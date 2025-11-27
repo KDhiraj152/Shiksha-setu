@@ -18,8 +18,17 @@ from fastapi import (
     Depends
 )
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
 
+from ...schemas.content import (
+    ChunkedUploadRequest,
+    ProcessRequest,
+    SimplifyRequest,
+    TranslateRequest,
+    ValidateRequest,
+    TTSRequest,
+    FeedbackRequest,
+    TaskResponse,
+)
 from ...tasks.celery_app import celery_app, get_task_info, revoke_task
 from ...tasks.pipeline_tasks import (
     extract_text_task,
@@ -30,20 +39,32 @@ from ...tasks.pipeline_tasks import (
     full_pipeline_task
 )
 from ...tasks.qa_tasks import process_document_for_qa_task
-from ...utils.input_sanitizer import InputSanitizer
+from ...utils.sanitizer import InputSanitizer
 from ...utils.auth import get_current_user, TokenData
 from ...database import get_db_session
 from ...models import ProcessedContent, Feedback
 from ...monitoring import get_logger
+from .helpers import (
+    parse_chunk_metadata,
+    save_file_chunk,
+    reassemble_chunks,
+    validate_file_type,
+    extract_text_from_content,
+    check_task_completion,
+    wait_for_task_result,
+    async_wait_for_task,
+    WAIT_SYNC_DESCRIPTION,
+    TASK_PROCESSING_MESSAGE,
+    MAX_UPLOAD_SIZE
+)
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1", tags=["content"])
+router = APIRouter(prefix="/api/v1/content", tags=["content"])
 
 # Upload configuration
 UPLOAD_DIR = Path("data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
 CHUNK_SIZE = 1024 * 1024  # 1MB
 
 # Input sanitizer
@@ -61,91 +82,8 @@ class AppError(Exception):
         super().__init__(message)
 
 
-# ==================== Request/Response Models ====================
+# ==================== Content Processing Endpoints ====================
 
-class ChunkedUploadRequest(BaseModel):
-    """Chunked upload metadata."""
-    filename: str
-    chunk_index: int
-    total_chunks: int
-    upload_id: str
-    checksum: Optional[str] = None
-
-
-class ProcessRequest(BaseModel):
-    """Full pipeline processing request."""
-    grade_level: int = Field(ge=5, le=12)
-    subject: str
-    target_languages: List[str]
-    output_format: str = Field(default='both', pattern='^(text|audio|both)$')
-    validation_threshold: float = Field(default=0.80, ge=0.0, le=1.0)
-
-
-class SimplifyRequest(BaseModel):
-    """Text simplification request."""
-    text: str = Field(min_length=10, max_length=50000)
-    grade_level: Optional[int] = Field(None, ge=5, le=12)
-    target_grade: Optional[int] = Field(None, ge=5, le=12)  # Backward compatibility
-    subject: str = Field(default='General')
-    
-    def get_grade_level(self) -> int:
-        """Get grade level from either field."""
-        return self.grade_level or self.target_grade or 8
-
-
-class TranslateRequest(BaseModel):
-    """Translation request."""
-    text: str = Field(min_length=10, max_length=50000)
-    target_languages: Optional[List[str]] = None
-    source_language: Optional[str] = None  # Backward compatibility
-    target_language: Optional[str] = None  # Backward compatibility
-    subject: str = Field(default='General')
-    
-    def get_target_languages(self) -> List[str]:
-        """Get target languages from either format."""
-        if self.target_languages:
-            return self.target_languages
-        elif self.target_language:
-            return [self.target_language]
-        return ['Hindi']
-
-
-class ValidateRequest(BaseModel):
-    """Content validation request."""
-    text: Optional[str] = Field(None, min_length=10)  # Backward compatibility
-    original_text: Optional[str] = Field(None, min_length=10)
-    processed_text: Optional[str] = Field(None, min_length=10)
-    grade_level: int = Field(ge=5, le=12)
-    subject: str
-    language: Optional[str] = Field(default='English')
-    
-    def get_texts(self) -> tuple[str, str]:
-        """Get original and processed texts."""
-        if self.text:
-            # Use text for both if only text is provided
-            return (self.text, self.text)
-        return (self.original_text or '', self.processed_text or '')
-
-
-class TTSRequest(BaseModel):
-    """Text-to-speech request."""
-    text: str = Field(min_length=10, max_length=10000)
-    language: str
-    subject: str = Field(default='General')
-
-
-class FeedbackRequest(BaseModel):
-    """User feedback request."""
-    content_id: str
-    rating: int = Field(ge=1, le=5)
-    feedback_text: Optional[str] = None
-    issue_type: Optional[str] = None
-
-
-class TaskResponse(BaseModel):
-    """Task status response."""
-    task_id: str
-    state: str
     progress: Optional[int] = None
     stage: Optional[str] = None
     message: Optional[str] = None
@@ -170,63 +108,30 @@ async def upload_chunk(
     Supports chunked uploads for files >10MB.
     """
     try:
-        # Parse metadata from JSON blob or discrete form fields for backward compatibility
-        parsed_metadata: Dict[str, Any]
-        if metadata:
-            parsed_metadata = json.loads(metadata)
-        elif None not in (upload_id, chunk_index, total_chunks):
-            parsed_metadata = {
-                "filename": file.filename or "chunk.bin",
-                "chunk_index": chunk_index,
-                "total_chunks": total_chunks,
-                "upload_id": upload_id,
-                "checksum": checksum
-            }
-        else:
-            raise HTTPException(status_code=400, detail="Chunk metadata missing")
-
+        # Parse metadata using helper
+        parsed_metadata = parse_chunk_metadata(
+            metadata, upload_id, chunk_index, total_chunks, checksum, file.filename or "chunk.bin"
+        )
         if checksum and "checksum" not in parsed_metadata:
             parsed_metadata["checksum"] = checksum
 
         chunk_request = ChunkedUploadRequest(**parsed_metadata)
         
-        # Create upload directory
+        # Create upload directory and save chunk
         upload_path = UPLOAD_DIR / chunk_request.upload_id
         upload_path.mkdir(exist_ok=True)
         
-        # Save chunk
-        chunk_path = upload_path / f"chunk_{chunk_request.chunk_index}"
         content = await file.read()
         if not content:
             raise HTTPException(status_code=400, detail="Empty chunk received")
-        async with aiofiles.open(chunk_path, 'wb') as f:
-            await f.write(content)
-        
+            
+        await save_file_chunk(content, upload_path, chunk_request.chunk_index)
         logger.info(f"Saved chunk {chunk_request.chunk_index}/{chunk_request.total_chunks}")
         
         # If last chunk, reassemble file
         if chunk_request.chunk_index == chunk_request.total_chunks - 1:
             final_path = UPLOAD_DIR / chunk_request.filename
-            
-            async with aiofiles.open(final_path, 'wb') as outfile:
-                for i in range(chunk_request.total_chunks):
-                    chunk_path = upload_path / f"chunk_{i}"
-                    async with aiofiles.open(chunk_path, 'rb') as infile:
-                        await outfile.write(await infile.read())
-
-            # Validate the reconstructed file before confirming success
-            async with aiofiles.open(final_path, 'rb') as validated:
-                final_bytes = await validated.read()
-                sanitizer.validate_file_upload(
-                    chunk_request.filename,
-                    final_bytes,
-                    max_size_mb=100
-                )
-            
-            # Cleanup chunks
-            import shutil
-            shutil.rmtree(upload_path)
-            
+            await reassemble_chunks(upload_path, final_path, chunk_request.total_chunks, chunk_request.filename)
             logger.info(f"File reassembled: {final_path}")
             
             return {
@@ -262,37 +167,11 @@ async def upload_file(
     Automatically processes document for Q&A if process_for_qa=True.
     """
     try:
-        # Read file content
+        # Read and validate file
         content = await file.read()
+        _, file_extension = validate_file_type(content, file.filename)
         
-        # Validate file type using magic bytes or extension
-        file_extension = Path(file.filename).suffix.lower()
-        allowed_extensions = ['.pdf', '.txt', '.jpeg', '.jpg', '.png']
-        
-        try:
-            mime_type = magic.from_buffer(content, mime=True)
-            allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'text/plain']
-            if mime_type not in allowed_types and file_extension not in allowed_extensions:
-                raise AppError(
-                    f"Invalid file type: {mime_type}. Allowed: PDF, TXT, JPEG, PNG",
-                    "INVALID_FILE_TYPE",
-                    400
-                )
-        except Exception as e:
-            logger.warning(f"File type detection issue: {e}, using extension check")
-            if file_extension not in allowed_extensions:
-                raise AppError(
-                    f"Invalid file extension: {file_extension}. Allowed: {', '.join(allowed_extensions)}",
-                    "INVALID_FILE_TYPE",
-                    400
-                )
-        
-        # Validate
-        sanitizer.validate_file_upload(
-            file.filename,
-            content,
-            max_size_mb=100
-        )
+        sanitizer.validate_file_upload(file.filename, content, max_size_mb=100)
         
         # Save file
         content_id = str(uuid.uuid4())
@@ -304,25 +183,8 @@ async def upload_file(
         
         logger.info(f"File uploaded: {file_path}")
         
-        # Extract text if it's a text file
-        extracted_text = ""
-        if file_extension == '.txt':
-            try:
-                extracted_text = content.decode('utf-8')
-            except Exception as e:
-                logger.warning(f"Failed to decode text file: {e}")
-                extracted_text = content.decode('utf-8', errors='ignore')
-        elif file_extension == '.pdf':
-            # Try to extract text from PDF
-            try:
-                import fitz  # PyMuPDF
-                doc = fitz.open(stream=content, filetype="pdf")
-                extracted_text = ""
-                for page in doc:
-                    extracted_text += page.get_text()
-                doc.close()
-            except Exception as e:
-                logger.warning(f"Failed to extract PDF text: {e}")
+        # Extract text using helper
+        extracted_text = extract_text_from_content(content, file_extension)
         
         # Save to database
         with get_db_session() as session:
@@ -342,7 +204,7 @@ async def upload_file(
             session.add(processed_content)
             session.commit()
         
-        # Start Q&A processing if requested and text is available
+        # Start Q&A processing if requested
         qa_task_id = None
         if process_for_qa and extracted_text:
             try:
@@ -357,11 +219,11 @@ async def upload_file(
         return {
             "status": "uploaded",
             "content_id": content_id,
-            "file_id": content_id,  # Alias for backward compatibility
+            "file_id": content_id,
             "file_path": str(file_path),
             "filename": file.filename,
             "size": len(content),
-            "extracted_text": extracted_text[:5000] if extracted_text else "",  # Limit to first 5000 chars
+            "extracted_text": extracted_text[:5000] if extracted_text else "",
             "grade_level": grade_level,
             "subject": subject,
             "qa_processing": {
@@ -371,10 +233,10 @@ async def upload_file(
             }
         }
         
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except AppError:
-        raise
     except Exception as e:
         logger.error(f"File upload failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -426,60 +288,36 @@ async def process_content(
 
 @router.post("/simplify")
 async def simplify_content(
-    request: SimplifyRequest,
-    wait: bool = Query(default=True, description="Wait for result synchronously")
+    request_data: SimplifyRequest,
+    wait: bool = Query(default=True, description=WAIT_SYNC_DESCRIPTION)
 ):
     """Simplify text asynchronously or synchronously."""
     try:
         # Sanitize input
-        clean_text = sanitizer.sanitize_text(request.text)
-        grade = request.get_grade_level()
+        clean_text = sanitizer.sanitize_text(request_data.text)
+        grade = request_data.get_grade_level()
         sanitizer.validate_grade_level(grade)
         
         # Submit task
         task = simplify_text_task.delay(
             text=clean_text,
             grade_level=grade,
-            subject=request.subject,
+            subject=request_data.subject,
             formula_blocks=None
         )
         
-        # If wait is True, poll for result using asyncio
+        # Wait for result if requested
         if wait:
-            import asyncio
-            max_wait = 60  # seconds
-            poll_interval = 0.5  # seconds
-            elapsed = 0
-            
-            while elapsed < max_wait:
-                # Check task status in a non-blocking way
-                task_status = task.state
-                
-                if task_status in ['SUCCESS', 'FAILURE']:
-                    if task_status == 'SUCCESS':
-                        result = task.result
-                        return {
-                            "simplified_text": result.get('simplified_text', ''),
-                            "grade_level": result.get('grade_level', grade),
-                            "task_id": task.id,
-                            "status": "completed"
-                        }
-                    else:
-                        return {
-                            "error": str(task.info) if hasattr(task, 'info') else "Task failed",
-                            "task_id": task.id,
-                            "status": "failed"
-                        }
-                
-                await asyncio.sleep(poll_interval)
-                elapsed += poll_interval
-            
-            # Timeout
-            return TaskResponse(
-                task_id=task.id,
-                state='PENDING',
-                message='Task is still processing. Use task_id to check status.'
-            )
+            result = await async_wait_for_task(task, max_wait=60)
+            if result.get('state') == 'SUCCESS':
+                task_result = result.get('result', {})
+                return {
+                    "simplified_text": task_result.get('simplified_text', ''),
+                    "grade_level": task_result.get('grade_level', grade),
+                    "task_id": task.id,
+                    "status": "completed"
+                }
+            return result
         
         return TaskResponse(
             task_id=task.id,
@@ -494,18 +332,16 @@ async def simplify_content(
 
 @router.post("/translate")
 async def translate_content(
-    request: TranslateRequest,
-    wait: bool = Query(default=True, description="Wait for result synchronously")
+    request_data: TranslateRequest,
+    wait: bool = Query(default=True, description=WAIT_SYNC_DESCRIPTION)
 ):
     """Translate text asynchronously or synchronously."""
     try:
         # Sanitize input
-        clean_text = sanitizer.sanitize_text(request.text)
+        clean_text = sanitizer.sanitize_text(request_data.text)
         
-        # Get target languages
-        target_langs = request.get_target_languages()
-        
-        # Validate languages
+        # Get and validate target languages
+        target_langs = request_data.get_target_languages()
         for lang in target_langs:
             sanitizer.validate_language(lang)
         
@@ -516,39 +352,20 @@ async def translate_content(
             formula_blocks=None
         )
         
-        # If wait is True, poll for result
+        # Wait for result if requested
         if wait:
-            import asyncio
-            max_wait = 60
-            start_time = asyncio.get_event_loop().time()
-            
-            while asyncio.get_event_loop().time() - start_time < max_wait:
-                if task.ready():
-                    if task.successful():
-                        result = task.result
-                        # Get the first translation (backward compatibility)
-                        translations = result.get('translations', {})
-                        first_lang = target_langs[0] if target_langs else 'Hindi'
-                        translated_text = translations.get(first_lang, '')
-                        return {
-                            "translated_text": translated_text,
-                            "translations": translations,
-                            "task_id": task.id,
-                            "status": "completed"
-                        }
-                    else:
-                        return {
-                            "error": str(task.info),
-                            "task_id": task.id,
-                            "status": "failed"
-                        }
-                await asyncio.sleep(1)
-            
-            return TaskResponse(
-                task_id=task.id,
-                state='PENDING',
-                message='Task is still processing'
-            )
+            result = await async_wait_for_task(task, max_wait=60)
+            if result.get('state') == 'SUCCESS':
+                task_result = result.get('result', {})
+                translations = task_result.get('translations', {})
+                first_lang = target_langs[0] if target_langs else 'Hindi'
+                return {
+                    "translated_text": translations.get(first_lang, ''),
+                    "translations": translations,
+                    "task_id": task.id,
+                    "status": "completed"
+                }
+            return result
         
         return TaskResponse(
             task_id=task.id,
@@ -563,8 +380,8 @@ async def translate_content(
 
 @router.post("/validate")
 async def validate_content(
-    request: ValidateRequest,
-    wait: bool = Query(default=True, description="Wait for result synchronously")
+    request_data: ValidateRequest,
+    wait: bool = Query(default=True, description=WAIT_SYNC_DESCRIPTION)
 ):
     """Validate content semantically."""
     try:
@@ -609,7 +426,7 @@ async def validate_content(
             return TaskResponse(
                 task_id=task.id,
                 state='PENDING',
-                message='Task is still processing'
+                message=TASK_PROCESSING_MESSAGE
             )
         
         return TaskResponse(
@@ -626,7 +443,7 @@ async def validate_content(
 @router.post("/tts")
 async def text_to_speech(
     request: TTSRequest,
-    wait: bool = Query(default=True, description="Wait for result synchronously")
+    wait: bool = Query(default=True, description=WAIT_SYNC_DESCRIPTION)
 ):
     """Generate speech audio asynchronously or synchronously."""
     try:
@@ -668,7 +485,7 @@ async def text_to_speech(
             return TaskResponse(
                 task_id=task.id,
                 state='PENDING',
-                message='Task is still processing'
+                message=TASK_PROCESSING_MESSAGE
             )
         
         return TaskResponse(

@@ -3,12 +3,9 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Body
-from pydantic import BaseModel
 
+from ...schemas.auth import Token, UserCreate, UserLogin, RefreshTokenRequest
 from ...utils.auth import (
-    Token,
-    UserCreate,
-    UserLogin,
     create_tokens,
     get_password_hash,
     verify_password,

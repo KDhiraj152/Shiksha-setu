@@ -10,6 +10,10 @@ import ContentPage from './pages/ContentPage';
 import LibraryPage from './pages/LibraryPage';
 import LandingPage from './pages/LandingPage';
 import AboutPage from './pages/AboutPage';
+import FeaturesPage from './pages/FeaturesPage';
+import SimplifyPage from './pages/SimplifyPage';
+import TranslatePage from './pages/TranslatePage';
+import QAPage from './pages/QAPage';
 
 function App() {
   return (
@@ -27,7 +31,11 @@ function App() {
           {/* Protected routes */}
           <Route path="/" element={<ProtectedRoute />}>
             <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="features" element={<FeaturesPage />} />
             <Route path="upload" element={<UploadPage />} />
+            <Route path="simplify" element={<SimplifyPage />} />
+            <Route path="translate" element={<TranslatePage />} />
+            <Route path="qa" element={<QAPage />} />
             <Route path="library" element={<LibraryPage />} />
             <Route path="tasks/:taskId" element={<TaskPage />} />
             <Route path="content/:contentId" element={<ContentPage />} />

@@ -84,14 +84,25 @@ def init_db():
     Initialize database - create all tables and enable pgvector.
     Safe to call multiple times (idempotent).
     """
+    # Test database connection first
     try:
-        # Try to enable pgvector extension for Supabase/PostgreSQL
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+            logger.info("Database connection successful")
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        logger.error(f"DATABASE_URL: {DATABASE_URL[:30]}...")
+        raise
+    
+    # Try to enable pgvector extension for Supabase/PostgreSQL
+    try:
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             conn.commit()
             logger.info("pgvector extension enabled")
     except Exception as e:
         logger.warning(f"Could not enable pgvector extension: {e}")
+        logger.warning("RAG/Q&A features will have limited functionality without pgvector")
     
     # Create all tables
     create_tables()

@@ -1,7 +1,7 @@
 """Add Q&A tables for RAG system
 
 Revision ID: 61631d311ed9
-Revises: 003_add_authentication
+Revises: 007_enable_pgvector
 Create Date: 2025-11-16 12:48:27.515982
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '61631d311ed9'
-down_revision = '003_add_authentication'
+down_revision = '007_enable_pgvector'
 branch_labels = None
 depends_on = None
 

@@ -120,7 +120,7 @@ class ContentPipelineOrchestrator:
     )
     def _simplify_text(self, text: str, grade: int, subject: str) -> str:
         """Simplify text for grade level (with auto-retry)."""
-        from ..simplifier import TextSimplifier
+        from ..simplify import TextSimplifier
         
         simplifier = TextSimplifier(model_client=self.flant5_client)
         result = simplifier.simplify(
@@ -142,7 +142,7 @@ class ContentPipelineOrchestrator:
     )
     def _translate_text(self, text: str, language: str) -> str:
         """Translate text to target language (with auto-retry)."""
-        from ..translator import TranslationEngine
+        from ..translate import TranslationEngine
         
         engine = TranslationEngine(model_client=self.indictrans2_client)
         result = engine.translate(

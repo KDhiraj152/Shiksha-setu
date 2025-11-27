@@ -1,6 +1,6 @@
 """Service package exports."""
 from .ocr import OCRService, PDFExtractor, TesseractOCR, MathFormulaDetector, ExtractionResult
-from .caption_service import WhisperCaptionService, CaptionResult, Caption
+from .captions import WhisperCaptionService, CaptionResult, Caption
 
 __all__ = [
     'OCRService',

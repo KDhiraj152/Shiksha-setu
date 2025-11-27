@@ -1,7 +1,7 @@
 """Speech generator module for text-to-speech conversion in multiple Indian languages."""
 
-from .speech_generator import SpeechGenerator, AudioFile, TechnicalTermHandler, ASRValidator
-from .audio_processor import AudioProcessor, AudioCache, BatchAudioProcessor
+from .generator import SpeechGenerator, AudioFile, TechnicalTermHandler, ASRValidator
+from .processor import AudioProcessor, AudioCache, BatchAudioProcessor
 
 __all__ = [
     'SpeechGenerator',

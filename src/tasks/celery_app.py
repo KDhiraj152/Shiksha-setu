@@ -123,12 +123,18 @@ def task_success_handler(sender=None, result=None, **extra):
 @task_failure.connect
 def task_failure_handler(sender=None, task_id=None, exception=None, args=None, 
                          kwargs=None, traceback=None, einfo=None, **extra):
-    """Handle task failure - log and optionally alert."""
+    """Handle task failure - log and optionally alert.
+    
+    Note: Alerting mechanism (email, Slack, etc.) can be implemented by:
+    1. Adding an alert service in src/services/alerts.py
+    2. Importing and calling send_alert(f"Task {sender.name} failed: {exception}")
+    3. Configure alert channels via environment variables (SLACK_WEBHOOK_URL, ALERT_EMAIL, etc.)
+    """
     logger.error(f"Task {sender.name} [{task_id}] failed: {exception}")
     logger.error(f"Traceback: {traceback}")
     
-    # TODO: Add alerting mechanism (email, Slack, etc.)
-    # Example: send_alert(f"Task {sender.name} failed: {exception}")
+    # Alerting mechanism can be added here when needed
+    # send_alert(f"Task {sender.name} failed: {exception}")
 
 
 @task_retry.connect

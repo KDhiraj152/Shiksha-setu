@@ -5,8 +5,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 import bcrypt
 from jose import JWTError, jwt
-from pydantic import BaseModel, EmailStr, Field
 import logging
+
+# Import schemas for backward compatibility
+from ..schemas.auth import Token, TokenData, UserCreate, UserLogin, UserResponse
 
 logger = logging.getLogger(__name__)
 
@@ -21,45 +23,21 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
-# Models
-class Token(BaseModel):
-    """JWT token response."""
-    access_token: str
-    refresh_token: Optional[str] = None
-    token_type: str = "bearer"
-    expires_in: int
-
-
-class TokenData(BaseModel):
-    """Token payload data."""
-    user_id: Optional[str] = None
-    email: Optional[str] = None
-    role: Optional[str] = "user"
-
-
-class UserCreate(BaseModel):
-    """User registration model."""
-    email: EmailStr
-    password: str = Field(min_length=8, max_length=72, description="Password (max 72 characters for bcrypt)")
-    full_name: Optional[str] = None
-    organization: Optional[str] = None
-
-
-class UserLogin(BaseModel):
-    """User login model."""
-    email: EmailStr
-    password: str
-
-
-class User(BaseModel):
-    """User model."""
-    id: str
-    email: str
-    full_name: Optional[str] = None
-    organization: Optional[str] = None
-    role: str = "user"
-    is_active: bool = True
-    created_at: datetime
+# Re-export schemas for backward compatibility
+__all__ = [
+    "Token",
+    "TokenData",
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
+    "verify_password",
+    "get_password_hash",
+    "create_access_token",
+    "create_refresh_token",
+    "create_tokens",
+    "verify_token",
+    "get_current_user",
+]
 
 
 # Password utilities
@@ -305,7 +283,7 @@ __all__ = [
     'TokenData',
     'UserCreate',
     'UserLogin',
-    'User',
+    'UserResponse',
     'verify_password',
     'get_password_hash',
     'create_tokens',

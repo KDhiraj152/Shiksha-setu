@@ -61,10 +61,23 @@ class Settings:
     REQUIRE_NUMBERS: bool = False  # Relaxed for testing
     REQUIRE_UPPERCASE: bool = False  # Relaxed for testing
     
-    # Rate Limiting (High values for testing)
-    RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "false").lower() == "true"
-    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "1000"))  # High for testing
-    RATE_LIMIT_PER_HOUR: int = int(os.getenv("RATE_LIMIT_PER_HOUR", "10000"))  # High for testing
+    # Rate Limiting
+    # Enable by default in production, can be overridden via environment variable
+    RATE_LIMIT_ENABLED: bool = os.getenv(
+        "RATE_LIMIT_ENABLED", 
+        "true" if os.getenv("ENVIRONMENT", "development") == "production" else "false"
+    ).lower() == "true"
+    
+    # Production rate limits (requests per time period per user/IP)
+    # For testing: 1000/min, for production: 60/min
+    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "1000" if os.getenv("TESTING") == "true" else "60"))
+    RATE_LIMIT_PER_HOUR: int = int(os.getenv("RATE_LIMIT_PER_HOUR", "10000" if os.getenv("TESTING") == "true" else "1000"))
+    
+    # Rate limit storage backend
+    RATE_LIMIT_STORAGE: str = os.getenv("RATE_LIMIT_STORAGE", "redis")  # redis or memory
+    
+    # Burst allowance (percentage of rate limit that can be used in burst)
+    RATE_LIMIT_BURST_MULTIPLIER: float = float(os.getenv("RATE_LIMIT_BURST_MULTIPLIER", "1.5"))
     
     # CORS
     ALLOWED_ORIGINS: List[str] = [

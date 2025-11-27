@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '005_add_composite_indexes'
-down_revision = '61631d311ed9_add_q_a_tables_for_rag_system'
+down_revision = '004_add_user_tracking'
 branch_labels = None
 depends_on = None
 

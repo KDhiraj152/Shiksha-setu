@@ -9,7 +9,7 @@ These tasks handle:
 
 import logging
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 
 from celery import shared_task
@@ -17,8 +17,8 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
 from ..models import ProcessedContent, ChatHistory
-from ..services.rag_service import get_rag_service
-from ..simplifier.text_simplifier import TextSimplifier
+from ..services.rag import get_rag_service
+from ..simplify.simplifier import TextSimplifier
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def process_document_for_qa_task(
                 metadata = content.metadata or {}
                 metadata['qa_ready'] = True
                 metadata['num_chunks'] = num_chunks
-                metadata['qa_processed_at'] = datetime.utcnow().isoformat()
+                metadata['qa_processed_at'] = datetime.now(timezone.utc).isoformat()
                 content.metadata = metadata
                 session.commit()
         finally:

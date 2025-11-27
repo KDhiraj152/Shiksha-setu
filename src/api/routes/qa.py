@@ -3,14 +3,15 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Form, Query, Depends
-from pydantic import BaseModel
 
+from ...schemas.qa import QAProcessRequest, QAQueryRequest, QAResponse
+from ...core.constants import CONTENT_NOT_FOUND
 from ...tasks.qa_tasks import (
     process_document_for_qa_task,
     answer_question_task,
     get_chat_history_task
 )
-from ...utils.input_sanitizer import InputSanitizer
+from ...utils.sanitizer import InputSanitizer
 from ...utils.auth import get_current_user
 from ...database import get_db_session
 from ...models import ProcessedContent, User
@@ -44,9 +45,9 @@ async def process_document_for_qa(
             ).first()
             
             if not content:
-                raise HTTPException(status_code=404, detail="Content not found")
+                raise HTTPException(status_code=404, detail=CONTENT_NOT_FOUND)
             
-            # Get the text to process
+            # Get the text for Q&A
             text = content.original_text or content.simplified_text
             if not text:
                 raise HTTPException(status_code=400, detail="No text available in content")

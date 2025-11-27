@@ -158,7 +158,7 @@ class ApiService {
     formData.append('file', file);
 
     const response = await apiClient.post<{ file_path: string }>(
-      '/api/v1/upload',
+      '/api/v1/content/upload',
       formData,
       {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -199,7 +199,7 @@ class ApiService {
     formData.append('metadata', JSON.stringify(metadata));
 
     const response = await apiClient.post<{ status: string; message: string }>(
-      '/api/v1/upload/chunked',
+      '/api/v1/content/upload/chunked',
       formData,
       {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -216,7 +216,7 @@ class ApiService {
 
   async processContent(data: ProcessRequest): Promise<{ task_id: string; status: string; message?: string }> {
     const response = await apiClient.post<{ task_id: string; status: string; message?: string }>(
-      '/api/v1/process',
+      '/api/v1/content/process',
       {
         grade_level: data.grade_level,
         subject: data.subject,
@@ -235,7 +235,7 @@ class ApiService {
 
   async simplifyText(data: SimplifyRequest): Promise<{ task_id: string; status: string }> {
     const response = await apiClient.post<{ task_id: string; status: string }>(
-      '/api/v1/simplify',
+      '/api/v1/content/simplify',
       data
     );
     return response.data;
@@ -243,7 +243,7 @@ class ApiService {
 
   async translateText(data: TranslateRequest): Promise<{ task_id: string; status: string }> {
     const response = await apiClient.post<{ task_id: string; status: string }>(
-      '/api/v1/translate',
+      '/api/v1/content/translate',
       data
     );
     return response.data;
@@ -251,7 +251,7 @@ class ApiService {
 
   async validateContent(data: ValidateRequest): Promise<{ task_id: string; status: string }> {
     const response = await apiClient.post<{ task_id: string; status: string }>(
-      '/api/v1/validate',
+      '/api/v1/content/validate',
       data
     );
     return response.data;
@@ -259,43 +259,74 @@ class ApiService {
 
   async generateAudio(data: TTSRequest): Promise<{ task_id: string; status: string }> {
     const response = await apiClient.post<{ task_id: string; status: string }>(
-      '/api/v1/tts',
+      '/api/v1/content/tts',
       data
     );
     return response.data;
   }
 
+  async processDocumentForQA(contentId: string, chunkSize: number = 512, overlap: number = 50): Promise<{ task_id: string; message: string }> {
+    const formData = new FormData();
+    formData.append('content_id', contentId);
+    formData.append('chunk_size', chunkSize.toString());
+    formData.append('overlap', overlap.toString());
+    
+    const response = await apiClient.post<{ task_id: string; message: string }>(
+      '/api/v1/qa/process',
+      formData
+    );
+    return response.data;
+  }
+
+  async askQuestion(contentId: string, question: string, wait: boolean = false, topK: number = 3): Promise<any> {
+    const formData = new FormData();
+    formData.append('content_id', contentId);
+    formData.append('question', question);
+    formData.append('wait', wait.toString());
+    formData.append('top_k', topK.toString());
+    
+    const response = await apiClient.post('/api/v1/qa/ask', formData);
+    return response.data;
+  }
+
+  async getQAHistory(contentId: string, limit: number = 10): Promise<{ history: any[]; count: number }> {
+    const response = await apiClient.get(`/api/v1/qa/history/${contentId}`, {
+      params: { limit }
+    });
+    return response.data;
+  }
+
   async getTaskStatus(taskId: string): Promise<TaskStatus> {
-    const response = await apiClient.get<TaskStatus>(`/api/v1/tasks/${taskId}`);
+    const response = await apiClient.get<TaskStatus>(`/api/v1/content/tasks/${taskId}`);
     return response.data;
   }
 
   async cancelTask(taskId: string, terminate: boolean = false): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(
-      `/api/v1/tasks/${taskId}`,
+      `/api/v1/content/tasks/${taskId}`,
       { params: { terminate } }
     );
     return response.data;
   }
 
   async getContent(contentId: string): Promise<ProcessedContent> {
-    const response = await apiClient.get<ProcessedContent>(`/api/v1/content/${contentId}`);
+    const response = await apiClient.get<ProcessedContent>(`/api/v1/content/content/${contentId}`);
     return response.data;
   }
 
   getAudioUrl(contentId: string, language?: string): string {
     const params = language ? `?language=${language}` : '';
-    return `${API_BASE_URL}/api/v1/audio/${contentId}${params}`;
+    return `${API_BASE_URL}/api/v1/content/audio/${contentId}${params}`;
   }
 
   async submitFeedback(data: FeedbackRequest): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>('/api/v1/feedback', data);
+    const response = await apiClient.post<{ message: string }>('/api/v1/content/feedback', data);
     return response.data;
   }
 
   async getLibrary(filters: LibraryFilters): Promise<PaginatedResponse<ProcessedContent>> {
     const response = await apiClient.get<PaginatedResponse<ProcessedContent>>(
-      '/api/v1/library',
+      '/api/v1/content/library',
       { params: filters }
     );
     return response.data;
@@ -303,7 +334,7 @@ class ApiService {
 
   async searchContent(params: SearchParams): Promise<{ results: ProcessedContent[] }> {
     const response = await apiClient.get<{ results: ProcessedContent[] }>(
-      '/api/v1/content/search',
+      '/api/v1/content/content/search',
       { params }
     );
     return response.data;

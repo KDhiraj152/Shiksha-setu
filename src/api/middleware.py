@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..core.config import settings
 from ..core.exceptions import ShikshaSetuException
-from ..utils.logging_config import get_logger
+from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -20,15 +20,27 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
         
-        # Security headers
+        # Security headers - prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
+        
+        # Security headers - prevent clickjacking
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        
+        # Security headers - XSS protection
         response.headers["X-XSS-Protection"] = "1; mode=block"
+        
+        # Security headers - Referrer policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        
+        # Content Security Policy
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
         
         # HSTS header for production
         if settings.ENVIRONMENT == "production":
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        
+        # Permissions Policy
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         
         return response
 
@@ -78,7 +90,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         return response
 
 
-async def exception_handler(request: Request, exc: ShikshaSetuException) -> JSONResponse:
+def exception_handler(request: Request, exc: ShikshaSetuException) -> JSONResponse:
     """Handle custom ShikshaSetu exceptions."""
     logger.error(
         f"ShikshaSetuException: {exc.error_code} - {exc.detail} "
@@ -91,7 +103,7 @@ async def exception_handler(request: Request, exc: ShikshaSetuException) -> JSON
     )
 
 
-async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions."""
     logger.exception(
         f"Unhandled exception for {request.method} {request.url.path}: {str(exc)}"

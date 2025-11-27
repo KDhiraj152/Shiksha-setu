@@ -9,15 +9,31 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-# Test configuration constants
-TEST_REDIS_URL = 'redis://localhost:6379/15'
-
-# Set test environment
+# Set test environment BEFORE importing src modules
 os.environ['TESTING'] = 'true'
-os.environ['DATABASE_URL'] = os.environ.get('DATABASE_URL', 'postgresql://test_user:test_password@localhost:5432/test_db')
+os.environ['ENVIRONMENT'] = 'test'
+
+# Use SQLite for testing (no database server required)
+# SQLite is fast, in-memory capable, and perfect for integration tests
+TEST_DATABASE_URL = 'sqlite:///test_shiksha_setu.db'
+os.environ['DATABASE_URL'] = TEST_DATABASE_URL
+
+# Redis configuration (test database 15 to avoid interfering with dev/prod)
+TEST_REDIS_URL = 'redis://localhost:6379/15'
 os.environ['REDIS_URL'] = TEST_REDIS_URL
 os.environ['CELERY_BROKER_URL'] = TEST_REDIS_URL
 os.environ['CELERY_RESULT_BACKEND'] = TEST_REDIS_URL
+
+# Celery should run tasks synchronously during testing
+os.environ['CELERY_TASK_ALWAYS_EAGER'] = 'true'
+os.environ['CELERY_TASK_EAGER_PROPAGATES'] = 'true'
+
+# Disable rate limiting for tests
+os.environ['RATE_LIMIT_ENABLED'] = 'false'
+
+# Set higher rate limits for tests
+os.environ['RATE_LIMIT_PER_MINUTE'] = '10000'
+os.environ['RATE_LIMIT_PER_HOUR'] = '100000'
 
 
 @pytest.fixture(scope='session')
@@ -63,18 +79,18 @@ def setup_test_environment():
 @pytest.fixture(scope="function")
 def clean_database():
     """Clean database between tests."""
-    from src.database import SessionLocal
+    from src.database import engine, Base
     
-    db = get_db()
+    # Drop all tables
+    Base.metadata.drop_all(bind=engine)
     
-    # Drop and recreate tables for each test
-    db.drop_tables()
-    db.create_tables()
+    # Recreate all tables
+    Base.metadata.create_all(bind=engine)
     
     yield
     
     # Cleanup after test
-    db.close_session()
+    Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture

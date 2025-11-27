@@ -1,0 +1,11 @@
+# Ignore sensitive files
+secrets.env
+*.secret.yaml
+*-secrets.yaml
+
+# Ignore generated files
+kustomization-generated.yaml
+
+# Ignore backup files
+*.bak
+*.backup

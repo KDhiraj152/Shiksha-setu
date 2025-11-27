@@ -90,14 +90,42 @@ export default function DashboardPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
-              Welcome back, {user?.full_name || user?.username || 'Educator'}!
+              Welcome back, {user?.full_name || user?.email?.split('@')[0] || 'Educator'}!
             </h1>
             <p className="text-gray-600">Here is the latest summary of your processed content.</p>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Total Processed</h3>
-            <p className="text-2xl font-bold text-gray-900">{recentContent.length}</p>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Items</h3>
+            <p className="text-3xl font-bold text-primary-600">{recentContent.length}</p>
           </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Link to="/features" className="glass-card p-6 hover:shadow-xl transition-all transform hover:-translate-y-1 text-center">
+            <div className="text-4xl mb-2">✨</div>
+            <h3 className="font-semibold text-gray-900">All Features</h3>
+          </Link>
+          <Link to="/upload" className="glass-card p-6 hover:shadow-xl transition-all transform hover:-translate-y-1 text-center">
+            <div className="text-4xl mb-2">📤</div>
+            <h3 className="font-semibold text-gray-900">Upload</h3>
+          </Link>
+          <Link to="/simplify" className="glass-card p-6 hover:shadow-xl transition-all transform hover:-translate-y-1 text-center">
+            <div className="text-4xl mb-2">📝</div>
+            <h3 className="font-semibold text-gray-900">Simplify</h3>
+          </Link>
+          <Link to="/translate" className="glass-card p-6 hover:shadow-xl transition-all transform hover:-translate-y-1 text-center">
+            <div className="text-4xl mb-2">🌐</div>
+            <h3 className="font-semibold text-gray-900">Translate</h3>
+          </Link>
+          <Link to="/qa" className="glass-card p-6 hover:shadow-xl transition-all transform hover:-translate-y-1 text-center">
+            <div className="text-4xl mb-2">💬</div>
+            <h3 className="font-semibold text-gray-900">Q&A</h3>
+          </Link>
+          <Link to="/library" className="glass-card p-6 hover:shadow-xl transition-all transform hover:-translate-y-1 text-center">
+            <div className="text-4xl mb-2">📚</div>
+            <h3 className="font-semibold text-gray-900">Library</h3>
+          </Link>
         </div>
 
         <div className="glass-card p-8">

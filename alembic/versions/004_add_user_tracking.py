@@ -1,7 +1,7 @@
 """Add user tracking to processed_content and feedback
 
 Revision ID: 004_add_user_tracking
-Revises: 61631d311ed9
+Revises: 003_add_authentication
 Create Date: 2025-11-16 09:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 # revision identifiers, used by Alembic.
 revision = '004_add_user_tracking'
-down_revision = '61631d311ed9'
+down_revision = '003_add_authentication'
 branch_labels = None
 depends_on = None
 

@@ -1,0 +1,48 @@
+"""Ingress configuration for ShikshaSetu."""
+
+# ==================== Ingress ====================
+# NOTE: $(DOMAIN_NAME) will be replaced via Kustomize variable substitution
+# Configure in overlay-specific kustomization.yaml files
+# Example for prod: DOMAIN_NAME=shiksha-setu.com
+# This will create: shiksha-setu.com and api.shiksha-setu.com
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shiksha-ingress
+  namespace: shiksha-setu
+  annotations:
+    # kubernetes.io/ingress.class: "nginx"  # DEPRECATED - removed in favor of spec.ingressClassName
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - $(DOMAIN_NAME)
+    - api.$(DOMAIN_NAME)
+    secretName: shiksha-tls
+  rules:
+  - host: api.$(DOMAIN_NAME)
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fastapi
+            port:
+              number: 8000
+  - host: $(DOMAIN_NAME)
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: fastapi
+            port:
+              number: 8000

@@ -1,0 +1,163 @@
+#!/bin/bash
+# ===================================================================
+# ShikshaSetu - Stop All Services
+# Gracefully stops backend, frontend, and AI/ML pipeline
+# ===================================================================
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+NC='\033[0m'
+
+PID_DIR="/tmp/shiksha_setu"
+
+print_header() {
+    echo ""
+    echo "======================================================================"
+    echo -e "  ${MAGENTA}$1${NC}"
+    echo "======================================================================"
+    echo ""
+}
+
+print_status() { echo -e "${GREEN}✓${NC} $1"; }
+print_error() { echo -e "${RED}✗${NC} $1"; }
+print_info() { echo -e "${BLUE}ℹ${NC} $1"; }
+print_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
+
+print_header "🛑 SHIKSHA SETU - STOPPING ALL SERVICES"
+
+STOPPED=0
+
+# ===================================================================
+# Stop Backend API
+# ===================================================================
+if [ -f "$PID_DIR/backend.pid" ]; then
+    BACKEND_PID=$(cat "$PID_DIR/backend.pid")
+    if ps -p $BACKEND_PID > /dev/null 2>&1; then
+        print_info "Stopping Backend API (PID: $BACKEND_PID)..."
+        kill $BACKEND_PID 2>/dev/null
+        sleep 2
+        if ps -p $BACKEND_PID > /dev/null 2>&1; then
+            kill -9 $BACKEND_PID 2>/dev/null
+        fi
+        rm -f "$PID_DIR/backend.pid"
+        print_status "Backend API stopped"
+        ((STOPPED++))
+    else
+        print_warning "Backend API not running"
+        rm -f "$PID_DIR/backend.pid"
+    fi
+else
+    # Try to find and kill uvicorn process
+    UVICORN_PID=$(ps aux | grep "uvicorn src.api.main:app" | grep -v grep | awk '{print $2}' | head -1)
+    if [ ! -z "$UVICORN_PID" ]; then
+        print_info "Found Backend API process (PID: $UVICORN_PID)..."
+        kill $UVICORN_PID 2>/dev/null
+        sleep 1
+        print_status "Backend API stopped"
+        ((STOPPED++))
+    else
+        print_info "Backend API not running"
+    fi
+fi
+
+# ===================================================================
+# Stop AI/ML Pipeline (Celery)
+# ===================================================================
+if [ -f "$PID_DIR/celery.pid" ]; then
+    CELERY_PID=$(cat "$PID_DIR/celery.pid")
+    if ps -p $CELERY_PID > /dev/null 2>&1; then
+        print_info "Stopping AI/ML Pipeline (PID: $CELERY_PID)..."
+        kill $CELERY_PID 2>/dev/null
+        sleep 2
+        if ps -p $CELERY_PID > /dev/null 2>&1; then
+            kill -9 $CELERY_PID 2>/dev/null
+        fi
+        rm -f "$PID_DIR/celery.pid"
+        print_status "AI/ML Pipeline stopped"
+        ((STOPPED++))
+    else
+        print_warning "AI/ML Pipeline not running"
+        rm -f "$PID_DIR/celery.pid"
+    fi
+else
+    # Try to find and kill celery worker
+    CELERY_PID=$(ps aux | grep "celery.*worker" | grep -v grep | awk '{print $2}' | head -1)
+    if [ ! -z "$CELERY_PID" ]; then
+        print_info "Found Celery worker process (PID: $CELERY_PID)..."
+        kill $CELERY_PID 2>/dev/null
+        sleep 1
+        print_status "AI/ML Pipeline stopped"
+        ((STOPPED++))
+    else
+        print_info "AI/ML Pipeline not running"
+    fi
+fi
+
+# ===================================================================
+# Stop Frontend
+# ===================================================================
+if [ -f "$PID_DIR/frontend.pid" ]; then
+    FRONTEND_PID=$(cat "$PID_DIR/frontend.pid")
+    if ps -p $FRONTEND_PID > /dev/null 2>&1; then
+        print_info "Stopping Frontend (PID: $FRONTEND_PID)..."
+        kill $FRONTEND_PID 2>/dev/null
+        sleep 2
+        if ps -p $FRONTEND_PID > /dev/null 2>&1; then
+            kill -9 $FRONTEND_PID 2>/dev/null
+        fi
+        rm -f "$PID_DIR/frontend.pid"
+        print_status "Frontend stopped"
+        ((STOPPED++))
+    else
+        print_warning "Frontend not running"
+        rm -f "$PID_DIR/frontend.pid"
+    fi
+else
+    # Try to find and kill vite process
+    VITE_PID=$(ps aux | grep "vite" | grep "frontend" | grep -v grep | awk '{print $2}' | head -1)
+    if [ ! -z "$VITE_PID" ]; then
+        print_info "Found Frontend process (PID: $VITE_PID)..."
+        kill $VITE_PID 2>/dev/null
+        sleep 1
+        print_status "Frontend stopped"
+        ((STOPPED++))
+    else
+        print_info "Frontend not running"
+    fi
+fi
+
+# ===================================================================
+# Additional cleanup
+# ===================================================================
+print_info "Cleaning up additional processes..."
+
+# Kill any remaining uvicorn processes
+pkill -f "uvicorn src.api.main" 2>/dev/null && print_status "Cleaned uvicorn processes"
+
+# Kill any remaining celery processes
+pkill -f "celery.*worker" 2>/dev/null && print_status "Cleaned celery processes"
+
+# Kill any remaining vite processes in frontend
+pkill -f "vite.*frontend" 2>/dev/null && print_status "Cleaned vite processes"
+
+# ===================================================================
+# Summary
+# ===================================================================
+print_header "✅ SHUTDOWN COMPLETE"
+
+if [ $STOPPED -gt 0 ]; then
+    echo -e "${GREEN}Stopped $STOPPED service(s)${NC}"
+else
+    echo -e "${BLUE}No services were running${NC}"
+fi
+
+echo ""
+echo "To start services again, run:"
+echo -e "  ${GREEN}./2-start.sh${NC}     - Start all services"
+echo -e "  ${GREEN}./3-backend.sh${NC}   - Start backend only"
+echo -e "  ${GREEN}./4-frontend.sh${NC}  - Start frontend only"
+echo ""

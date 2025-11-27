@@ -10,7 +10,20 @@ router = APIRouter(tags=["health"])
 @router.get("/health")
 async def health_check():
     """Basic health check."""
-    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+    from ...database import SessionLocal
+    from sqlalchemy import text
+    db_status = "connected"
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+    except Exception:
+        db_status = "disconnected"
+    return {
+        "status": "healthy",
+        "database": db_status,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
 
 
 @router.get("/health/detailed")

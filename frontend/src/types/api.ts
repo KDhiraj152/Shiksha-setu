@@ -50,7 +50,9 @@ export interface SimplifyRequest {
 
 export interface TranslateRequest {
   text: string;
-  target_languages: string[];
+  source_language?: string;
+  target_language?: string;
+  target_languages?: string[];
   subject?: string;
 }
 

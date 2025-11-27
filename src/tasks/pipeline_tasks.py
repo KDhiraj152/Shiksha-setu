@@ -7,10 +7,10 @@ import time
 
 from .celery_app import celery_app
 from ..services.ocr import OCRService
-from ..simplifier.text_simplifier import TextSimplifier
-from ..translator.translation_engine import TranslationEngine
-from ..validator.validation_module import ValidationModule
-from ..speech.speech_generator import SpeechGenerator
+from ..simplify.simplifier import TextSimplifier
+from ..translate.engine import TranslationEngine
+from ..validate.validator import ValidationModule
+from ..speech.generator import SpeechGenerator
 from ..database import get_db
 from ..models import ProcessedContent
 from datetime import datetime
@@ -118,8 +118,20 @@ def simplify_text_task(
     try:
         self.update_progress(self.request.id, 10, 'simplification', 'Loading model...')
         
-        # Initialize simplifier
-        simplifier = TextSimplifier()
+        # Initialize simplifier with FLAN-T5 model client
+        from ..pipeline.model_clients import FlanT5Client
+        import os
+        
+        api_key = os.getenv('HUGGINGFACE_API_KEY')
+        model_client = None
+        if api_key:
+            try:
+                model_client = FlanT5Client(api_key)
+                logger.info("FLAN-T5 model client initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize FLAN-T5 client: {e}")
+        
+        simplifier = TextSimplifier(model_client=model_client)
         
         self.update_progress(self.request.id, 40, 'simplification', 'Simplifying content...')
         
@@ -129,7 +141,7 @@ def simplify_text_task(
             grade_level=grade_level,
             subject=subject
         )
-        simplified = simplified_result.text  # Use .text instead of .simplified_text
+        simplified = simplified_result.text
         
         # Restore formulas if present
         if formula_blocks:
@@ -181,8 +193,20 @@ def translate_text_task(
     try:
         self.update_progress(self.request.id, 10, 'translation', 'Loading translation model...')
         
-        # Initialize translator
-        translator = TranslationEngine()
+        # Initialize translator with model client
+        from ..pipeline.model_clients import IndicTrans2Client
+        import os
+        
+        api_key = os.getenv('HUGGINGFACE_API_KEY')
+        model_client = None
+        if api_key:
+            try:
+                model_client = IndicTrans2Client(api_key)
+                logger.info("IndicTrans2 model client initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize IndicTrans2 client: {e}")
+        
+        translator = TranslationEngine(model_client=model_client)
         
         translations = {}
         progress_step = 80 / len(target_languages)
