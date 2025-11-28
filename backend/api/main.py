@@ -108,6 +108,30 @@ async def startup_event():
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
     
+    # Initialize device manager and configure MPS if available
+    try:
+        from ..utils.device_manager import get_device_manager
+        device_manager = get_device_manager()
+        
+        if device_manager.device == "mps":
+            device_manager.configure_mps_environment()
+            logger.info("Apple Silicon MPS environment configured")
+        
+        logger.info(f"Device: {device_manager.device_name} ({device_manager.device})")
+    except Exception as e:
+        logger.warning(f"Device manager initialization: {e}")
+    
+    # Initialize model tier router
+    try:
+        from ..core.model_tier_router import init_router
+        router = init_router(
+            max_memory_gb=settings.MAX_MODEL_MEMORY_GB,
+            device_type=device_manager.device if 'device_manager' in locals() else "cpu"
+        )
+        logger.info(f"Model tier router initialized (max memory: {settings.MAX_MODEL_MEMORY_GB}GB)")
+    except Exception as e:
+        logger.warning(f"Model router initialization: {e}")
+    
     # Initialize Sentry error tracking
     try:
         init_sentry()

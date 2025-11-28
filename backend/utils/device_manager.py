@@ -101,10 +101,58 @@ class DeviceManager:
         elif self._device == "mps":
             info["mps_available"] = True
             info["available_memory"] = "Shared with system RAM"
+            info["mps_optimizations"] = self.get_mps_optimizations()
         else:
             info["available_memory"] = "N/A"
         
         return info
+    
+    def get_mps_optimizations(self) -> dict:
+        """Get MPS-specific optimization settings."""
+        if self._device != "mps":
+            return {}
+        
+        return {
+            "use_float16": True,  # FP16 faster on Apple Silicon
+            "max_batch_size": 4,  # Lower than CUDA due to unified memory
+            "max_sequence_length": 2048,  # Conservative for memory
+            "enable_fallback": True,  # Allow CPU fallback for unsupported ops
+        }
+    
+    def configure_mps_environment(self):
+        """Configure environment variables for MPS optimization."""
+        if self._device != "mps":
+            return
+        
+        # Enable MPS fallback for unsupported operations
+        os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+        
+        # Set default dtype to FP16 for better MPS performance
+        torch.set_default_dtype(torch.float16)
+        
+        logger.info("MPS environment configured: FP16 default, fallback enabled")
+    
+    def empty_cache(self):
+        """Empty device cache to free memory."""
+        if self._device == "cuda":
+            torch.cuda.empty_cache()
+            logger.debug("Cleared CUDA cache")
+        elif self._device == "mps":
+            torch.mps.empty_cache()
+            logger.debug("Cleared MPS cache")
+    
+    def get_memory_stats(self) -> dict:
+        """Get current memory usage statistics."""
+        stats = {"device": self._device}
+        
+        if self._device == "cuda":
+            stats["allocated"] = f"{torch.cuda.memory_allocated() / 1024**3:.2f} GB"
+            stats["reserved"] = f"{torch.cuda.memory_reserved() / 1024**3:.2f} GB"
+            stats["max_allocated"] = f"{torch.cuda.max_memory_allocated() / 1024**3:.2f} GB"
+        else:
+            stats["note"] = "Memory stats only available for CUDA"
+        
+        return stats
     
     @property
     def supports_flash_attention(self) -> bool:
