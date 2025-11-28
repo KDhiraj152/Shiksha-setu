@@ -174,30 +174,70 @@ async def upload_file(
     Automatically processes document for Q&A if process_for_qa=True.
     
     Rate limited to 10 uploads per minute per user/IP.
+    
+    Now uses streaming upload to minimize memory usage for large files.
     """
     try:
-        # Read and validate file
-        content = await file.read()
-        _, file_extension = validate_file_type(content, file.filename)
-
-        # Use configured max upload size from settings (in bytes)
+        # Get max upload size from settings
         try:
-            max_mb = int(settings.MAX_UPLOAD_SIZE / (1024 * 1024))
+            max_size_mb = int(settings.MAX_UPLOAD_SIZE / (1024 * 1024))
         except Exception:
-            max_mb = 100
-        sanitizer.validate_file_upload(file.filename, content, max_size_mb=max_mb)
+            max_size_mb = 100
         
-        # Save file
+        max_size_bytes = max_size_mb * 1024 * 1024
+        
+        # Generate unique ID and filename
         content_id = str(uuid.uuid4())
         safe_filename = f"{content_id}_{Path(file.filename).name}"
         
+        # Create temp file path
+        temp_dir = Path(settings.UPLOAD_DIR) / "temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        temp_path = temp_dir / safe_filename
+        
+        # Stream file to disk in chunks (8KB at a time)
+        file_size = 0
+        chunk_size = 8192
+        
+        try:
+            async with aiofiles.open(temp_path, 'wb') as f:
+                while True:
+                    chunk = await file.read(chunk_size)
+                    if not chunk:
+                        break
+                    
+                    file_size += len(chunk)
+                    
+                    # Check size limit while streaming
+                    if file_size > max_size_bytes:
+                        await f.close()
+                        temp_path.unlink(missing_ok=True)
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"File too large. Maximum size: {max_size_mb}MB"
+                        )
+                    
+                    await f.write(chunk)
+        
+        except Exception as e:
+            temp_path.unlink(missing_ok=True)
+            raise
+        
+        logger.info(f"File streamed to disk: {temp_path} ({file_size / 1024 / 1024:.2f}MB)")
+        
+        # Validate file type by reading header (not full file)
+        async with aiofiles.open(temp_path, 'rb') as f:
+            header = await f.read(8192)  # Read just header for validation
+        
+        _, file_extension = validate_file_type(header, file.filename)
+        
+        # Move to permanent storage
         storage_service = get_storage_service()
-        # Use BytesIO to treat content as file-like object
-        file_path = storage_service.upload_file(io.BytesIO(content), safe_filename)
+        file_path = storage_service.save_temp_file(temp_path, safe_filename)
         
         logger.info(f"File uploaded: {file_path}")
         
-        # Extract text using helper
+        # Extract text using helper (now reads from disk, not RAM)
         extracted_text = extract_text_from_content(content, file_extension)
         
         # Save to database

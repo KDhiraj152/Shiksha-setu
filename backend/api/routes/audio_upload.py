@@ -50,38 +50,57 @@ async def upload_audio(
         
     Returns:
         Task ID for tracking transcription progress
+        
+    Now uses streaming upload to handle large audio files efficiently.
     """
     try:
-        # Read file content
-        content = await file.read()
+        # Generate unique ID
+        audio_id = str(uuid.uuid4())
+        file_extension = Path(file.filename).suffix or ".mp3"
+        audio_path = AUDIO_DIR / f"{audio_id}{file_extension}"
         
-        # Validate file type
-        mime_type = magic.from_buffer(content, mime=True)
+        # Ensure directory exists
+        AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+        
+        # Stream file to disk (max 100MB)
+        max_size = 100 * 1024 * 1024  # 100MB
+        file_size = 0
+        chunk_size = 8192  # 8KB chunks
+        
+        async with aiofiles.open(audio_path, 'wb') as f:
+            while True:
+                chunk = await file.read(chunk_size)
+                if not chunk:
+                    break
+                
+                file_size += len(chunk)
+                
+                # Check size limit
+                if file_size > max_size:
+                    await f.close()
+                    audio_path.unlink(missing_ok=True)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"Audio file too large. Max size: {max_size / (1024*1024)}MB"
+                    )
+                
+                await f.write(chunk)
+        
+        # Validate file type by reading header
+        async with aiofiles.open(audio_path, 'rb') as f:
+            header = await f.read(4096)
+        
+        mime_type = magic.from_buffer(header, mime=True)
         if mime_type not in SUPPORTED_FORMATS:
+            audio_path.unlink(missing_ok=True)
             raise HTTPException(
                 status_code=400,
                 detail=f"Unsupported audio format: {mime_type}. "
                        f"Supported: {', '.join(SUPPORTED_FORMATS)}"
             )
         
-        # Check file size (max 100MB)
-        max_size = 100 * 1024 * 1024  # 100MB
-        if len(content) > max_size:
-            raise HTTPException(
-                status_code=413,
-                detail=f"Audio file too large. Max size: {max_size / (1024*1024)}MB"
-            )
-        
-        # Save audio file
-        audio_id = str(uuid.uuid4())
-        file_extension = Path(file.filename).suffix or ".mp3"
-        audio_path = AUDIO_DIR / f"{audio_id}{file_extension}"
-        
-        with open(audio_path, "wb") as f:
-            f.write(content)
-        
         logger.info(
-            f"Audio uploaded: {audio_path} ({len(content)} bytes)",
+            f"Audio uploaded: {audio_path} ({file_size / 1024 / 1024:.2f}MB)",
             extra={
                 "audio_id": audio_id,
                 "user_id": current_user.id,

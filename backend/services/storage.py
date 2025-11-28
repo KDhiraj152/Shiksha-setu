@@ -86,6 +86,26 @@ class LocalStorageService(StorageService):
             os.remove(file_path)
             return True
         return False
+    
+    def save_temp_file(self, temp_path: Path, key: str) -> str:
+        """
+        Move a temporary file to permanent storage.
+        
+        Args:
+            temp_path: Path to temporary file
+            key: Storage key/filename
+            
+        Returns:
+            Final file path
+        """
+        final_path = self.base_path / key
+        final_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Move file (more efficient than copy)
+        shutil.move(str(temp_path), str(final_path))
+        
+        logger.info(f"Moved temp file to storage: {final_path}")
+        return str(final_path)
 
 
 class S3StorageService(StorageService):
