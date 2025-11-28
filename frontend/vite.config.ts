@@ -13,4 +13,28 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Optimize bundle splitting
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          // Feature chunks
+          'auth': ['./src/pages/LoginPage', './src/pages/RegisterPage'],
+          'content': ['./src/pages/ContentPage', './src/pages/LibraryPage'],
+          'upload': ['./src/pages/UploadPage', './src/pages/SimplifyPage', './src/pages/TranslatePage'],
+        },
+      },
+    },
+    // Increase chunk size warning limit (optimized chunks may be larger)
+    chunkSizeWarningLimit: 1000,
+    // Enable source maps for production debugging
+    sourcemap: true,
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+  },
 })
