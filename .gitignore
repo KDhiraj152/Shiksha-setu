@@ -60,16 +60,38 @@ Thumbs.db
 *.log
 logs/*.log
 
+# Additional runtime artifacts
+logs/
+storage/uploads/*
+storage/cache/*
+storage/logs/*
+storage/database/*.db
+storage/database/*.sqlite
+storage/database/*.sqlite3
+storage/data/uploads/*
+storage/data/cache/*
+!storage/**/.gitkeep
+*.sqlite3
+*.db
+*.pkl
+*.tmp
+*.bak
+*.swp
+*.DS_Store
+
 # Backup files
 *.bak
 *.backup
 
 # Data & Models (Large files - should not be in git)
-data/audio/*
-data/cache/*
-data/uploads/*
-data/models/*
-data/test_results/*
+storage/audio/*
+storage/models/*
+data/audio/
+data/cache/
+data/uploads/
+data/models/
+data/test_results/
+!storage/**/.gitkeep
 !data/audio/.gitkeep
 !data/cache/.gitkeep
 !data/uploads/.gitkeep
@@ -115,6 +137,12 @@ docker-compose.override.yml
 .DS_Store
 
 # Test data (keep structure, not actual files)
+storage/uploads/*.txt
+storage/uploads/*.pdf
+storage/uploads/*.docx
+storage/data/uploads/*.txt
+storage/data/uploads/*.pdf
+storage/data/uploads/*.docx
 data/uploads/*.txt
 data/uploads/*.pdf
 data/uploads/*.docx

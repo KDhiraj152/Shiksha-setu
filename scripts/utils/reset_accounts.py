@@ -8,9 +8,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.database import SessionLocal
-from src.models import User
-from src.utils.auth import get_password_hash
+from backend.database import SessionLocal
+from backend.models import User
+from backend.utils.auth import get_password_hash
 
 def reset_demo_accounts():
     """Delete and recreate demo accounts"""

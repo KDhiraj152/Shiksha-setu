@@ -1,21 +1,37 @@
 """
-Pytest configuration and fixtures for integration tests.
+Comprehensive Testing Framework
+
+Issue: CODE-REVIEW-GPT #8 (HIGH)
+Provides production-grade testing infrastructure with unit, integration, e2e, and performance tests.
 """
+
 import pytest
+import asyncio
+from typing import Generator, AsyncGenerator
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from fastapi.testclient import TestClient
 import os
 import sys
+import tempfile
 from pathlib import Path
 
-# Add src to path
+# Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-# Set test environment BEFORE importing src modules
+# Set test environment BEFORE importing modules
 os.environ['TESTING'] = 'true'
 os.environ['ENVIRONMENT'] = 'test'
+os.environ['JWT_SECRET_KEY'] = 'test-secret-key-minimum-64-characters-required-for-testing-purposes-only'
 
-# Use SQLite for testing (no database server required)
-# SQLite is fast, in-memory capable, and perfect for integration tests
-TEST_DATABASE_URL = 'sqlite:///test_shiksha_setu.db'
+# Disable rate limiting by default for tests (specific tests can enable it)
+os.environ['RATE_LIMIT_ENABLED'] = 'false'
+
+# Use PostgreSQL test database
+TEST_DATABASE_URL = os.getenv(
+    'TEST_DATABASE_URL',
+    'postgresql://kdhiraj_152@localhost:5432/shiksha_setu_test'
+)
 os.environ['DATABASE_URL'] = TEST_DATABASE_URL
 
 # Redis configuration (test database 15 to avoid interfering with dev/prod)
@@ -28,12 +44,126 @@ os.environ['CELERY_RESULT_BACKEND'] = TEST_REDIS_URL
 os.environ['CELERY_TASK_ALWAYS_EAGER'] = 'true'
 os.environ['CELERY_TASK_EAGER_PROPAGATES'] = 'true'
 
-# Disable rate limiting for tests
-os.environ['RATE_LIMIT_ENABLED'] = 'false'
+# Import after environment setup
+from backend.api.main import app
+from backend.database import Base, get_db
+from backend.models import User, ProcessedContent, ContentValidation
+from backend.utils.auth import get_password_hash, create_access_token
+from backend.core.config import settings
 
-# Set higher rate limits for tests
-os.environ['RATE_LIMIT_PER_MINUTE'] = '10000'
-os.environ['RATE_LIMIT_PER_HOUR'] = '100000'
+
+# =============================================================================
+# PYTEST CONFIGURATION
+# =============================================================================
+
+def pytest_configure(config):
+    """Configure pytest with custom markers."""
+    config.addinivalue_line("markers", "unit: Unit tests (fast, isolated)")
+    config.addinivalue_line("markers", "integration: Integration tests (database, external services)")
+    config.addinivalue_line("markers", "e2e: End-to-end tests (full workflows)")
+    config.addinivalue_line("markers", "performance: Performance and load tests")
+    config.addinivalue_line("markers", "slow: Slow running tests")
+    config.addinivalue_line("markers", "gpu: Tests requiring GPU")
+
+
+# =============================================================================
+# DATABASE FIXTURES
+# =============================================================================
+
+@pytest.fixture(scope="session")
+def test_engine():
+    """Create test database engine."""
+    engine = create_engine(TEST_DATABASE_URL, echo=False)
+    Base.metadata.create_all(bind=engine)
+    yield engine
+    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
+
+
+@pytest.fixture(scope="function")
+def db_session(test_engine) -> Generator[Session, None, None]:
+    """Create a new database session for each test."""
+    TestingSessionLocal = sessionmaker(bind=test_engine)
+    session = TestingSessionLocal()
+    
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@pytest.fixture(scope="function")
+def clean_db(db_session):
+    """Clean database before each test."""
+    for table in reversed(Base.metadata.sorted_tables):
+        db_session.execute(table.delete())
+    db_session.commit()
+    yield
+
+
+# =============================================================================
+# API CLIENT FIXTURES
+# =============================================================================
+
+@pytest.fixture(scope="function")
+def client(db_session):
+    """Create FastAPI test client with test database."""
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    with TestClient(app) as test_client:
+        yield test_client
+    
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+def authenticated_client(client, test_user, test_token):
+    """Create authenticated test client."""
+    client.headers.update({"Authorization": f"Bearer {test_token}"})
+    return client
+
+
+@pytest.fixture(scope="function")
+def auth_headers(test_token) -> dict:
+    """Create authentication headers for API requests."""
+    return {"Authorization": f"Bearer {test_token}"}
+
+
+# =============================================================================
+# USER FIXTURES
+# =============================================================================
+
+@pytest.fixture(scope="function")
+def test_user(db_session, clean_db) -> User:
+    """Create a test user."""
+    user = User(
+        email="test@example.com",
+        hashed_password=get_password_hash("TestPassword123!"),
+        full_name="Test User",
+        role="user",
+        is_active=True,
+        is_verified=True
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
+def test_token(test_user) -> str:
+    """Create JWT token for test user."""
+    return create_access_token({"sub": test_user.email, "user_id": str(test_user.id)})
 
 
 @pytest.fixture(scope='session')
@@ -53,7 +183,7 @@ def celery_enable_logging():
 @pytest.fixture(scope='session')
 def celery_includes():
     """Celery task modules to include."""
-    return ['src.tasks.pipeline_tasks']
+    return ['backend.tasks.pipeline_tasks']
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -79,7 +209,7 @@ def setup_test_environment():
 @pytest.fixture(scope="function")
 def clean_database():
     """Clean database between tests."""
-    from src.database import engine, Base
+    from backend.database import engine, Base
     
     # Drop all tables
     Base.metadata.drop_all(bind=engine)

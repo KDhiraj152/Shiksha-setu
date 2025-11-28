@@ -1,0 +1,237 @@
+# Prometheus Alert Rules for ShikshaSetu
+# Place this file in /etc/prometheus/rules/ and configure in prometheus.yml
+
+groups:
+  - name: shikshasetu_api_alerts
+    interval: 30s
+    rules:
+      # High error rate alert
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_failed_total[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          
+      # High response time alert
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 3
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API response time"
+          description: "P95 response time is {{ $value }}s (threshold: 3s)"
+          
+      # Database connection pool exhaustion
+      - alert: DatabasePoolExhausted
+        expr: |
+          db_connections_active / db_connections_max > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool near exhaustion"
+          description: "{{ $value | humanizePercentage }} of connections in use"
+          
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: |
+          rate(db_query_duration_seconds_sum[5m]) / rate(db_query_duration_seconds_count[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query duration is {{ $value }}s (threshold: 1s)"
+          
+      # Low cache hit rate
+      - alert: LowCacheHitRate
+        expr: |
+          rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) < 0.7
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 70%)"
+          
+      # Redis down
+      - alert: RedisDown
+        expr: |
+          up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance {{ $labels.instance }} is not responding"
+          
+      # Celery worker down
+      - alert: CeleryWorkerDown
+        expr: |
+          celery_worker_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: background_tasks
+        annotations:
+          summary: "Celery worker is down"
+          description: "Celery worker {{ $labels.worker }} is not responding"
+          
+      # High task queue depth
+      - alert: HighTaskQueueDepth
+        expr: |
+          celery_queue_depth > 1000
+        for: 10m
+        labels:
+          severity: warning
+          component: background_tasks
+        annotations:
+          summary: "High Celery task queue depth"
+          description: "{{ $value }} tasks in queue (threshold: 1000)"
+          
+      # API instance down
+      - alert: APIInstanceDown
+        expr: |
+          up{job="shikshasetu_api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "API instance is down"
+          description: "API instance {{ $labels.instance }} is not responding"
+          
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          process_resident_memory_bytes / 1024 / 1024 / 1024 > 4
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High memory usage"
+          description: "Process memory is {{ $value }}GB (threshold: 4GB)"
+          
+      # Disk space low
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Only {{ $value | humanizePercentage }} disk space available"
+          
+      # SSL certificate expiry
+      - alert: SSLCertificateExpiringSoon
+        expr: |
+          (ssl_certificate_expiry_seconds - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "Certificate expires in {{ $value }} days"
+          
+      # Rate limit triggered frequently
+      - alert: FrequentRateLimiting
+        expr: |
+          rate(http_requests_rate_limited_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: info
+          component: api
+        annotations:
+          summary: "Frequent rate limiting"
+          description: "{{ $value }} requests per second are being rate limited"
+          
+      # Database backup failure
+      - alert: DatabaseBackupFailed
+        expr: |
+          time() - database_backup_last_success_timestamp > 86400
+        for: 1h
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database backup has not succeeded in 24h"
+          description: "Last successful backup was {{ $value | humanizeDuration }} ago"
+          
+      # Sentry error spike
+      - alert: SentryErrorSpike
+        expr: |
+          rate(sentry_errors_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Spike in application errors"
+          description: "{{ $value }} errors per second reported to Sentry"
+
+  - name: shikshasetu_ml_pipeline_alerts
+    interval: 60s
+    rules:
+      # vLLM inference slow
+      - alert: SlowMLInference
+        expr: |
+          rate(model_inference_duration_seconds_sum[5m]) / rate(model_inference_duration_seconds_count[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: ml_pipeline
+        annotations:
+          summary: "Slow ML model inference"
+          description: "Average inference time is {{ $value }}s (threshold: 10s)"
+          
+      # Translation API errors
+      - alert: TranslationAPIErrors
+        expr: |
+          rate(translation_api_errors_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: ml_pipeline
+        annotations:
+          summary: "Translation API errors"
+          description: "{{ $value }} translation errors per second"
+          
+      # GPU memory high
+      - alert: GPUMemoryHigh
+        expr: |
+          gpu_memory_used_bytes / gpu_memory_total_bytes > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          component: ml_pipeline
+        annotations:
+          summary: "High GPU memory usage"
+          description: "GPU memory is {{ $value | humanizePercentage }} utilized"
+          
+      # TTS generation failures
+      - alert: TTSGenerationFailures
+        expr: |
+          rate(tts_generation_failures_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: ml_pipeline
+        annotations:
+          summary: "TTS generation failures"
+          description: "{{ $value }} TTS generation failures per second"

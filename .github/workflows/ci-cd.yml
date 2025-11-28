@@ -42,10 +42,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
@@ -68,12 +68,12 @@ jobs:
     
     - name: Run linting
       run: |
-        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 src/ --count --max-complexity=10 --max-line-length=127 --statistics
+        flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 backend/ --count --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Run type checking
       run: |
-        mypy src/ --ignore-missing-imports
+        mypy backend/ --ignore-missing-imports
     
     - name: Run tests with coverage
       env:
@@ -82,7 +82,7 @@ jobs:
         CELERY_BROKER_URL: redis://localhost:6379/1
         CELERY_RESULT_BACKEND: redis://localhost:6379/1
       run: |
-        pytest tests/ -v --cov=src --cov-report=xml --cov-report=html
+        pytest tests/ -v --cov=backend --cov-report=xml --cov-report=html
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -153,7 +153,7 @@ jobs:
     - name: Python security check with bandit
       run: |
         pip install bandit
-        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r backend/ -f json -o bandit-report.json || true
     
     - name: Upload bandit results
       uses: actions/upload-artifact@v3
@@ -177,32 +177,32 @@ jobs:
     - name: Login to Docker Hub
       uses: docker/login-action@v2
       with:
-        username: ${{ secrets.DOCKER_USERNAME }}
+        username: kdhiraj152
         password: ${{ secrets.DOCKER_PASSWORD }}
     
     - name: Build and push API image
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./Dockerfile
+        file: ./infrastructure/docker/Dockerfile
         push: true
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/shiksha-setu-api:latest
-          ${{ secrets.DOCKER_USERNAME }}/shiksha-setu-api:${{ github.sha }}
-        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/shiksha-setu-api:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/shiksha-setu-api:buildcache,mode=max
+          kdhiraj152/shiksha-setu-api:latest
+          kdhiraj152/shiksha-setu-api:${{ github.sha }}
+        cache-from: type=registry,ref=kdhiraj152/shiksha-setu-api:buildcache
+        cache-to: type=registry,ref=kdhiraj152/shiksha-setu-api:buildcache,mode=max
     
     - name: Build and push Worker image
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./worker.dockerfile
+        file: ./infrastructure/docker/worker.dockerfile
         push: true
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/shiksha-setu-worker:latest
-          ${{ secrets.DOCKER_USERNAME }}/shiksha-setu-worker:${{ github.sha }}
-        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/shiksha-setu-worker:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/shiksha-setu-worker:buildcache,mode=max
+          kdhiraj152/shiksha-setu-worker:latest
+          kdhiraj152/shiksha-setu-worker:${{ github.sha }}
+        cache-from: type=registry,ref=kdhiraj152/shiksha-setu-worker:buildcache
+        cache-to: type=registry,ref=kdhiraj152/shiksha-setu-worker:buildcache,mode=max
   
   # ==================== Deploy to Kubernetes ====================
   deploy:

@@ -1,6 +1,6 @@
 """Unit tests for security utilities."""
 import pytest
-from src.core.security import (
+from backend.core.security import (
     verify_password,
     get_password_hash,
     validate_password_strength,
@@ -9,7 +9,7 @@ from src.core.security import (
     decode_token,
     generate_api_key
 )
-from src.core.exceptions import AuthenticationError
+from backend.core.exceptions import AuthenticationError
 
 
 @pytest.mark.xfail(reason="bcrypt passlib compatibility issue with Python 3.13")
@@ -25,9 +25,10 @@ def test_password_hashing():
 
 def test_password_validation():
     """Test password strength validation."""
-    # Valid password (relaxed requirements for testing)
-    is_valid, error = validate_password_strength("testpass")
+    # Valid password with proper requirements
+    is_valid, error = validate_password_strength("TestPass123!")
     assert is_valid is True
+    assert error is None
     assert error is None
     
     # Too short

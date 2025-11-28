@@ -1,6 +1,6 @@
 """Unit tests for custom exceptions."""
 import pytest
-from src.core.exceptions import (
+from backend.core.exceptions import (
     ShikshaSetuException,
     ContentNotFoundError,
     AuthenticationError,

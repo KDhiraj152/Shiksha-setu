@@ -206,3 +206,157 @@ export const GRADE_LEVELS = [5, 6, 7, 8, 9, 10, 11, 12] as const;
 export type Language = typeof LANGUAGES[number];
 export type Subject = typeof SUBJECTS[number];
 export type GradeLevel = typeof GRADE_LEVELS[number];
+
+// ============================================================================
+// Extended Types for New Features (Issue #10)
+// ============================================================================
+
+// A/B Testing
+export interface Experiment {
+    id: string;
+    name: string;
+    description: string;
+    status: 'draft' | 'running' | 'paused' | 'completed';
+    start_date?: string;
+    end_date?: string;
+    variants: ExperimentVariant[];
+    targeting?: ExperimentTargeting;
+}
+
+export interface ExperimentVariant {
+    id: string;
+    experiment_id: string;
+    name: string;
+    description?: string;
+    traffic_allocation: number;
+    is_control: boolean;
+    config?: Record<string, any>;
+}
+
+export interface ExperimentTargeting {
+    grades?: number[];
+    subjects?: string[];
+    languages?: string[];
+}
+
+export interface ExperimentAssignment {
+    experiment_id: string;
+    variant_id: string;
+    user_id: string;
+    assigned_at: string;
+}
+
+// Cultural Context
+export type IndianRegion = 'north' | 'south' | 'east' | 'west' | 'northeast' | 'central';
+
+export interface CulturalAdaptationRequest {
+    content: string;
+    region: IndianRegion;
+    check_sensitivity?: boolean;
+    validate_inclusivity?: boolean;
+}
+
+export interface CulturalAdaptationResponse {
+    adapted_content?: string;
+    regional_suggestions: string[];
+    sensitivity_issues: SensitivityIssue[];
+    inclusivity_score?: number;
+    recommendations: string[];
+}
+
+export interface SensitivityIssue {
+    category: 'religion' | 'caste' | 'gender' | 'food_habits' | 'regional_identity';
+    text: string;
+    severity: 'high' | 'medium' | 'low';
+    suggestion: string;
+}
+
+// Grade Adaptation
+export interface GradeAdaptationRequest {
+    content: string;
+    target_grade: number;
+    maintain_accuracy?: boolean;
+}
+
+export interface GradeAdaptationResponse {
+    adapted_content: string;
+    original_grade: number;
+    target_grade: number;
+    readability_score: number;
+    complexity_level: 'very_easy' | 'easy' | 'medium' | 'hard' | 'very_hard';
+    changes_made: string[];
+}
+
+export interface ReadabilityAnalysis {
+    flesch_reading_ease: number;
+    flesch_kincaid_grade: number;
+    avg_sentence_length: number;
+    avg_word_length: number;
+    complex_word_count: number;
+    readability_level: string;
+}
+
+// Progress Tracking
+export interface Progress {
+    content_id: string;
+    user_id: string;
+    progress_percentage: number;
+    last_position?: number;
+    completed: boolean;
+    time_spent_seconds: number;
+    updated_at: string;
+}
+
+export interface ProgressUpdate {
+    content_id: string;
+    progress_percentage: number;
+    last_position?: number;
+    time_spent_seconds?: number;
+}
+
+// Q&A System
+export interface QuestionRequest {
+    question: string;
+    context?: string;
+    grade_level?: number;
+    subject?: string;
+}
+
+export interface Answer {
+    answer: string;
+    confidence: number;
+    sources: Source[];
+    related_content: string[];
+}
+
+export interface Source {
+    content_id: string;
+    title: string;
+    excerpt: string;
+    relevance_score: number;
+}
+
+// Validation
+export interface ValidationResult {
+    check_type: string;
+    passed: boolean;
+    score: number;
+    issues: ValidationIssue[];
+    suggestions: string[];
+}
+
+export interface ValidationIssue {
+    severity: 'error' | 'warning' | 'info';
+    message: string;
+    location?: {
+        line?: number;
+        column?: number;
+    };
+}
+
+export interface ContentValidationResponse {
+    content_id: string;
+    overall_status: 'passed' | 'failed' | 'warning';
+    results: ValidationResult[];
+    validated_at: string;
+}

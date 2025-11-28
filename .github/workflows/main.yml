@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: '3.13'
-  NODE_VERSION: '25'
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
 
 jobs:
   backend-test:

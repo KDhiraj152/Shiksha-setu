@@ -95,7 +95,7 @@ apiClient.interceptors.response.use(
 
         const response = await axios.post<TokenResponse>(
           `${API_BASE_URL}/api/v1/auth/refresh`,
-          { refresh_token: refreshToken }
+          { refresh_token: refreshToken }  // Send as object, not embedded
         );
 
         const { access_token, refresh_token } = response.data;
@@ -153,11 +153,16 @@ class ApiService {
   async uploadFile(
     file: File,
     onProgress?: (progress: number) => void
-  ): Promise<{ file_path: string }> {
+  ): Promise<{ file_path: string; content_id: string; status: string }> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await apiClient.post<{ file_path: string }>(
+    const response = await apiClient.post<{ 
+      file_path: string; 
+      content_id: string;
+      status: string;
+      extracted_text?: string;
+    }>(
       '/api/v1/content/upload',
       formData,
       {
@@ -273,7 +278,12 @@ class ApiService {
     
     const response = await apiClient.post<{ task_id: string; message: string }>(
       '/api/v1/qa/process',
-      formData
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
     return response.data;
   }
@@ -285,7 +295,11 @@ class ApiService {
     formData.append('wait', wait.toString());
     formData.append('top_k', topK.toString());
     
-    const response = await apiClient.post('/api/v1/qa/ask', formData);
+    const response = await apiClient.post('/api/v1/qa/ask', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 

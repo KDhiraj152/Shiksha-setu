@@ -1,51 +1,76 @@
-# 📚 ShikshaSetu Documentation
+# 📚 Shiksha Setu Documentation Hub
 
-Complete guides and references for the ShikshaSetu AI Education Platform.
-
----
-
-## 🚀 Getting Started
-
-Start here if you're new to ShikshaSetu:
-
-- **[setup.md](setup.md)** - Installation, prerequisites, and environment configuration
-- **[usage.md](usage.md)** - How to use the API and platform features with examples
+**Production-grade guides and references for the Shiksha Setu AI Education Platform.**
 
 ---
 
-## 📖 Guides & References
+## 🚀 Quick Start
 
-Learn how to do specific things:
-
-- **[api.md](api.md)** - Complete REST API reference with curl examples
-- **[deploy.md](deploy.md)** - Production deployment with Docker and Kubernetes
-- **[pgvector.md](pgvector.md)** - Vector database setup for RAG Q&A system
+1. **[Installation Guide](guides/installation.md)** — Get running locally
+2. **[Quick Start](../QUICK_START.md)** — 5-minute setup
+3. **[Architecture](reference/architecture.md)** — Understand the system
+4. **[API Reference](reference/api.md)** — API documentation with examples
 
 ---
 
-## 📝 Release & Change History
+## 📖 Documentation Structure
 
-- **[CHANGES.md](CHANGES.md)** - Recent improvements, security updates, and fixes
-- **[changelog.md](changelog.md)** - Version history and release notes
+### 📘 Core Documentation (Essential Reading)
+
+| Document | Purpose |
+|----------|---------|
+| **[DATABASE.md](DATABASE.md)** | Complete database schema, pgvector, migrations |
+| **[DEPLOYMENT.md](DEPLOYMENT.md)** | Production deployment (Docker, Kubernetes, monitoring) |
+
+### 📗 User Guides (`guides/`)
+Step-by-step instructions for getting started:
+- **[installation.md](guides/installation.md)** — Complete setup instructions
+- **[demo.md](guides/demo.md)** — Interactive demo walkthrough
+- **[demo.html](guides/demo.html)** — Browser-based demo interface
+
+### 🔬 Technical Reference (`reference/`)
+In-depth technical documentation:
+- **[architecture.md](reference/architecture.md)** — System architecture & design
+- **[backend.md](reference/backend.md)** — Backend services & API
+- **[frontend.md](reference/frontend.md)** — React application structure
+- **[ai-ml-pipeline.md](reference/ai-ml-pipeline.md)** — AI/ML processing pipeline
+- **[api.md](reference/api.md)** — Complete API reference
+- **[troubleshooting.md](reference/troubleshooting.md)** — Problem resolution guide
+- **[features.md](reference/features.md)** — Feature list & capabilities
+
+### 📦 Archive (`archive/`)
+Historical documentation and development records:
+- **[implementation/](archive/implementation/)** — Implementation summaries
+- **[reports/](archive/reports/)** — Status and progress reports
+- **[planning/](archive/planning/)** — Planning documents
+- **[README.md](archive/README.md)** — Archive index
 
 ---
 
 ## Quick Links
 
-| Resource | Link |
-|----------|------|
-| Main README | [../README.md](../README.md) |
-| Interactive API Docs | http://localhost:8000/docs (when running) |
-| GitHub Repository | https://github.com/KDhiraj152/Siksha-Setu |
-| Bug Reports | https://github.com/KDhiraj152/Siksha-Setu/issues |
+- 🔗 [GitHub](https://github.com/KDhiraj152/Siksha-Setu)
+- 🐛 [Issues](https://github.com/KDhiraj152/Siksha-Setu/issues)
+- 💬 [Discussions](https://github.com/KDhiraj152/Siksha-Setu/discussions)
+- 📊 [API Docs](http://localhost:8000/docs) (when running)
 
 ---
 
-## 📞 Need Help?
+## 📞 Support
 
-- 📧 **Email**: k.dhiraj.srihari@gmail.com
-- 💬 **Issues**: [GitHub Issues](https://github.com/KDhiraj152/Siksha-Setu/issues)
-- 📊 **API Docs**: Available at `/docs` endpoint when backend is running
+- 📧 Email: k.dhiraj.srihari@gmail.com
+- 💬 GitHub Issues & Discussions
+
+---
+
+## 👨‍💻 Made By
+
+**K Dhiraj Srihari**
+
+🔗 **Connect with me:**
+- 📧 Email: [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com)
+- 💼 LinkedIn: [linkedin.com/in/k-dhiraj](https://linkedin.com/in/k-dhiraj)
+- 🐙 GitHub: [@KDhiraj152](https://github.com/KDhiraj152)
 
 ---
 

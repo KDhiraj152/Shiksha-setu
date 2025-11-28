@@ -9,9 +9,9 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.database import SessionLocal
-from src.models import User
-from src.utils.auth import get_password_hash
+from backend.database import SessionLocal
+from backend.models import User
+from backend.utils.auth import get_password_hash
 
 def create_demo_accounts():
     """Create demo user accounts"""

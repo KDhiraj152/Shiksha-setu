@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShikshaSetu Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+        }
+        
+        .panel {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .chat-history {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .message.question {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .message.answer {
+            background: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+        }
+        
+        .message strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .confidence {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .confidence.high {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .confidence.medium {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .confidence.low {
+            background: #f44336;
+            color: white;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 ShikshaSetu AI Demo</h1>
+            <p>Upload a document and ask questions about it using AI-powered RAG system</p>
+        </div>
+        
+        <!-- Login Panel -->
+        <div class="panel" id="loginPanel">
+            <h2>1. Login</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" value="demo" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" value="demo123" placeholder="Enter password">
+            </div>
+            <button onclick="login()">Login</button>
+            <div id="loginStatus" class="status"></div>
+        </div>
+        
+        <!-- Upload Panel -->
+        <div class="panel" id="uploadPanel" style="display:none;">
+            <h2>2. Upload Document</h2>
+            <div class="form-group">
+                <label>Choose File (PDF or TXT)</label>
+                <input type="file" id="fileInput" accept=".pdf,.txt">
+            </div>
+            <div class="form-group">
+                <label>Grade Level</label>
+                <select id="gradeLevel">
+                    <option value="5">Grade 5</option>
+                    <option value="6">Grade 6</option>
+                    <option value="7">Grade 7</option>
+                    <option value="8" selected>Grade 8</option>
+                    <option value="9">Grade 9</option>
+                    <option value="10">Grade 10</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Subject</label>
+                <input type="text" id="subject" value="Science" placeholder="e.g., Science, Math, History">
+            </div>
+            <button onclick="uploadFile()">Upload & Process</button>
+            <div id="uploadStatus" class="status"></div>
+        </div>
+        
+        <!-- Q&A Panel -->
+        <div class="panel" id="qaPanel" style="display:none;">
+            <h2>3. Ask Questions</h2>
+            <div class="form-group">
+                <label>Your Question</label>
+                <textarea id="question" placeholder="Ask anything about the uploaded document..."></textarea>
+            </div>
+            <button onclick="askQuestion()">Get Answer</button>
+            <div id="qaStatus" class="status"></div>
+            
+            <div class="chat-history" id="chatHistory"></div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let authToken = null;
+        let contentId = null;
+        
+        // Login
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('loginStatus');
+            
+            statusDiv.className = 'status info';
+            statusDiv.textContent = 'Logging in...';
+            statusDiv.style.display = 'block';
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
+                
+                const data = await response.json();
+                authToken = data.access_token;
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✓ Login successful!';
+                
+                // Show upload panel
+                document.getElementById('uploadPanel').style.display = 'block';
+                document.getElementById('loginPanel').style.display = 'none';
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '✗ Login failed: ' + error.message;
+            }
+        }
+        
+        // Upload File
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const gradeLevel = document.getElementById('gradeLevel').value;
+            const subject = document.getElementById('subject').value;
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            if (!fileInput.files[0]) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '✗ Please select a file';
+                statusDiv.style.display = 'block';
+                return;
+            }
+            
+            statusDiv.className = 'status info';
+            statusDiv.innerHTML = 'Uploading and processing... <span class="spinner"></span>';
+            statusDiv.style.display = 'block';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('grade_level', gradeLevel);
+                formData.append('subject', subject);
+                formData.append('process_for_qa', 'true');
+                
+                const response = await fetch(`${API_BASE}/api/v1/content/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+                
+                const data = await response.json();
+                contentId = data.content_id;
+                
+                // Wait for processing
+                if (data.qa_processing.task_id) {
+                    await waitForProcessing(data.qa_processing.task_id);
+                }
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✓ Document uploaded and ready for Q&A!';
+                
+                // Show Q&A panel
+                document.getElementById('qaPanel').style.display = 'block';
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '✗ Upload failed: ' + error.message;
+            }
+        }
+        
+        // Wait for processing
+        async function waitForProcessing(taskId) {
+            const maxWait = 60; // 60 seconds
+            let elapsed = 0;
+            
+            while (elapsed < maxWait) {
+                const response = await fetch(`${API_BASE}/api/v1/status/${taskId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.state === 'SUCCESS') {
+                    return;
+                } else if (data.state === 'FAILURE') {
+                    throw new Error('Processing failed');
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                elapsed += 2;
+            }
+            
+            throw new Error('Processing timeout');
+        }
+        
+        // Ask Question
+        async function askQuestion() {
+            const question = document.getElementById('question').value.trim();
+            const statusDiv = document.getElementById('qaStatus');
+            
+            if (!question) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '✗ Please enter a question';
+                statusDiv.style.display = 'block';
+                return;
+            }
+            
+            statusDiv.className = 'status info';
+            statusDiv.innerHTML = 'Getting answer... <span class="spinner"></span>';
+            statusDiv.style.display = 'block';
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('content_id', contentId);
+                formData.append('question', question);
+                formData.append('wait', 'true');
+                
+                const response = await fetch(`${API_BASE}/api/v1/qa/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Q&A failed');
+                }
+                
+                const data = await response.json();
+                
+                // Add to chat history
+                addToChat(question, data.answer, data.confidence_score);
+                
+                // Clear question input
+                document.getElementById('question').value = '';
+                
+                statusDiv.style.display = 'none';
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '✗ Failed: ' + error.message;
+            }
+        }
+        
+        // Add to chat history
+        function addToChat(question, answer, confidence) {
+            const chatHistory = document.getElementById('chatHistory');
+            
+            const confidenceClass = confidence > 0.7 ? 'high' : confidence > 0.4 ? 'medium' : 'low';
+            const confidenceText = confidence > 0.7 ? 'High' : confidence > 0.4 ? 'Medium' : 'Low';
+            
+            const messageHtml = `
+                <div class="message question">
+                    <strong>Q: ${question}</strong>
+                </div>
+                <div class="message answer">
+                    <strong>
+                        A: 
+                        <span class="confidence ${confidenceClass}">
+                            ${confidenceText} Confidence (${(confidence * 100).toFixed(1)}%)
+                        </span>
+                    </strong>
+                    ${answer}
+                </div>
+            `;
+            
+            chatHistory.innerHTML = messageHtml + chatHistory.innerHTML;
+        }
+        
+        // Enter key support for inputs
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+        
+        document.getElementById('question').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+    </script>
+</body>
+</html>

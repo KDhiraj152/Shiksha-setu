@@ -1,0 +1,81 @@
+# Prometheus Configuration for ShikshaSetu
+# /etc/prometheus/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'shikshasetu-prod'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+
+# Load alert rules
+rule_files:
+  - '/etc/prometheus/rules/shikshasetu-alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # ShikshaSetu API
+  - job_name: 'shikshasetu_api'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - 'api-1:8000'
+          - 'api-2:8000'
+          - 'api-3:8000'
+          - 'api-4:8000'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '(.+):.*'
+        replacement: '${1}'
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets:
+          - 'postgres-exporter:9187'
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets:
+          - 'redis-exporter:9121'
+
+  # Celery
+  - job_name: 'celery'
+    static_configs:
+      - targets:
+          - 'celery-exporter:9540'
+
+  # Node Exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets:
+          - 'node-exporter-1:9100'
+          - 'node-exporter-2:9100'
+
+  # Nginx (load balancer)
+  - job_name: 'nginx'
+    static_configs:
+      - targets:
+          - 'nginx-exporter:9113'
+
+  # vLLM Model Server
+  - job_name: 'vllm'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - 'vllm-server:8001'
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:9090'

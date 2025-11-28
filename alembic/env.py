@@ -2,43 +2,53 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-import os
 import sys
+import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Add the project root to the Python path to allow imports from 'src'
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add backend to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Import the Base model from your application
-from src.database import Base
-from src import models  # This imports all models to register them with Base
+from backend.database import Base
+# Import all models so they are registered with Base.metadata
+from backend.models import (
+    ProcessedContent, NCERTStandard, ContentTranslation, ContentAudio,
+    ContentValidation, Feedback, PipelineLog,
+    User, APIKey, TokenBlacklist, RefreshToken,
+    StudentProgress, QuizScore, LearningSession, ParentReport, Achievement,
+    DocumentChunk, Embedding, ChatHistory
+)
 
-# This is the Alembic Config object, which provides access to the values within the .ini file
+# this is the Alembic Config object
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Interpret the config file for Python logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Set the target metadata for 'autogenerate' support
+# Override sqlalchemy.url with DATABASE_URL from environment
+database_url = os.getenv('DATABASE_URL', 'sqlite:///./shiksha_setu.db')
+config.set_main_option('sqlalchemy.url', database_url)
+
+# add your model's MetaData object here for 'autogenerate' support
 target_metadata = Base.metadata
 
-# Override sqlalchemy.url from environment variable if present, otherwise use default
-# This allows for flexible database configuration (e.g., for production vs. development)
-database_url = os.getenv('DATABASE_URL', 'postgresql://user:password@localhost/shiksha_setu')
-if database_url:
-    config.set_main_option('sqlalchemy.url', database_url)
 
 def run_migrations_offline() -> None:
-    """
-    Run migrations in 'offline' mode.
-    This configures the context with just a URL and not an Engine, though an Engine is acceptable
-    here as well. By skipping the Engine creation we don't even need a DBAPI to be available.
-    Calls to context.execute() here emit the given string to the script output.
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -46,7 +56,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True,  # Detect column type changes
+        compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -54,9 +65,11 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """
-    Run migrations in 'online' mode.
-    In this scenario we need to create an Engine and associate a connection with the context.
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
     """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
@@ -68,8 +81,8 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            compare_type=True,  # Detect column type changes
-            compare_server_default=True, # Detect server default changes
+            compare_type=True,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():

@@ -210,9 +210,9 @@ def main():
     def check_project_imports():
         try:
             sys.path.insert(0, str(Path.cwd()))
-            importlib.import_module("src.api.async_app")
-            importlib.import_module("src.tasks.celery_app")
-            importlib.import_module("src.utils.auth")
+            importlib.import_module("backend.api.async_app")
+            importlib.import_module("backend.tasks.celery_app")
+            importlib.import_module("backend.utils.auth")
             return True
         except Exception as e:
             print(f"    (Import Error: {e})")

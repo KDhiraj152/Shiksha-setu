@@ -117,7 +117,7 @@ def main():
     def check_files():
         required = [
             Path(".env"),
-            Path("src/api/async_app.py"),
+            Path("backend/api/async_app.py"),
             Path("frontend/src/App.tsx"),
             Path("data/uploads"),
             Path("logs")
