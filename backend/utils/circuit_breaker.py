@@ -3,6 +3,7 @@ import asyncio
 from typing import Optional, Callable, Any
 from datetime import datetime, timedelta
 import logging
+from functools import wraps
 
 from tenacity import (
     retry,
@@ -181,6 +182,30 @@ def with_circuit_breaker(breaker: CircuitBreaker):
             ...
     """
     def decorator(func: Callable):
+        async def wrapper(*args, **kwargs):
+            return await breaker.call_async(func, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
+# Simple decorator with default breaker
+def circuit_breaker(failures: int = 3, timeout: int = 30):
+    """
+    Simple circuit breaker decorator with inline configuration.
+    
+    Usage:
+        @circuit_breaker(failures=3, timeout=30)
+        async def my_api_call():
+            ...
+    """
+    breaker = CircuitBreaker(
+        failure_threshold=failures,
+        timeout=timeout,
+        success_threshold=2
+    )
+    
+    def decorator(func: Callable):
+        @wraps(func)
         async def wrapper(*args, **kwargs):
             return await breaker.call_async(func, *args, **kwargs)
         return wrapper
