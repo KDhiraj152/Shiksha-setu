@@ -5,7 +5,7 @@ const PublicRoute = () => {
   const { isAuthenticated } = useAuthStore();
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/workspace" replace />;
   }
 
   return <Outlet />;

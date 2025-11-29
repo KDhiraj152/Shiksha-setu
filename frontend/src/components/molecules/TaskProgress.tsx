@@ -100,7 +100,7 @@ export function TaskProgress({
         </div>
         <Progress 
           value={progress} 
-          variant={error ? 'error' : currentStage === 'complete' ? 'success' : 'primary'}
+          variant={error ? 'error' : currentStage === 'complete' ? 'success' : 'default'}
           size="md"
         />
       </div>

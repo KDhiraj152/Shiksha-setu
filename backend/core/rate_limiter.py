@@ -67,9 +67,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         # Custom limits for specific endpoints
         self.endpoint_limits = {
-            "/api/v1/auth/login": (10, 100),  # (per_minute, per_hour)
-            "/api/v1/auth/register": (5, 50),
-            "/api/v1/content/upload": (5, 50),
+            "/api/v1/auth/login": (30, 300),  # (per_minute, per_hour) - Increased for better UX
+            "/api/v1/auth/register": (20, 200),  # Increased for development/testing
+            "/api/v1/content/upload": (30, 300),  # Increased for development
             "/api/v1/content/translate": (30, 500),
             "/api/v1/content/simplify": (30, 500),
             "/api/v1/qa/search": (60, 1000),

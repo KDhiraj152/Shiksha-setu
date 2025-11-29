@@ -13,9 +13,9 @@ from ...tasks.qa_tasks import (
 )
 from ...utils.sanitizer import InputSanitizer
 from ...utils.auth import get_current_user
-from ...database import get_db_session
+from ...core.database import get_db_session
 from ...models import ProcessedContent, User
-from ...monitoring import get_logger
+from ...core.monitoring import get_logger
 
 logger = get_logger(__name__)
 

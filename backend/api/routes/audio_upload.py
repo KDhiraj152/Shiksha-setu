@@ -13,7 +13,7 @@ from ...core.config import settings
 from ...utils.logging import get_logger
 from ...utils.auth import get_current_user, TokenData
 from ...tasks.celery_app import celery_app
-from ...database import get_db_session
+from ...core.database import get_db_session
 from ...models import ProcessedContent
 
 logger = get_logger(__name__)

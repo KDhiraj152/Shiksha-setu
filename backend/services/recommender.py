@@ -16,7 +16,7 @@ from backend.models import (
     UserPerformance, RecommendedContent, LearningPath,
     ProcessedContent, User
 )
-from backend.database import get_db_session
+from backend.core.database import get_db_session
 from backend.utils.logging import get_logger
 
 logger = get_logger(__name__)

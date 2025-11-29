@@ -1,8 +1,93 @@
-# Integration Tests
+# Comprehensive Test Suite
 
-This directory contains comprehensive integration tests for the multilingual education content pipeline.
+This directory contains **comprehensive tests** for the ShikshaSetu platform with the **new AI tech stack**.
 
-## Test Coverage
+## 🚀 Quick Start
+
+### Run All Tests
+```bash
+./scripts/run_tests.sh
+```
+
+### Run Specific Tests
+```bash
+# Unit tests (fast)
+pytest tests/unit/ -v -m "not slow"
+
+# AI stack tests
+pytest tests/unit/test_new_ai_stack.py -v
+pytest tests/integration/test_new_ai_stack_integration.py -v
+
+# Integration tests
+pytest tests/integration/ -v -m "integration"
+
+# E2E tests
+pytest tests/e2e/ -v -m "e2e"
+
+# Performance tests
+pytest tests/performance/ -v -m "performance"
+
+# With coverage
+pytest tests/ --cov=backend --cov-report=html
+```
+
+### Prerequisites
+- PostgreSQL running with `shiksha_setu_test` database
+- Redis running on port 6379
+- Ollama running on port 11434 (optional, for full AI tests)
+
+---
+
+## 🆕 New AI Tech Stack Tests
+
+### Unit Tests
+- **`unit/test_new_ai_stack.py`** - AI service unit tests (400+ lines)
+  - NLLB-200 translator
+  - Ollama simplifier
+  - Edge TTS generator
+  - BGE-M3 embeddings
+  - Memory manager
+  - AI orchestrator
+
+### Integration Tests
+- **`integration/test_new_ai_stack_integration.py`** - AI integration tests (500+ lines)
+  - Translation, simplification, TTS workflows
+  - RAG with BGE-M3 embeddings
+  - Celery task execution
+  - Redis caching
+  - Memory management
+  - Full pipelines
+
+- **`integration/test_celery_redis.py`** - Celery/Redis tests (300+ lines)
+  - Task queueing and states
+  - Result caching
+  - Cache invalidation
+  - Task monitoring
+
+- **`integration/test_rag_qa.py`** - RAG Q&A tests (400+ lines)
+  - Document processing
+  - BGE-M3 embeddings
+  - Vector search with pgvector
+  - Question answering
+  - Conversation history
+
+### E2E Tests
+- **`e2e/test_ai_pipeline_e2e.py`** - End-to-end workflows (200+ lines)
+  - Content upload → simplify → translate → audio
+  - RAG document ingestion and querying
+  - Health monitoring
+  - Error handling
+
+### Performance Tests
+- **`performance/test_ai_performance.py`** - Performance benchmarks (250+ lines)
+  - Memory management (10GB budget)
+  - Latency benchmarks (<20s simplification, <5s translation)
+  - Throughput (20 concurrent requests)
+  - Cache speedup
+
+---
+
+## Original Test Coverage
 
 ### End-to-End Integration Tests (`test_end_to_end_integration.py`)
 
@@ -83,7 +168,7 @@ export SQL_ECHO="false"
 Install all required dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements/base.txt
 ```
 
 ## Running the Tests
@@ -242,7 +327,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements/base.txt
       
       - name: Run integration tests
         env:
@@ -264,3 +349,11 @@ Run all tests:
 ```bash
 pytest tests/ -v
 ```
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

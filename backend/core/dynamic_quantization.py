@@ -1,5 +1,4 @@
-"""
-Dynamic Quantization Manager - Adaptive Model Quantization
+"""Dynamic Quantization Manager - Adaptive Model Quantization
 
 Automatically adjusts quantization levels based on:
 - Available system memory
@@ -12,6 +11,7 @@ Supports variable quantization: FP16, INT8, INT4, INT2 (GGUF)
 import logging
 import psutil
 import torch
+import threading
 from typing import Dict, Any, Optional, Tuple
 from enum import Enum
 from dataclasses import dataclass
@@ -376,6 +376,3 @@ def get_quantization_manager() -> DynamicQuantizationManager:
                 _quantization_manager = DynamicQuantizationManager()
     
     return _quantization_manager
-
-
-import threading

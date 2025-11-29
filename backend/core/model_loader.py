@@ -551,3 +551,12 @@ if __name__ == "__main__":
     for model_info in stats['models']:
         print(f"  - {model_info['name']}: {model_info['size_mb']:.1f}MB "
               f"(accessed {model_info['access_count']} times)")
+
+# Singleton
+_loader = None
+def get_model_loader():
+    global _loader
+    if not _loader:
+        _loader = LazyModelLoader()
+    return _loader
+

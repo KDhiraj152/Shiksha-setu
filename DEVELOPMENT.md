@@ -19,42 +19,16 @@
 
 ## 🚀 Getting Started
 
-### Prerequisites
+For installation and setup prerequisites, see **[Setup Guide](docs/guides/setup.md)**.
 
-- **Python**: 3.11 or 3.12
-- **Node.js**: 20.x LTS
-- **PostgreSQL**: 15+ with pgvector
-- **Redis**: 7.0+
-- **Git**: Latest version
-- **Docker**: v24.0+ (optional)
-
-### Initial Setup
+### Quick Setup Summary
 
 ```bash
-# Clone repository
-git clone https://github.com/KDhiraj152/Siksha-Setu.git
-cd Siksha-Setu
-
-# Run automated setup
-./bin/setup
-
-# Activate virtual environment
-source .venv/bin/activate
-
-# Start services
-./bin/start
+git clone https://github.com/KDhiraj152/Siksha-Setu.git && cd Siksha-Setu
+./SETUP.sh && ./START.sh
 ```
 
-**Verify Setup**:
-```bash
-# Check all dependencies
-python3 scripts/validation/check_dependencies.py
-
-# Test all features
-python3 scripts/testing/test_all_features.py
-
-# Expected: 12/14 features PASS (14/14 with HuggingFace token)
-```
+Then verify your setup is complete before proceeding with development.
 
 ---
 
@@ -64,44 +38,93 @@ python3 scripts/testing/test_all_features.py
 Siksha-Setu/
 ├── backend/                    # Backend API (FastAPI)
 │   ├── api/                    # API endpoints
-│   │   ├── endpoints/          # Endpoint modules
-│   │   ├── routes/             # Route definitions
+│   │   ├── routes/             # All API routes (consolidated)
+│   │   │   ├── __init__.py     # Route exports
+│   │   │   ├── auth.py         # Authentication
+│   │   │   ├── content.py      # Content processing
+│   │   │   ├── qa.py           # Q&A endpoints
+│   │   │   ├── streaming.py    # Streaming responses
+│   │   │   ├── progress.py     # Progress tracking
+│   │   │   ├── experiments.py  # A/B testing
+│   │   │   ├── admin.py        # Admin operations
+│   │   │   └── quantization.py # Model quantization
 │   │   ├── main.py             # FastAPI app
+│   │   ├── middleware.py       # Request middleware
 │   │   └── documentation.py    # API docs config
-│   ├── core/                   # Core functionality
-│   │   ├── config.py           # Configuration
+│   ├── core/                   # Core infrastructure
+│   │   ├── config.py           # SINGLE configuration source
+│   │   ├── database.py         # Database connection
+│   │   ├── cache.py            # Redis caching
 │   │   ├── security.py         # Security utilities
 │   │   ├── exceptions.py       # Custom exceptions
-│   │   └── telemetry.py        # Monitoring
+│   │   ├── telemetry.py        # Monitoring
+│   │   ├── model_loader.py     # Lazy model loading
+│   │   ├── model_tier_router.py # Resource-aware routing
+│   │   ├── dynamic_quantization.py # Adaptive quantization
+│   │   └── model_optimizer.py  # Model optimization
 │   ├── models/                 # Database models (SQLAlchemy)
-│   ├── schemas/                # Pydantic schemas
+│   │   ├── auth.py             # User, APIKey, TokenBlacklist
+│   │   ├── content.py          # ProcessedContent, NCERTStandard
+│   │   ├── progress.py         # StudentProgress, QuizScore
+│   │   └── rag.py              # DocumentChunk, Embedding
+│   ├── schemas/                # Pydantic request/response schemas
+│   │   ├── auth.py             # Auth schemas
+│   │   ├── content.py          # Content schemas
+│   │   └── qa.py               # Q&A schemas
 │   ├── services/               # Business logic
+│   │   ├── unified_model_client.py # SINGLE model client (active)
+│   │   ├── ab_test_router.py   # A/B testing (renamed)
 │   │   ├── rag.py              # RAG Q&A system
-│   │   ├── curriculum_validator.py
-│   │   ├── cultural_context.py
-│   │   └── ...
-│   ├── pipeline/               # AI/ML pipeline
+│   │   ├── curriculum_validation.py # NCERT validation
+│   │   ├── cultural_context_service.py # Cultural adaptation
+│   │   ├── simplify/           # Text simplification
+│   │   │   ├── __init__.py
+│   │   │   ├── simplifier.py
+│   │   │   └── analyzer.py
+│   │   ├── translate/          # Translation services
+│   │   │   ├── __init__.py
+│   │   │   ├── engine.py
+│   │   │   └── model.py
+│   │   ├── speech/             # Text-to-speech
+│   │   │   ├── __init__.py
+│   │   │   ├── generator.py
+│   │   │   └── processor.py
+│   │   └── validate/           # Content validation
+│   │       ├── __init__.py
+│   │       └── validator.py
+│   ├── pipeline/               # AI/ML pipeline orchestration
 │   │   ├── orchestrator.py     # Pipeline coordinator
-│   │   ├── model_clients.py    # Model interfaces
-│   │   └── model_clients_async.py
-│   ├── simplify/               # Text simplification
-│   ├── translate/              # Translation services
-│   ├── speech/                 # Text-to-speech
-│   ├── validate/               # NCERT validation
-│   ├── tasks/                  # Celery tasks
+│   │   └── README.md           # Pipeline documentation
+│   ├── tasks/                  # Celery background tasks
+│   │   ├── celery_app.py       # Celery configuration
+│   │   ├── pipeline_tasks.py   # Content processing tasks
+│   │   ├── qa_tasks.py         # Q&A tasks
+│   │   └── audio_tasks.py      # Audio generation tasks
 │   ├── middleware/             # Custom middleware
+│   │   └── tenant.py           # Multi-tenancy
 │   ├── utils/                  # Utility functions
-│   ├── database.py             # Database connection
-│   └── cache.py                # Redis caching
+│   │   ├── logging.py          # Logging setup
+│   │   ├── device_manager.py   # Device detection
+│   │   └── sanitizer.py        # Input sanitization
+│   ├── _deprecated/            # Archived redundant code
+│   │   ├── model_clients.py    # (archived 2025-11-28)
+│   │   ├── model_clients_async.py # (archived 2025-11-28)
+│   │   └── model_client.py     # (archived 2025-11-28)
+│   └── __init__.py             # Package init
 │
 ├── frontend/                   # React frontend
 │   ├── src/
 │   │   ├── components/         # React components
-│   │   │   ├── atoms/          # Basic UI elements
+│   │   │   ├── ui/             # shadcn/ui components
 │   │   │   ├── molecules/      # Composite components
 │   │   │   └── organisms/      # Complex sections
+│   │   ├── pages/              # Page components
 │   │   ├── hooks/              # Custom React hooks
 │   │   ├── services/           # API services
+│   │   │   └── api.ts          # API client
+│   │   ├── store/              # Zustand state
+│   │   │   └── authStore.ts    # Auth state
+│   │   ├── types/              # TypeScript types
 │   │   ├── utils/              # Utility functions
 │   │   ├── App.tsx             # Main app component
 │   │   └── main.tsx            # Entry point
@@ -113,12 +136,11 @@ Siksha-Setu/
 │   ├── integration/            # Integration tests
 │   └── conftest.py             # Pytest configuration
 │
-├── scripts/                    # Utility scripts
+├── scripts/                    # Organized utility scripts (no duplicates)
 │   ├── setup/                  # Setup scripts
-│   ├── validation/             # Validation scripts
+│   ├── deployment/             # Deployment scripts
 │   ├── testing/                # Test scripts
 │   ├── demo/                   # Demo scripts
-│   ├── deployment/             # Deployment scripts
 │   └── utils/                  # Utility scripts
 │
 ├── infrastructure/             # Infrastructure as Code
@@ -130,7 +152,7 @@ Siksha-Setu/
 ├── docs/                       # Documentation
 │   ├── reference/              # API & architecture docs
 │   ├── guides/                 # How-to guides
-│   └── archive/                # Old documentation
+│   └── technical/              # Technical deep-dives
 │
 ├── data/                       # Data directory
 │   ├── uploads/                # User uploads
@@ -138,20 +160,38 @@ Siksha-Setu/
 │   ├── cache/                  # Cache files
 │   └── models/                 # ML model files
 │
-├── bin/                        # Executable scripts
-│   ├── setup                   # Initial setup
-│   ├── start                   # Start services
+├── bin/                        # User-facing executable scripts
+│   ├── setup                   # Initial setup (FIXED paths)
+│   ├── start                   # Start services (FIXED paths)
 │   ├── stop                    # Stop services
+│   ├── test                    # Run tests
 │   └── validate-production     # Production validation
 │
+├── config/                     # Configuration files
+│   ├── alembic.ini            # Database migrations
+│   ├── pytest.ini             # Pytest configuration
+│   └── docker-compose.production.yml # Production compose
+│
+├── requirements/               # Python dependencies
+│   ├── base.txt               # Core dependencies
+│   └── dev.txt                # Development dependencies
+│
 ├── .env.example                # Environment template
-├── requirements.txt            # Python dependencies
-├── requirements.dev.txt        # Dev dependencies
-├── pytest.ini                  # Pytest configuration
-├── alembic.ini                 # Database migrations
-├── docker-compose.yml          # Docker Compose
+├── CHANGELOG.md                # Version history (updated 2025-11-28)
+├── DEVELOPMENT.md              # This file (updated 2025-11-28)
+├── DEPLOYMENT.md               # Deployment guide
 └── README.md                   # Project overview
 ```
+
+### Key Changes (v2.2.0 - 2025-11-28)
+- ✅ **Single Model Client**: `unified_model_client.py` is now the only active client
+- ✅ **Single Config**: `core/config.py` is the only configuration file  
+- ✅ **Router Clarity**: `ab_test_router.py` (A/B testing) vs `model_tier_router.py` (resource routing)
+- ✅ **Consolidated Routes**: All API routes now in `api/routes/` (no more `endpoints/`)
+- ✅ **No Script Duplicates**: Only `/bin/` scripts exist, `/scripts/` has no duplicates
+- ✅ **Fixed Bugs**: Threading import, path checks in setup scripts
+
+See [CHANGELOG.md](CHANGELOG.md) for complete details.
 
 ---
 
@@ -364,13 +404,13 @@ export const ContentCard = (props: any) => {  // No interface, any type
 **Use Alembic for migrations**:
 ```bash
 # Create migration
-alembic revision --autogenerate -m "Add new table"
+alembic -c config/alembic.ini revision --autogenerate -m "Add new table"
 
 # Apply migration
-alembic upgrade head
+alembic -c config/alembic.ini upgrade head
 
 # Rollback
-alembic downgrade -1
+alembic -c config/alembic.ini downgrade -1
 ```
 
 **Model Best Practices**:
@@ -633,7 +673,7 @@ Brief description of changes
 source .venv/bin/activate
 
 # Or reinstall dependencies
-pip install -r requirements.txt
+pip install -r requirements/base.txt
 ```
 
 #### 2. Database Connection Issues
@@ -644,8 +684,8 @@ sudo systemctl status postgresql
 # or
 docker ps | grep postgres
 
-# Reset database
-./bin/setup --reset-db
+# Reset database (re-run migrations)
+python -m alembic upgrade head
 ```
 
 #### 3. Redis Connection Issues
@@ -727,8 +767,6 @@ SELECT * FROM users LIMIT 5;
 4. **Test** thoroughly
 5. **Submit** pull request
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
 ---
 
 ## 📖 Additional Resources
@@ -736,11 +774,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 - [Deployment Guide](DEPLOYMENT.md)
 - [API Documentation](docs/reference/api.md)
 - [Architecture Overview](docs/reference/architecture.md)
-- [Troubleshooting Guide](docs/reference/troubleshooting.md)
-- [Scripts Documentation](scripts/README.md)
+- [Troubleshooting Guide](docs/guides/troubleshooting.md)
 
 ---
 
-**Last Updated**: 2024-11-28  
-**Maintained By**: Shiksha Setu Development Team  
-**Questions?** Create an issue or join our Slack channel
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

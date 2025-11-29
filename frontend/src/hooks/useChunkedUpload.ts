@@ -66,12 +66,14 @@ export function useChunkedUpload(options: UseChunkedUploadOptions = {}) {
     try {
       await api.uploadChunk(
         chunk,
-        file.name,
-        uploadId,
-        chunkIndex,
-        totalChunks,
-        undefined,
-        (chunkProgress) => {
+        {
+          filename: file.name,
+          uploadId: uploadId,
+          chunkIndex: chunkIndex,
+          totalChunks: totalChunks,
+          checksum: undefined,
+        },
+        (chunkProgress: number) => {
           const totalProgress = ((chunkIndex + chunkProgress / 100) / totalChunks) * 100;
           const uploadedBytes = uploadedBytesRef.current + (chunk.size * chunkProgress / 100);
           const speed = calculateSpeed(uploadedBytes, startTimeRef.current);

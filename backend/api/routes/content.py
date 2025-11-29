@@ -44,9 +44,9 @@ from ...tasks.pipeline_tasks import (
 from ...tasks.qa_tasks import process_document_for_qa_task
 from ...utils.sanitizer import InputSanitizer
 from ...utils.auth import get_current_user, TokenData
-from ...database import get_db_session
+from ...core.database import get_db_session
 from ...models import ProcessedContent, Feedback
-from ...monitoring import get_logger
+from ...core.monitoring import get_logger
 from .helpers import (
     parse_chunk_metadata,
     save_file_chunk,
@@ -86,15 +86,6 @@ class AppError(Exception):
         self.code = code
         self.status = status
         super().__init__(message)
-
-
-# ==================== Content Processing Endpoints ====================
-
-    progress: Optional[int] = None
-    stage: Optional[str] = None
-    message: Optional[str] = None
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
 
 
 # ==================== Endpoints ====================
@@ -237,8 +228,10 @@ async def upload_file(
         
         logger.info(f"File uploaded: {file_path}")
         
-        # Extract text using helper (now reads from disk, not RAM)
-        extracted_text = extract_text_from_content(content, file_extension)
+        # Extract text using helper (read from saved file)
+        with open(file_path, 'rb') as f:
+            file_content = f.read()
+        extracted_text = extract_text_from_content(file_content, file_extension)
         
         # Save to database
         with get_db_session() as session:
@@ -251,7 +244,7 @@ async def upload_file(
                 metadata={
                     'filename': file.filename,
                     'file_path': str(file_path),
-                    'file_size': len(content),
+                    'file_size': file_size,
                     'file_type': file_extension,
                     'storage_type': settings.STORAGE_TYPE
                 }
@@ -277,14 +270,14 @@ async def upload_file(
             "file_id": content_id,
             "file_path": str(file_path),
             "filename": file.filename,
-            "size": len(content),
+            "size": file_size,
             "extracted_text": extracted_text[:5000] if extracted_text else "",
             "grade_level": grade_level,
             "subject": subject,
             "qa_processing": {
                 "enabled": process_for_qa and bool(extracted_text),
                 "task_id": qa_task_id,
-                "status_url": f"/api/v1/status/{qa_task_id}" if qa_task_id else None
+                "status_url": f"/api/v1/content/tasks/{qa_task_id}" if qa_task_id else None
             }
         }
         
@@ -344,7 +337,7 @@ async def process_content(
 @router.post("/simplify")
 async def simplify_content(
     request_data: SimplifyRequest,
-    wait: bool = Query(default=True, description=WAIT_SYNC_DESCRIPTION)
+    wait: bool = Query(default=False, description=WAIT_SYNC_DESCRIPTION)
 ):
     """Simplify text asynchronously or synchronously."""
     try:
@@ -388,7 +381,7 @@ async def simplify_content(
 @router.post("/translate")
 async def translate_content(
     request_data: TranslateRequest,
-    wait: bool = Query(default=True, description=WAIT_SYNC_DESCRIPTION)
+    wait: bool = Query(default=False, description=WAIT_SYNC_DESCRIPTION)
 ):
     """Translate text asynchronously or synchronously."""
     try:
@@ -436,7 +429,7 @@ async def translate_content(
 @router.post("/validate")
 async def validate_content(
     request_data: ValidateRequest,
-    wait: bool = Query(default=True, description=WAIT_SYNC_DESCRIPTION)
+    wait: bool = Query(default=False, description=WAIT_SYNC_DESCRIPTION)
 ):
     """Validate content semantically."""
     try:
@@ -636,7 +629,22 @@ async def get_content(content_id: str):
 async def get_audio(content_id: str):
     """Serve audio file."""
     try:
-        # Validate UUID
+        # First check if it's a file-based audio (e.g., tts_20251129...)
+        if content_id.startswith('tts_'):
+            # Look for the file in audio directory
+            audio_dir = Path("data/audio")
+            # Find any file matching the pattern
+            matching_files = list(audio_dir.glob(f"{content_id}*.mp3"))
+            if matching_files:
+                audio_path = matching_files[0]
+                return FileResponse(
+                    audio_path,
+                    media_type="audio/mpeg",
+                    filename=audio_path.name
+                )
+            raise HTTPException(status_code=404, detail="Audio not found")
+        
+        # Otherwise, validate as UUID and look in database
         try:
             sanitizer.validate_uuid(content_id)
         except Exception:

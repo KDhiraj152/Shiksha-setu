@@ -1,7 +1,7 @@
 """Authentication and authorization schemas."""
 
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
 class Token(BaseModel):
@@ -22,8 +22,8 @@ class TokenData(BaseModel):
 class UserCreate(BaseModel):
     """User registration request."""
     email: EmailStr
-    password: str = Field(min_length=8, max_length=100)
-    full_name: str = Field(min_length=2, max_length=100)
+    password: str = Field(min_length=6, max_length=100)  # Relaxed for development
+    full_name: str = Field(min_length=1, max_length=100)
     organization: Optional[str] = None
     role: Optional[str] = Field(default="user", pattern="^(user|educator|admin)$")
 
@@ -43,8 +43,7 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RefreshTokenRequest(BaseModel):

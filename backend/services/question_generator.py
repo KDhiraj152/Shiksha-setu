@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..utils.logging import get_logger
-from ..database import get_db_session, Base
+from ..core.database import get_db_session, Base
 from ..utils.model_loader import ModelLoader
 
 logger = get_logger(__name__)
@@ -35,7 +35,7 @@ class GeneratedQuestion(Base):
     quality_score = Column(Integer, default=0)  # 0-100, manual review score
     is_approved = Column(Integer, default=0)  # 0=pending, 1=approved, -1=rejected
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    metadata = Column(JSON, default=dict)
+    question_metadata = Column('metadata', JSON, default=dict)  # Renamed from 'metadata' to avoid SQLAlchemy reserved word
 
 
 class QuestionGenerator:

@@ -223,7 +223,7 @@ python scripts/utils/check_status.py
 
 ```bash
 # 1. Install dependencies
-./bin/setup
+./SETUP.sh
 
 # 2. Initialize database
 python scripts/setup/init_db.py
@@ -311,5 +311,8 @@ When adding new scripts:
 
 ---
 
-**Last Updated**: 2024-11-28  
-**Maintained By**: Shiksha Setu Development Team
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

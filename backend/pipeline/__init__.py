@@ -9,8 +9,12 @@ from .orchestrator import (
     ProcessingStatus
 )
 
+# Convenience alias for shorter import
+ContentPipeline = ContentPipelineOrchestrator
+
 __all__ = [
     'ContentPipelineOrchestrator',
+    'ContentPipeline',
     'ProcessedContentResult',
     'StageMetrics',
     'PipelineValidationError',

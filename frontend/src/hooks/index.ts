@@ -46,6 +46,11 @@ export {
   useInvalidateContent,
 } from './useApi';
 
+// Modular hooks (new architecture)
+export { authKeys } from './useAuth';
+export { contentKeys } from './useContent';
+export { qaKeys } from './useQA';
+
 // WebSocket Hook
 export { useWebSocket, type WebSocketStatus, type TaskUpdate, type UseWebSocketOptions } from './useWebSocket';
 

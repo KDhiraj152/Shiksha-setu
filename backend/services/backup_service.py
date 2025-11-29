@@ -150,7 +150,7 @@ class BackupService:
             logger.error(f"Content backup failed: {e}")
             raise
     
-    def cleanup_old_backups(self):
+    def cleanup_old_backups(self) -> None:
         """Remove backups older than retention period."""
         logger.info(f"Cleaning up backups older than {self.retention_days} days")
         
@@ -165,7 +165,7 @@ class BackupService:
         
         logger.info(f"Cleanup completed: {removed_count} backups removed")
     
-    def _upload_to_s3(self, file_path: Path, backup_type: str):
+    def _upload_to_s3(self, file_path: Path, backup_type: str) -> None:
         """Upload backup to S3."""
         if not self.s3_bucket:
             return

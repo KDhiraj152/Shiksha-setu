@@ -401,20 +401,21 @@ class xAPIStatementGenerator:
         try:
             import httpx
             response = httpx.post(
-                f\"{self.lrs_endpoint}/statements\",
+                f"{self.lrs_endpoint}/statements",
                 json=statement,
                 headers={
-                    \"Authorization\": self.lrs_auth,
-                    \"Content-Type\": \"application/json\",
-                    \"X-Experience-API-Version\": \"1.0.3\"
+                    "Authorization": self.lrs_auth,
+                    "Content-Type": "application/json",
+                    "X-Experience-API-Version": "1.0.3"
                 },
                 timeout=10.0
             )
             if response.status_code == 200:
-                logger.info(f\"xAPI statement sent successfully: {statement['verb']['display']['en-US']}\")
+                logger.info(f"xAPI statement sent successfully: {statement['verb']['display']['en-US']}")
                 return True
             else:
-                logger.warning(f\"LRS responded with status {response.status_code}\")\n                return False
+                logger.warning(f"LRS responded with status {response.status_code}")
+                return False
         except Exception as e:
-            logger.error(f\"Failed to send xAPI statement to LRS: {e}\")
+            logger.error(f"Failed to send xAPI statement to LRS: {e}")
             return False

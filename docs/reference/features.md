@@ -24,3 +24,11 @@ Future improvements
 - Add streaming TTS for lower-latency audio playback.
 - Integrate model-cost/latency-aware routing (local vs cloud HF inference).
 - Add content versioning and diffing to track curriculum updates.
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

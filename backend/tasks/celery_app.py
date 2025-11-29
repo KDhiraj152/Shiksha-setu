@@ -1,11 +1,20 @@
 """Celery application configuration for async task processing."""
 import os
+import platform
 from celery import Celery
 from celery.signals import task_prerun, task_postrun, task_failure, task_success, task_retry
 from kombu import Queue
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Fix for macOS + PyTorch/MPS: Use spawn instead of fork
+if platform.system() == "Darwin":
+    import multiprocessing
+    try:
+        multiprocessing.set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass  # Already set
 
 # Redis configuration
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')

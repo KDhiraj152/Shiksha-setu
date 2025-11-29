@@ -10,7 +10,7 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
 
-from backend.database import get_db
+from backend.core.database import get_db
 from backend.models import TranslationReview, ReviewComment, ReviewVersion, User
 from backend.schemas.review import (
     ReviewCreate, ReviewResponse, ReviewUpdate,
@@ -18,7 +18,7 @@ from backend.schemas.review import (
     VersionResponse
 )
 from backend.utils.auth import get_current_user
-from backend.monitoring import track_review_action
+from backend.core.monitoring import track_review_action
 
 router = APIRouter(prefix="/api/v1/reviews", tags=["reviews"])
 

@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 from datetime import datetime, timezone
 
-from ..database import Base
+from ..core.database import Base
 
 def utcnow():
     """Get current UTC time with timezone awareness."""

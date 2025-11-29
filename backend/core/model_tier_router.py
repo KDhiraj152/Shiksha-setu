@@ -3,11 +3,19 @@ Model Tier Router for resource-aware inference.
 
 Routes tasks to appropriate model sizes based on complexity and available resources.
 Implements local-first strategy with graceful degradation to API fallback.
+
+Key Features:
+- Language-aware complexity scoring with Indic script multipliers
+- Predictive memory budgeting based on workload patterns
+- Adaptive tier selection based on device capabilities
+- Circuit breaker pattern for API fallback
 """
 import logging
+import re
 from enum import Enum
 from typing import Dict, Any, Optional, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +28,172 @@ class ModelTier(str, Enum):
     API = "api"          # External API fallback (Bhashini, OpenAI)
 
 
+class ScriptType(str, Enum):
+    """Unicode script classification for Indic languages."""
+    LATIN = "latin"           # English, romanized text
+    DEVANAGARI = "devanagari" # Hindi, Marathi, Sanskrit
+    TAMIL = "tamil"           # Tamil script
+    TELUGU = "telugu"         # Telugu script  
+    BENGALI = "bengali"       # Bengali/Bangla script
+    GUJARATI = "gujarati"     # Gujarati script
+    KANNADA = "kannada"       # Kannada script
+    MALAYALAM = "malayalam"   # Malayalam script
+    ODIA = "odia"             # Odia/Oriya script
+    GURMUKHI = "gurmukhi"     # Punjabi script
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class ScriptMetrics:
+    """Script-specific metrics for complexity calculation."""
+    script_type: ScriptType
+    # Token expansion multiplier (Indic scripts expand ~1.5-2x vs Latin)
+    token_multiplier: float
+    # Average character per token (affects memory/compute)
+    chars_per_token: float
+    # Morphological complexity (agglutinative languages need more)
+    morphological_factor: float
+
+
+# Script multipliers based on NLLB-200 tokenizer analysis
+SCRIPT_METRICS: Dict[ScriptType, ScriptMetrics] = {
+    ScriptType.LATIN: ScriptMetrics(
+        script_type=ScriptType.LATIN,
+        token_multiplier=1.0,
+        chars_per_token=4.0,
+        morphological_factor=1.0
+    ),
+    ScriptType.DEVANAGARI: ScriptMetrics(
+        script_type=ScriptType.DEVANAGARI,
+        token_multiplier=1.4,
+        chars_per_token=2.8,
+        morphological_factor=1.2
+    ),
+    ScriptType.TAMIL: ScriptMetrics(
+        script_type=ScriptType.TAMIL,
+        token_multiplier=1.6,  # Tamil has complex agglutination
+        chars_per_token=2.5,
+        morphological_factor=1.5
+    ),
+    ScriptType.TELUGU: ScriptMetrics(
+        script_type=ScriptType.TELUGU,
+        token_multiplier=1.5,
+        chars_per_token=2.6,
+        morphological_factor=1.3
+    ),
+    ScriptType.BENGALI: ScriptMetrics(
+        script_type=ScriptType.BENGALI,
+        token_multiplier=1.4,
+        chars_per_token=2.7,
+        morphological_factor=1.2
+    ),
+    ScriptType.GUJARATI: ScriptMetrics(
+        script_type=ScriptType.GUJARATI,
+        token_multiplier=1.35,
+        chars_per_token=2.9,
+        morphological_factor=1.15
+    ),
+    ScriptType.KANNADA: ScriptMetrics(
+        script_type=ScriptType.KANNADA,
+        token_multiplier=1.45,
+        chars_per_token=2.6,
+        morphological_factor=1.25
+    ),
+    ScriptType.MALAYALAM: ScriptMetrics(
+        script_type=ScriptType.MALAYALAM,
+        token_multiplier=1.55,  # Malayalam is highly agglutinative
+        chars_per_token=2.4,
+        morphological_factor=1.4
+    ),
+    ScriptType.ODIA: ScriptMetrics(
+        script_type=ScriptType.ODIA,
+        token_multiplier=1.4,
+        chars_per_token=2.7,
+        morphological_factor=1.2
+    ),
+    ScriptType.GURMUKHI: ScriptMetrics(
+        script_type=ScriptType.GURMUKHI,
+        token_multiplier=1.35,
+        chars_per_token=2.9,
+        morphological_factor=1.15
+    ),
+    ScriptType.UNKNOWN: ScriptMetrics(
+        script_type=ScriptType.UNKNOWN,
+        token_multiplier=1.3,  # Conservative default
+        chars_per_token=3.0,
+        morphological_factor=1.1
+    ),
+}
+
+# Language name to script mapping
+LANGUAGE_TO_SCRIPT: Dict[str, ScriptType] = {
+    # English
+    "english": ScriptType.LATIN,
+    "en": ScriptType.LATIN,
+    # Hindi
+    "hindi": ScriptType.DEVANAGARI,
+    "hi": ScriptType.DEVANAGARI,
+    "hin": ScriptType.DEVANAGARI,
+    # Tamil
+    "tamil": ScriptType.TAMIL,
+    "ta": ScriptType.TAMIL,
+    "tam": ScriptType.TAMIL,
+    # Telugu
+    "telugu": ScriptType.TELUGU,
+    "te": ScriptType.TELUGU,
+    "tel": ScriptType.TELUGU,
+    # Bengali
+    "bengali": ScriptType.BENGALI,
+    "bangla": ScriptType.BENGALI,
+    "bn": ScriptType.BENGALI,
+    "ben": ScriptType.BENGALI,
+    # Marathi
+    "marathi": ScriptType.DEVANAGARI,
+    "mr": ScriptType.DEVANAGARI,
+    "mar": ScriptType.DEVANAGARI,
+    # Gujarati
+    "gujarati": ScriptType.GUJARATI,
+    "gu": ScriptType.GUJARATI,
+    "guj": ScriptType.GUJARATI,
+    # Kannada
+    "kannada": ScriptType.KANNADA,
+    "kn": ScriptType.KANNADA,
+    "kan": ScriptType.KANNADA,
+    # Malayalam
+    "malayalam": ScriptType.MALAYALAM,
+    "ml": ScriptType.MALAYALAM,
+    "mal": ScriptType.MALAYALAM,
+    # Punjabi
+    "punjabi": ScriptType.GURMUKHI,
+    "pa": ScriptType.GURMUKHI,
+    "pan": ScriptType.GURMUKHI,
+    # Odia
+    "odia": ScriptType.ODIA,
+    "oriya": ScriptType.ODIA,
+    "or": ScriptType.ODIA,
+    "ori": ScriptType.ODIA,
+    # Sanskrit (Devanagari script)
+    "sanskrit": ScriptType.DEVANAGARI,
+    "sa": ScriptType.DEVANAGARI,
+    "san": ScriptType.DEVANAGARI,
+}
+
+
 @dataclass
 class TaskComplexity:
     """Task complexity metrics for routing decisions."""
     token_count: int
+    adjusted_token_count: int  # After script multiplier
     grade_level: int
     subject_technical: bool  # Science/Math vs Social/English
     translation_pairs: int   # Number of languages
     requires_cultural_context: bool
     complexity_score: float
+    # New fields for language awareness
+    source_script: ScriptType = ScriptType.LATIN
+    target_scripts: list = field(default_factory=list)
+    script_complexity_factor: float = 1.0
+    morphological_complexity: float = 1.0
 
 
 class ModelTierRouter:
@@ -112,16 +277,73 @@ class ModelTierRouter:
             f"ModelTierRouter initialized: max_memory={max_memory_gb}GB, device={device_type}"
         )
     
+    def _detect_script_from_text(self, text: str) -> ScriptType:
+        """
+        Detect script type from text using Unicode ranges.
+        
+        Args:
+            text: Input text to analyze
+            
+        Returns:
+            Detected ScriptType
+        """
+        # Unicode ranges for Indic scripts
+        script_patterns = {
+            ScriptType.DEVANAGARI: re.compile(r'[\u0900-\u097F]'),
+            ScriptType.BENGALI: re.compile(r'[\u0980-\u09FF]'),
+            ScriptType.GURMUKHI: re.compile(r'[\u0A00-\u0A7F]'),
+            ScriptType.GUJARATI: re.compile(r'[\u0A80-\u0AFF]'),
+            ScriptType.ODIA: re.compile(r'[\u0B00-\u0B7F]'),
+            ScriptType.TAMIL: re.compile(r'[\u0B80-\u0BFF]'),
+            ScriptType.TELUGU: re.compile(r'[\u0C00-\u0C7F]'),
+            ScriptType.KANNADA: re.compile(r'[\u0C80-\u0CFF]'),
+            ScriptType.MALAYALAM: re.compile(r'[\u0D00-\u0D7F]'),
+        }
+        
+        # Count matches for each script
+        script_counts = {}
+        for script, pattern in script_patterns.items():
+            matches = pattern.findall(text)
+            if matches:
+                script_counts[script] = len(matches)
+        
+        if script_counts:
+            # Return script with most matches
+            return max(script_counts, key=script_counts.get)
+        
+        # Default to Latin for ASCII text
+        return ScriptType.LATIN
+    
+    def _get_script_for_language(self, language: str) -> ScriptType:
+        """
+        Get script type for a language name.
+        
+        Args:
+            language: Language name or code
+            
+        Returns:
+            Associated ScriptType
+        """
+        normalized = language.lower().strip()
+        return LANGUAGE_TO_SCRIPT.get(normalized, ScriptType.UNKNOWN)
+    
     def calculate_task_complexity(
         self,
         text: str,
         grade_level: int,
         subject: str,
         language_count: int = 1,
-        requires_cultural_context: bool = False
+        requires_cultural_context: bool = False,
+        source_language: str = "English",
+        target_languages: list = None
     ) -> TaskComplexity:
         """
-        Calculate task complexity score.
+        Calculate task complexity score with language-aware adjustments.
+        
+        This method now accounts for:
+        - Script-specific token expansion (Indic scripts tokenize differently)
+        - Morphological complexity (agglutinative languages like Tamil/Malayalam)
+        - Cross-script translation difficulty
         
         Args:
             text: Input text
@@ -129,12 +351,56 @@ class ModelTierRouter:
             subject: Subject area
             language_count: Number of language pairs (for translation)
             requires_cultural_context: Whether cultural adaptation needed
+            source_language: Source language for translation
+            target_languages: List of target languages
             
         Returns:
-            TaskComplexity object with metrics
+            TaskComplexity object with language-aware metrics
         """
-        # Estimate token count (rough: 1 token ≈ 4 chars)
-        token_count = len(text) // 4
+        target_languages = target_languages or []
+        
+        # Detect source script from text content
+        source_script = self._detect_script_from_text(text)
+        if source_script == ScriptType.LATIN and source_language:
+            # If text is romanized, use language hint
+            source_script = self._get_script_for_language(source_language)
+        
+        # Get target scripts
+        target_scripts = [
+            self._get_script_for_language(lang) 
+            for lang in target_languages
+        ]
+        
+        # Calculate script complexity factor
+        source_metrics = SCRIPT_METRICS.get(source_script, SCRIPT_METRICS[ScriptType.UNKNOWN])
+        
+        # Get max target complexity (worst case for multi-language)
+        target_multipliers = [
+            SCRIPT_METRICS.get(script, SCRIPT_METRICS[ScriptType.UNKNOWN]).token_multiplier
+            for script in target_scripts
+        ] if target_scripts else [1.0]
+        
+        max_target_multiplier = max(target_multipliers)
+        
+        # Combined script complexity factor
+        script_complexity_factor = (source_metrics.token_multiplier + max_target_multiplier) / 2
+        
+        # Calculate morphological complexity (affects model requirements)
+        target_morph_factors = [
+            SCRIPT_METRICS.get(script, SCRIPT_METRICS[ScriptType.UNKNOWN]).morphological_factor
+            for script in target_scripts
+        ] if target_scripts else [1.0]
+        
+        morphological_complexity = max(
+            source_metrics.morphological_factor,
+            max(target_morph_factors)
+        )
+        
+        # Base token count estimation (Latin baseline)
+        base_token_count = len(text) // 4
+        
+        # Adjusted token count with script multiplier
+        adjusted_token_count = int(base_token_count * script_complexity_factor)
         
         # Technical subject increases complexity
         is_technical = subject in self.TECHNICAL_SUBJECTS
@@ -142,46 +408,70 @@ class ModelTierRouter:
         # Calculate complexity score (0.0 - 1.0)
         score = 0.0
         
-        # Token count factor (40% weight)
-        if token_count < self.TOKEN_SMALL:
+        # Token count factor (35% weight) - using adjusted tokens
+        if adjusted_token_count < self.TOKEN_SMALL:
             score += 0.1
-        elif token_count < self.TOKEN_MEDIUM:
-            score += 0.25
+        elif adjusted_token_count < self.TOKEN_MEDIUM:
+            score += 0.22
+        elif adjusted_token_count < self.TOKEN_LARGE:
+            score += 0.30
         else:
-            score += 0.4
+            score += 0.35
         
-        # Grade level factor (20% weight)
+        # Grade level factor (15% weight)
         if grade_level <= self.GRADE_SIMPLE:
             score += 0.05
         elif grade_level <= self.GRADE_COMPLEX:
+            score += 0.10
+        else:
+            score += 0.15
+        
+        # Subject factor (15% weight)
+        if is_technical:
             score += 0.15
         else:
-            score += 0.2
+            score += 0.08
         
-        # Subject factor (20% weight)
-        if is_technical:
-            score += 0.2
-        else:
-            score += 0.1
-        
-        # Language factor (10% weight)
+        # Language/script factor (20% weight) - enhanced
+        script_score = 0.0
         if language_count > 1:
-            score += 0.1
+            script_score += 0.05
+        if script_complexity_factor > 1.3:  # Significant script complexity
+            script_score += 0.08
+        if morphological_complexity > 1.3:  # Complex morphology
+            script_score += 0.07
+        score += min(script_score, 0.20)
         
         # Cultural context (10% weight)
         if requires_cultural_context:
-            score += 0.1
+            score += 0.10
+        
+        # Cross-script penalty (5% weight)
+        if source_script != ScriptType.LATIN and target_scripts:
+            cross_script_pairs = sum(1 for t in target_scripts if t != source_script)
+            if cross_script_pairs > 0:
+                score += min(0.05, cross_script_pairs * 0.02)
         
         complexity = TaskComplexity(
-            token_count=token_count,
+            token_count=base_token_count,
+            adjusted_token_count=adjusted_token_count,
             grade_level=grade_level,
             subject_technical=is_technical,
             translation_pairs=language_count,
             requires_cultural_context=requires_cultural_context,
-            complexity_score=min(score, 1.0)
+            complexity_score=min(score, 1.0),
+            source_script=source_script,
+            target_scripts=target_scripts,
+            script_complexity_factor=script_complexity_factor,
+            morphological_complexity=morphological_complexity
         )
         
-        logger.debug(f"Task complexity: {complexity.complexity_score:.2f} (tokens={token_count})")
+        logger.debug(
+            f"Task complexity: {complexity.complexity_score:.2f} "
+            f"(tokens={base_token_count}→{adjusted_token_count}, "
+            f"script_factor={script_complexity_factor:.2f}, "
+            f"morph={morphological_complexity:.2f})"
+        )
         
         return complexity
     

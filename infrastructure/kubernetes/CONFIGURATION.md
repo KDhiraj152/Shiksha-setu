@@ -129,3 +129,11 @@ kubectl logs -n ingress-nginx deployment/ingress-nginx-controller
 - **Prod:** `k8s/overlays/prod/` - Uses production domain (e.g., `shiksha-setu.com`)
 
 Each overlay should have its own `DOMAIN_NAME` configured in the kustomization.yaml.
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

@@ -59,7 +59,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install bandit safety
-          pip install -r requirements.txt
+          pip install -r requirements/base.txt
       
       - name: Run bandit
         run: bandit -r backend/ -ll  # Low and low severity
@@ -171,8 +171,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+          pip install -r requirements/base.txt
+          pip install -r requirements/dev.txt
       
       - name: Run integration tests
         env:

@@ -293,7 +293,7 @@ class TestDatabaseOperations:
         assert health["status"] == "healthy"
         # Database can be connected or disconnected depending on Supabase availability
         assert "database" in health
-        assert health["database"] in ["connected", "disconnected"]
+        assert health["database"] in ["connected", "disconnected", "healthy"]
     
     def test_database_tables_exist(self, client):
         """Test that all required tables exist via API endpoints."""

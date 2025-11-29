@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 import uuid
 from enum import Enum
 
-from ..database import Base
+from ..core.database import Base
 
 
 def utcnow():

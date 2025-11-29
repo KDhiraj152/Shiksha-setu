@@ -1,0 +1,207 @@
+version: '3.8'
+
+# =============================================================================
+# ShikshaSetu Docker Compose - Complete Development Stack
+# =============================================================================
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose up -d postgres redis  # Start just DB/Redis for local dev
+#   docker-compose logs -f backend    # View backend logs
+#   docker-compose down -v            # Stop and remove volumes
+
+services:
+  # ===========================================================================
+  # Database: PostgreSQL with pgvector
+  # ===========================================================================
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: shiksha_postgres
+    environment:
+      POSTGRES_DB: shiksha_setu
+      POSTGRES_USER: shiksha_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-shiksha_pass}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shiksha_user -d shiksha_setu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - shiksha_network
+
+  # ===========================================================================
+  # Cache: Redis
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: shiksha_redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - shiksha_network
+
+  # ===========================================================================
+  # Backend: FastAPI Application
+  # ===========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    container_name: shiksha_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-true}
+      - DATABASE_URL=postgresql://shiksha_user:${DB_PASSWORD:-shiksha_pass}@postgres:5432/shiksha_setu
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - BHASHINI_API_KEY=${BHASHINI_API_KEY:-}
+      - MAX_MODEL_MEMORY_GB=${MAX_MODEL_MEMORY_GB:-8}
+    volumes:
+      - ./data/uploads:/app/data/uploads
+      - ./data/models:/app/data/models
+      - ./data/audio:/app/data/audio
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - shiksha_network
+
+  # ===========================================================================
+  # Celery Worker: Background Task Processing
+  # ===========================================================================
+  worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/worker.Dockerfile
+    container_name: shiksha_worker
+    command: celery -A backend.tasks.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=postgresql://shiksha_user:${DB_PASSWORD:-shiksha_pass}@postgres:5432/shiksha_setu
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - BHASHINI_API_KEY=${BHASHINI_API_KEY:-}
+      - MAX_MODEL_MEMORY_GB=${MAX_MODEL_MEMORY_GB:-8}
+    volumes:
+      - ./data/uploads:/app/data/uploads
+      - ./data/models:/app/data/models
+      - ./data/audio:/app/data/audio
+      - ./logs:/app/logs
+    depends_on:
+      - backend
+      - redis
+    restart: unless-stopped
+    networks:
+      - shiksha_network
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+
+  # ===========================================================================
+  # Celery Beat: Periodic Task Scheduler
+  # ===========================================================================
+  beat:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/worker.Dockerfile
+    container_name: shiksha_beat
+    command: celery -A backend.tasks.celery_app beat --loglevel=info
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=postgresql://shiksha_user:${DB_PASSWORD:-shiksha_pass}@postgres:5432/shiksha_setu
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - worker
+    restart: unless-stopped
+    networks:
+      - shiksha_network
+
+  # ===========================================================================
+  # Frontend: React Application (Production)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infrastructure/docker/frontend.Dockerfile
+    container_name: shiksha_frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - shiksha_network
+
+  # ===========================================================================
+  # Flower: Celery Monitoring (Development Only)
+  # ===========================================================================
+  flower:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/worker.Dockerfile
+    container_name: shiksha_flower
+    command: celery -A backend.tasks.celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - worker
+    restart: unless-stopped
+    networks:
+      - shiksha_network
+    profiles:
+      - monitoring
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  shiksha_network:
+    driver: bridge

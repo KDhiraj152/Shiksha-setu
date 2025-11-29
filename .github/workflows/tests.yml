@@ -1,0 +1,177 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shiksha_setu_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpq-dev
+    
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements/requirements.txt
+        pip install -r requirements/dev.txt
+        pip install pytest-cov pytest-asyncio
+    
+    - name: Set up test database
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shiksha_setu_test
+      run: |
+        python -c "from backend.core.database import init_db; init_db()"
+    
+    - name: Run unit tests
+      env:
+        TESTING: true
+        ENVIRONMENT: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shiksha_setu_test
+        REDIS_URL: redis://localhost:6379/15
+      run: |
+        pytest tests/unit/ -v -m "not slow" --cov=backend --cov-report=xml --cov-report=term
+    
+    - name: Run integration tests (without slow tests)
+      env:
+        TESTING: true
+        ENVIRONMENT: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shiksha_setu_test
+        REDIS_URL: redis://localhost:6379/15
+      run: |
+        pytest tests/integration/ -v -m "integration and not slow" --cov=backend --cov-append --cov-report=xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  integration-full:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shiksha_setu_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements/requirements.txt
+        pip install -r requirements/dev.txt
+    
+    - name: Run full integration tests
+      env:
+        TESTING: true
+        ENVIRONMENT: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shiksha_setu_test
+      run: |
+        pytest tests/integration/ -v -m "integration"
+
+  e2e:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements/requirements.txt
+        pip install -r requirements/dev.txt
+    
+    - name: Run E2E tests
+      env:
+        TESTING: true
+        ENVIRONMENT: test
+      run: |
+        pytest tests/e2e/ -v -m "e2e"
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run Bandit security scan
+      run: |
+        pip install bandit
+        bandit -r backend/ -f json -o bandit-report.json || true
+    
+    - name: Upload security report
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-report
+        path: bandit-report.json

@@ -13,7 +13,7 @@ load_dotenv()
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from backend.database import Base
+from backend.core.database import Base
 # Import all models so they are registered with Base.metadata
 from backend.models import (
     ProcessedContent, NCERTStandard, ContentTranslation, ContentAudio,
@@ -32,6 +32,9 @@ if config.config_file_name is not None:
 
 # Override sqlalchemy.url with DATABASE_URL from environment
 database_url = os.getenv('DATABASE_URL', 'sqlite:///./shiksha_setu.db')
+# Convert postgresql:// to postgresql+psycopg:// for psycopg3 compatibility
+if database_url.startswith('postgresql://') and '+' not in database_url:
+    database_url = database_url.replace('postgresql://', 'postgresql+psycopg://')
 config.set_main_option('sqlalchemy.url', database_url)
 
 # add your model's MetaData object here for 'autogenerate' support

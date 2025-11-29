@@ -30,12 +30,12 @@ def upgrade() -> None:
     # 1. FIX PROGRESS TABLES - Change user_id from String to UUID
     # ========================================================================
     
-    # Drop existing indexes first
-    op.drop_index('ix_student_progress_user_id', table_name='student_progress')
-    op.drop_index('ix_quiz_scores_user_id', table_name='quiz_scores')
-    op.drop_index('ix_learning_sessions_user_id', table_name='learning_sessions')
-    op.drop_index('ix_achievements_user_id', table_name='achievements')
-    op.drop_index('ix_parent_reports_student_id', table_name='parent_reports')
+    # Drop existing indexes first (IF EXISTS to handle fresh installs)
+    op.execute('DROP INDEX IF EXISTS ix_student_progress_user_id')
+    op.execute('DROP INDEX IF EXISTS ix_quiz_scores_user_id')
+    op.execute('DROP INDEX IF EXISTS ix_learning_sessions_user_id')
+    op.execute('DROP INDEX IF EXISTS ix_achievements_user_id')
+    op.execute('DROP INDEX IF EXISTS ix_parent_reports_student_id')
     
     # Alter columns to UUID type
     op.alter_column('student_progress', 'user_id',

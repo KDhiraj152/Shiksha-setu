@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""
+Schema Export Pipeline - Contract-First API Type Generation
+
+Generates TypeScript types and OpenAPI specs from Pydantic models.
+This ensures frontend and backend contracts stay in perfect sync.
+
+Usage:
+    python -m backend.schemas.generated.export_schemas
+    
+Outputs:
+    - frontend/src/types/generated/api.ts (TypeScript types)
+    - backend/schemas/generated/openapi.json (OpenAPI spec)
+"""
+import json
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Type, get_type_hints, get_origin, get_args, Union
+from enum import Enum
+
+# Add project root to path
+project_root = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from pydantic import BaseModel
+
+# Import all schemas
+from backend.schemas.auth import (
+    Token, TokenData, UserCreate, UserLogin, UserResponse, RefreshTokenRequest
+)
+from backend.schemas.content import (
+    ChunkedUploadRequest, ProcessRequest, SimplifyRequest, TranslateRequest,
+    ValidateRequest, TTSRequest, FeedbackRequest, TaskResponse, ContentResponse
+)
+from backend.schemas.qa import (
+    QAProcessRequest, QAQueryRequest, QAResponse, DocumentChunk, QAStatusResponse
+)
+from backend.schemas.review import (
+    ReviewCreate, ReviewUpdate, ReviewResponse, CommentCreate, 
+    CommentResponse, VersionResponse, ReviewListResponse
+)
+
+
+# TypeScript type mappings
+PYTHON_TO_TS = {
+    "str": "string",
+    "int": "number",
+    "float": "number",
+    "bool": "boolean",
+    "None": "null",
+    "NoneType": "null",
+    "Any": "unknown",
+    "dict": "Record<string, unknown>",
+    "Dict": "Record<string, unknown>",
+    "list": "unknown[]",
+    "List": "unknown[]",
+    "datetime": "string",  # ISO format
+    "date": "string",
+    "UUID": "string",
+    "EmailStr": "string",
+}
+
+
+def python_type_to_ts(python_type: Any, optional: bool = False) -> str:
+    """Convert Python type annotation to TypeScript type."""
+    origin = get_origin(python_type)
+    args = get_args(python_type)
+    
+    # Handle None/NoneType
+    if python_type is type(None):
+        return "null"
+    
+    # Handle Union types (Optional is Union[X, None])
+    if origin is Union:
+        non_none_args = [a for a in args if a is not type(None)]
+        is_optional = len(non_none_args) < len(args)
+        
+        if len(non_none_args) == 1:
+            ts_type = python_type_to_ts(non_none_args[0])
+            return f"{ts_type} | null" if is_optional else ts_type
+        else:
+            ts_types = [python_type_to_ts(a) for a in non_none_args]
+            union = " | ".join(ts_types)
+            return f"{union} | null" if is_optional else union
+    
+    # Handle List types
+    if origin is list:
+        if args:
+            inner = python_type_to_ts(args[0])
+            return f"{inner}[]"
+        return "unknown[]"
+    
+    # Handle Dict types
+    if origin is dict:
+        if len(args) == 2:
+            key_type = python_type_to_ts(args[0])
+            val_type = python_type_to_ts(args[1])
+            return f"Record<{key_type}, {val_type}>"
+        return "Record<string, unknown>"
+    
+    # Handle Pydantic models
+    if isinstance(python_type, type) and issubclass(python_type, BaseModel):
+        return python_type.__name__
+    
+    # Handle enums
+    if isinstance(python_type, type) and issubclass(python_type, Enum):
+        values = [f'"{v.value}"' for v in python_type]
+        return " | ".join(values)
+    
+    # Handle basic types
+    type_name = getattr(python_type, "__name__", str(python_type))
+    return PYTHON_TO_TS.get(type_name, "unknown")
+
+
+def pydantic_to_typescript(model: Type[BaseModel]) -> str:
+    """Convert a Pydantic model to TypeScript interface."""
+    lines = [f"export interface {model.__name__} {{"]
+    
+    for field_name, field_info in model.model_fields.items():
+        annotation = field_info.annotation
+        ts_type = python_type_to_ts(annotation)
+        
+        # Check if field is optional (has default or is Optional type)
+        is_optional = (
+            field_info.default is not None or 
+            field_info.is_required() is False or
+            get_origin(annotation) is Union and type(None) in get_args(annotation)
+        )
+        
+        optional_marker = "?" if is_optional else ""
+        
+        # Add JSDoc comment if description exists
+        if field_info.description:
+            lines.append(f"  /** {field_info.description} */")
+        
+        lines.append(f"  {field_name}{optional_marker}: {ts_type};")
+    
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def generate_typescript_file(models: list[Type[BaseModel]], output_path: Path) -> None:
+    """Generate TypeScript file with all interfaces."""
+    header = '''/**
+ * AUTO-GENERATED TypeScript types from Pydantic schemas.
+ * 
+ * DO NOT EDIT MANUALLY!
+ * 
+ * Generated by: backend/schemas/generated/export_schemas.py
+ * Generated at: {timestamp}
+ * 
+ * To regenerate:
+ *   python -m backend.schemas.generated.export_schemas
+ */
+
+// ============================================================================
+// API Types - Single Source of Truth
+// ============================================================================
+
+'''.format(timestamp=datetime.now().isoformat())
+    
+    interfaces = []
+    for model in models:
+        try:
+            ts_interface = pydantic_to_typescript(model)
+            interfaces.append(ts_interface)
+        except Exception as e:
+            print(f"Warning: Could not convert {model.__name__}: {e}")
+    
+    # Generate enums and constants
+    enums_section = '''
+// ============================================================================
+// Constants (from backend.core.constants)
+// ============================================================================
+
+export const LANGUAGES = [
+  'Hindi',
+  'Tamil',
+  'Telugu',
+  'Bengali',
+  'Marathi',
+  'Gujarati',
+  'Kannada',
+  'Malayalam',
+  'Punjabi',
+  'Odia',
+] as const;
+
+export type Language = typeof LANGUAGES[number];
+
+export const SUBJECTS = [
+  'Science',
+  'Mathematics',
+  'Social Studies',
+  'English',
+  'Hindi',
+  'History',
+  'Geography',
+  'Civics',
+  'Physics',
+  'Chemistry',
+  'Biology',
+] as const;
+
+export type Subject = typeof SUBJECTS[number];
+
+export const GRADE_LEVELS = [5, 6, 7, 8, 9, 10, 11, 12] as const;
+
+export type GradeLevel = typeof GRADE_LEVELS[number];
+
+export type TaskState = 
+  | 'PENDING'
+  | 'STARTED'
+  | 'PROCESSING'
+  | 'SUCCESS'
+  | 'FAILURE'
+  | 'REVOKED';
+
+export type OutputFormat = 'text' | 'audio' | 'both';
+
+export type UserRole = 'user' | 'educator' | 'admin';
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+}
+
+export interface ApiError {
+  error: string;
+  message: string;
+  detail?: string;
+  timestamp: string;
+}
+
+export interface RateLimitInfo {
+  limit: number;
+  remaining: number;
+  reset: number;
+  retryAfter?: number;
+}
+
+// ============================================================================
+// Request/Response Type Helpers
+// ============================================================================
+
+/** Extract the response type from an API endpoint */
+export type ApiResponse<T> = {
+  data: T;
+  status: number;
+  headers: Record<string, string>;
+};
+
+/** Async operation result with progress tracking */
+export interface AsyncTaskResult<T = unknown> {
+  task_id: string;
+  state: TaskState;
+  progress: number;
+  result?: T;
+  error?: string;
+}
+'''
+
+    content = header + "\n\n".join(interfaces) + "\n" + enums_section
+    
+    # Ensure directory exists
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(content)
+    print(f"✓ Generated TypeScript types: {output_path}")
+
+
+def generate_openapi_json(models: list[Type[BaseModel]], output_path: Path) -> None:
+    """Generate OpenAPI JSON schema for all models."""
+    schemas = {}
+    
+    for model in models:
+        try:
+            schemas[model.__name__] = model.model_json_schema()
+        except Exception as e:
+            print(f"Warning: Could not generate schema for {model.__name__}: {e}")
+    
+    openapi_spec = {
+        "openapi": "3.1.0",
+        "info": {
+            "title": "ShikshaSetu API",
+            "version": "3.0.0",
+            "description": "AI-powered multilingual education content platform",
+        },
+        "components": {
+            "schemas": schemas
+        },
+        "generated_at": datetime.now().isoformat(),
+    }
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(openapi_spec, indent=2))
+    print(f"✓ Generated OpenAPI spec: {output_path}")
+
+
+def main():
+    """Main entry point for schema generation."""
+    print("\n" + "=" * 60)
+    print("ShikshaSetu Schema Generation Pipeline")
+    print("=" * 60 + "\n")
+    
+    # All models to export
+    models = [
+        # Auth
+        Token, TokenData, UserCreate, UserLogin, UserResponse, RefreshTokenRequest,
+        # Content
+        ChunkedUploadRequest, ProcessRequest, SimplifyRequest, TranslateRequest,
+        ValidateRequest, TTSRequest, FeedbackRequest, TaskResponse, ContentResponse,
+        # Q&A
+        QAProcessRequest, QAQueryRequest, QAResponse, DocumentChunk, QAStatusResponse,
+        # Review
+        ReviewCreate, ReviewUpdate, ReviewResponse, CommentCreate,
+        CommentResponse, VersionResponse, ReviewListResponse,
+    ]
+    
+    print(f"Processing {len(models)} Pydantic models...\n")
+    
+    # Output paths
+    frontend_types = project_root / "frontend" / "src" / "types" / "generated" / "api.ts"
+    openapi_json = project_root / "backend" / "schemas" / "generated" / "openapi.json"
+    
+    # Generate outputs
+    generate_typescript_file(models, frontend_types)
+    generate_openapi_json(models, openapi_json)
+    
+    print("\n" + "-" * 60)
+    print("Schema generation complete!")
+    print("-" * 60)
+    print("\nNext steps:")
+    print("  1. Import types in frontend: import { User, Token } from '@/types/generated/api'")
+    print("  2. Remove deprecated manual types from frontend/src/types/api.ts")
+    print("  3. Add to CI pipeline: python -m backend.schemas.generated.export_schemas")
+    print()
+
+
+if __name__ == "__main__":
+    main()

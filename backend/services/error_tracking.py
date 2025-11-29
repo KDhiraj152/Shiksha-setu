@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 settings = Settings()
 
 
-def init_sentry():
+def init_sentry() -> None:
     """Initialize Sentry error tracking."""
     
     sentry_dsn = os.getenv("SENTRY_DSN")

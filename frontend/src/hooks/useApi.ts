@@ -137,13 +137,13 @@ export function useLogout() {
  */
 export function useUploadFile(
   options?: UseMutationOptions<
-    { file_path: string; content_id: string; status: string },
+    { status: string; content_id: string; file_path: string; filename: string; size: number; extracted_text?: string },
     Error,
-    { file: File; onProgress?: (progress: number) => void }
+    { file: File; onProgress?: (progress: number) => void; gradeLevel?: number; subject?: string; processForQA?: boolean }
   >
 ) {
   return useMutation({
-    mutationFn: ({ file, onProgress }) => api.uploadFile(file, onProgress),
+    mutationFn: ({ file, onProgress, gradeLevel, subject, processForQA }) => api.uploadFile(file, { onProgress, gradeLevel, subject, processForQA }),
     ...options,
   });
 }
@@ -153,13 +153,13 @@ export function useUploadFile(
  */
 export function useProcessContent(
   options?: UseMutationOptions<
-    { task_id: string; status: string; message?: string },
+    { task_id: string; state: string; message?: string },
     Error,
-    ProcessRequest
+    ProcessRequest & { file_path: string }
   >
 ) {
   return useMutation({
-    mutationFn: (data: ProcessRequest) => api.processContent(data),
+    mutationFn: (data: ProcessRequest & { file_path: string }) => api.processContent(data.file_path, data),
     ...options,
   });
 }
@@ -168,7 +168,7 @@ export function useProcessContent(
  * Simplify text mutation
  */
 export function useSimplifyText(
-  options?: UseMutationOptions<{ task_id: string; status: string }, Error, SimplifyRequest>
+  options?: UseMutationOptions<{ task_id: string; state: string; simplified_text?: string }, Error, SimplifyRequest>
 ) {
   return useMutation({
     mutationFn: (data: SimplifyRequest) => api.simplifyText(data),
@@ -180,7 +180,7 @@ export function useSimplifyText(
  * Translate text mutation
  */
 export function useTranslateText(
-  options?: UseMutationOptions<{ task_id: string; status: string }, Error, TranslateRequest>
+  options?: UseMutationOptions<{ task_id: string; state: string; translated_text?: string; translations?: Record<string, string> }, Error, TranslateRequest>
 ) {
   return useMutation({
     mutationFn: (data: TranslateRequest) => api.translateText(data),
@@ -192,7 +192,7 @@ export function useTranslateText(
  * Validate content mutation
  */
 export function useValidateContent(
-  options?: UseMutationOptions<{ task_id: string; status: string }, Error, ValidateRequest>
+  options?: UseMutationOptions<{ task_id: string; state: string; is_valid?: boolean; accuracy_score?: number; issues?: Array<{ severity: string; message: string }> }, Error, ValidateRequest>
 ) {
   return useMutation({
     mutationFn: (data: ValidateRequest) => api.validateContent(data),
@@ -204,7 +204,7 @@ export function useValidateContent(
  * Generate audio mutation
  */
 export function useGenerateAudio(
-  options?: UseMutationOptions<{ task_id: string; status: string }, Error, TTSRequest>
+  options?: UseMutationOptions<{ task_id: string; state: string; audio_url?: string; audio_path?: string; duration?: number }, Error, TTSRequest>
 ) {
   return useMutation({
     mutationFn: (data: TTSRequest) => api.generateAudio(data),
@@ -366,7 +366,7 @@ export function useProcessDocumentForQA(
  */
 export function useAskQuestion(
   options?: UseMutationOptions<
-    unknown,
+    { answer?: string; confidence_score?: number; task_id: string; message?: string },
     Error,
     { contentId: string; question: string; wait?: boolean; topK?: number }
   >
@@ -375,7 +375,7 @@ export function useAskQuestion(
   
   return useMutation({
     mutationFn: ({ contentId, question, wait, topK }) =>
-      api.askQuestion(contentId, question, wait, topK),
+      api.askQuestion(contentId, question, { wait, topK }),
     onSuccess: (_, { contentId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.qaHistory(contentId) });
     },

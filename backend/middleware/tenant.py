@@ -9,7 +9,7 @@ from sqlalchemy import text
 from typing import Optional
 import uuid
 
-from backend.database import get_db
+from backend.core.database import get_db
 from backend.models import User, Organization
 from backend.utils.logging import get_logger
 

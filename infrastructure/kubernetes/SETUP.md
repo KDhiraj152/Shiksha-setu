@@ -244,3 +244,11 @@ docker system prune -a
 ---
 
 **Your cluster is ready! Start deploying with `./scripts/deploy-k8s.sh dev`** 🚀
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

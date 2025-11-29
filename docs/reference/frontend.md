@@ -39,3 +39,11 @@
  Notes
  - Keep business logic out of components — move to `services/` or hooks in `hooks/`.
  - When updating endpoints, update `services/api` and run frontend tests.
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

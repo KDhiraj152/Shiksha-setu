@@ -13,9 +13,9 @@ from ...utils.auth import (
     TokenData,
     verify_token
 )
-from ...database import get_db_session
+from ...core.database import get_db_session
 from ...models import User
-from ...monitoring import get_logger
+from ...core.monitoring import get_logger
 
 logger = get_logger(__name__)
 

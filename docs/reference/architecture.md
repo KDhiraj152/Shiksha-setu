@@ -40,3 +40,11 @@ Security & networking
 
 - Use an API gateway or ingress with TLS in production.
 - Use network policies to restrict DB/Redis access to FastAPI and workers.
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

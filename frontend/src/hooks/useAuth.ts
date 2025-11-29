@@ -4,6 +4,13 @@ import { api } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import type { LoginRequest, RegisterRequest } from '../types/api';
 
+// Query keys for auth-related queries
+export const authKeys = {
+  all: ['auth'] as const,
+  user: () => [...authKeys.all, 'user'] as const,
+  session: () => [...authKeys.all, 'session'] as const,
+};
+
 export function useAuth() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();

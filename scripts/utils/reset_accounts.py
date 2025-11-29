@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from backend.database import SessionLocal
+from backend.core.database import SessionLocal
 from backend.models import User
 from backend.utils.auth import get_password_hash
 

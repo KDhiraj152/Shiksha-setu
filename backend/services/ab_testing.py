@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, JSON, ForeignKey, Enum as SQLEnum
 from sqlalchemy.ext.declarative import declarative_base
 
-from ..database import Base
+from ..core.database import Base
 from ..models import User, ProcessedContent
 
 logger = logging.getLogger(__name__)

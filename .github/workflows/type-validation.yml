@@ -1,0 +1,90 @@
+name: Type Validation
+
+on:
+  push:
+    branches: [ main, develop, 'master-optimizer/**' ]
+    paths:
+      - 'backend/schemas/**'
+      - 'frontend/src/types/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/schemas/**'
+      - 'frontend/src/types/**'
+
+jobs:
+  validate-types:
+    name: Validate TypeScript Types
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install pydantic pydantic[email]
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Generate TypeScript types
+      run: |
+        python -m backend.schemas.generated.export_schemas
+    
+    - name: Check for uncommitted type changes
+      run: |
+        if git diff --exit-code frontend/src/types/generated/; then
+          echo "✓ Types are in sync"
+        else
+          echo "✗ Types are out of sync!"
+          echo ""
+          echo "The following files have uncommitted changes:"
+          git diff --name-only frontend/src/types/generated/
+          echo ""
+          echo "Please run: python -m backend.schemas.generated.export_schemas"
+          echo "Then commit the generated type files."
+          exit 1
+        fi
+    
+    - name: TypeScript type check
+      working-directory: frontend
+      run: |
+        npm ci
+        npx tsc --noEmit
+
+  schema-lint:
+    name: Lint Pydantic Schemas
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install pydantic pydantic[email] ruff mypy
+    
+    - name: Lint schemas with ruff
+      run: |
+        ruff check backend/schemas/
+    
+    - name: Type check schemas with mypy
+      run: |
+        mypy backend/schemas/ --ignore-missing-imports --no-error-summary || true

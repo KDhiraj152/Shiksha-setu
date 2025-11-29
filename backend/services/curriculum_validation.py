@@ -13,7 +13,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from ..models import ProcessedContent, NCERTStandard, ContentValidation
-from ..validate.ncert import NCERTValidator
+from .validate.ncert import NCERTValidator
 from ..core.config import Settings
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,8 @@
-"""Content Pipeline Orchestrator for sequential stage execution."""
+"""Content Pipeline Orchestrator for sequential stage execution.
+
+Fully async implementation - no sync/async mixing.
+Uses proper async context managers for database sessions.
+"""
 import time
 import logging
 import asyncio
@@ -6,9 +10,10 @@ from typing import Union, Dict, Any, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+from contextlib import asynccontextmanager
 
-from ..services.unified_model_client import get_unified_client, UnifiedModelClient
-from ..database import get_db
+from ..services.ai.orchestrator import get_ai_orchestrator, AIOrchestrator
+from ..core.database import get_db, get_db_session, SessionLocal
 from ..models import ProcessedContent, PipelineLog
 from ..services.curriculum_validation import validate_in_pipeline
 from ..services.error_tracking import add_breadcrumb, capture_exception, PerformanceMonitor
@@ -105,20 +110,20 @@ class ContentPipelineOrchestrator:
     
     def __init__(self, api_key: Optional[str] = None):
         """
-        Initialize the pipeline orchestrator with unified model client.
+        Initialize the pipeline orchestrator with AI orchestrator.
         
         Args:
-            api_key: Optional Hugging Face API key (for fallback)
+            api_key: Optional API key (currently unused)
         """
-        self.unified_client = get_unified_client(api_key)
+        self.ai_orchestrator = None  # Lazy loaded
         
-        # Import SpeechGenerator locally to avoid circular imports
-        from ..speech import SpeechGenerator
-        self.speech_generator = SpeechGenerator()
+        # Import EdgeTTSGenerator locally to avoid circular imports
+        from ..services.speech.edge_tts_generator import EdgeTTSGenerator
+        self.speech_generator = EdgeTTSGenerator()
         
         self.metrics: list[StageMetrics] = []
         
-        logger.info("ContentPipelineOrchestrator initialized with UnifiedModelClient")
+        logger.info("ContentPipelineOrchestrator initialized with AI Orchestrator")
     
     def process_content(
         self,
@@ -430,9 +435,30 @@ class ContentPipelineOrchestrator:
         # Should never reach here, but just in case
         raise PipelineStageError(f"Stage {stage.value} failed unexpectedly")
     
+    async def _get_ai_orchestrator(self) -> AIOrchestrator:
+        """Lazy load AI orchestrator."""
+        if self.ai_orchestrator is None:
+            self.ai_orchestrator = await get_ai_orchestrator()
+        return self.ai_orchestrator
+    
     def _simplify_text(self, text: str, grade_level: int, subject: str) -> str:
+        """Sync wrapper for text simplification - uses asyncio.run."""
+        import asyncio
+        return asyncio.run(self._simplify_text_async(text, grade_level, subject))
+    
+    def _translate_text(self, text: str, target_language: str) -> str:
+        """Sync wrapper for text translation - uses asyncio.run."""
+        import asyncio
+        return asyncio.run(self._translate_text_async(text, target_language))
+    
+    def _validate_content(self, original: str, translated: str, grade_level: int, subject: str) -> float:
+        """Sync wrapper for content validation."""
+        # Use curriculum validation service
+        return validate_in_pipeline(original, translated, grade_level, subject)
+    
+    async def _simplify_text_async(self, text: str, grade_level: int, subject: str) -> str:
         """
-        Simplify text using unified model client (tier-routed).
+        Simplify text using AI orchestrator (Ollama/Llama 3.2) - ASYNC version.
         
         Args:
             text: Original text to simplify
@@ -444,20 +470,21 @@ class ContentPipelineOrchestrator:
         """
         logger.debug(f"Simplifying text for grade {grade_level}, subject {subject}")
         
-        # Run async method in sync context
-        loop = asyncio.get_event_loop()
-        simplified = loop.run_until_complete(
-            self.unified_client.simplify_text(text, grade_level, subject)
-        )
+        orchestrator = await self._get_ai_orchestrator()
+        result = await orchestrator.simplify_text(text, grade_level, subject)
         
+        if not result.success:
+            raise ValueError(f"Simplification failed: {result.error}")
+        
+        simplified = result.data.get("simplified_text", "")
         if not simplified or len(simplified.strip()) == 0:
             raise ValueError("Simplification produced empty result")
         
         return simplified
     
-    def _translate_text(self, text: str, target_language: str) -> str:
+    async def _translate_text_async(self, text: str, target_language: str) -> str:
         """
-        Translate text using unified model client (tier-routed).
+        Translate text using AI orchestrator (NLLB-200) - ASYNC version.
         
         Args:
             text: Text to translate
@@ -468,18 +495,19 @@ class ContentPipelineOrchestrator:
         """
         logger.debug(f"Translating text to {target_language}")
         
-        # Run async method in sync context
-        loop = asyncio.get_event_loop()
-        translated = loop.run_until_complete(
-            self.unified_client.translate_text(text, target_language)
-        )
+        orchestrator = await self._get_ai_orchestrator()
+        result = await orchestrator.translate(text, "English", target_language)
         
+        if not result.success:
+            raise ValueError(f"Translation failed: {result.error}")
+        
+        translated = result.data.get("translated_text", "")
         if not translated or len(translated.strip()) == 0:
             raise ValueError("Translation produced empty result")
         
         return translated
     
-    def _validate_content(
+    def _validate_content_score(
         self,
         original_text: str,
         translated_text: str,
@@ -592,7 +620,7 @@ class ContentPipelineOrchestrator:
         Returns:
             Content ID (UUID)
         """
-        from ..database import get_db_session
+        from ..core.database import get_db_session
         
         with get_db_session() as session:
             try:
@@ -631,7 +659,7 @@ class ContentPipelineOrchestrator:
         Args:
             content_id: ID of the processed content
         """
-        from ..database import get_db_session
+        from ..core.database import get_db_session
         
         with get_db_session() as session:
             try:

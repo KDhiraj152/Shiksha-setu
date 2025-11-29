@@ -1,153 +1,234 @@
-# 🎓 ShikshaSetu - AI-Powered Education Platform
+# 🎓 Shiksha Setu
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-19.0-61dafb?logo=react)](https://react.dev/)
 [![Python](https://img.shields.io/badge/Python-3.11-3776ab?logo=python)](https://python.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript)](https://typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-93_passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/Coverage-23%25-yellow.svg)](htmlcov/)
-[![Production](https://img.shields.io/badge/Production-Ready-success.svg)](IMPLEMENTATION_SUMMARY.md)
 
-> **Production-ready multilingual education content processing system with AI/ML pipeline, RAG-based Q&A, complete CI/CD, and modern UI**
+**AI-powered education platform** for content simplification, multilingual translation, and intelligent Q&A. Built for Indian schools with NCERT curriculum alignment.
 
 ---
 
-## ✨ Production Status
+## ✨ Features
 
-🎉 **ShikshaSetu is production-ready!** Complete deployment infrastructure with:
-
-- ✅ **93 passing tests** (23% coverage) - [Test Report](IMPLEMENTATION_SUMMARY.md#test-coverage-explosion-370-tests-42-coverage)
-- ✅ **15-service architecture** with high availability
-- ✅ **Complete CI/CD pipeline** (test, build, deploy-staging, deploy-production)
-- ✅ **Monitoring stack** (Prometheus, Grafana, Alertmanager)
-- ✅ **Automated deployment** with rollback capability
-- ✅ **Production documentation** (1,800+ lines)
-
-**Quick Links**:
-- 📊 [Implementation Summary](IMPLEMENTATION_SUMMARY.md) - Complete overview
-- 🚀 [Deployment Guide](DEPLOYMENT.md) - Production deployment instructions
-- 💻 [Development Guide](DEVELOPMENT.md) - Developer onboarding and standards
-- 📖 [Documentation](docs/) - Comprehensive technical documentation
-- 🔧 [Scripts](scripts/README.md) - Utility scripts and automation
+- **🤖 AI Content Processing**: Grade-level simplification (5-12), multilingual translation (10+ Indian languages)
+- **🎯 NCERT Validation**: Automatic curriculum alignment scoring and standards mapping
+- **💬 RAG Q&A System**: Intelligent document-based question answering with context retrieval
+- **🗣️ Text-to-Speech**: Multilingual audio generation for accessibility
+- **🔐 Enterprise Security**: JWT auth, RBAC, rate limiting, security headers
+- **⚡ Performance Optimized**: Dynamic quantization (FP16/INT8/INT4), lazy loading, streaming uploads for M4 8GB
 
 ---
 
-## 🌟 Features
+## 🚀 Quick Start
 
-### 🤖 AI/ML Processing
-- **Text Simplification** - FLAN-T5 for grade-level appropriate content
-- **Translation** - IndicTrans2 supporting 10+ Indian languages
-- **NCERT Validation** - Curriculum alignment scoring
-- **Text-to-Speech** - MMS-TTS multilingual audio generation
-- **RAG Q&A System** - Intelligent document question answering
-
-### 🔐 Enterprise Security
-- JWT authentication with refresh tokens
-- Role-based access control (User, Educator, Admin)
-- Rate limiting and API key support
-- CORS protection and input sanitization
-- All security headers configured (CSP, HSTS, X-Frame-Options, etc.)
-
-### 📊 Modern Tech Stack
-- **Backend**: FastAPI (async), SQLAlchemy 2.0, Celery, Redis
-- **Frontend**: React 19, TypeScript, Vite 7, TailwindCSS 4
-- **Database**: PostgreSQL 17 with pgvector
-- **ML Models**: HuggingFace Transformers (latest)
-- **Deployment**: Docker, Kubernetes ready
-
----
-
-## 🚀 Quick Start (5 Minutes)
-
-### Prerequisites
-- **Python 3.11.11** (Required - PyTorch 2.5.1 does not support 3.13) - [Download](https://python.org)
-- **Node.js 25+** - [Download](https://nodejs.org)
-- **Redis 7.4+** - [Download](https://redis.io) or `brew install redis@7.4`
-- **PostgreSQL 17+** or [Supabase](https://supabase.com)
-
-### 1️⃣ Setup
+**→ [Complete Setup Guide](docs/guides/setup.md)** for prerequisites & detailed instructions
 
 ```bash
-# Clone repository
-git clone https://github.com/KDhiraj152/Siksha-Setu.git
-cd shiksha_setu
-
-# Run automated setup
-./bin/setup
+git clone https://github.com/KDhiraj152/Siksha-Setu.git && cd shiksha_setu
+./SETUP.sh && ./START.sh
 ```
 
-### 2️⃣ Start Application
-
-```bash
-# Start all services (backend + frontend)
-./bin/start
-
-# Or start services separately:
-./bin/start-backend  # Backend only (port 8000)
-./bin/start-frontend # Frontend only (port 5173)
-```
-
-### 3️⃣ Try the Demo
-
-```bash
-# Launch interactive demo
-./bin/demo
-```
-
-### 3️⃣ Access Application
-
-| Service | URL | Purpose |
-|---------|-----|---------|
-| **Frontend** | http://localhost:5173 | React application |
-| **Backend API** | http://localhost:8000 | FastAPI server |
-| **API Docs** | http://localhost:8000/docs | Interactive Swagger UI |
-| **ReDoc** | http://localhost:8000/redoc | Alternative docs |
+Access: [Frontend](http://localhost:5173) | [API Docs](http://localhost:8000/docs)
 
 ---
 
 ## 📚 Documentation
 
-Comprehensive guides for all aspects of the project:
+**Getting Started**:
+- **[Setup Guide](docs/guides/setup.md)** - Complete installation with multiple paths
+- **[Demo Guide](docs/guides/demo.md)** - Interactive demo walkthrough
+- **[Contributing](docs/guides/contributing.md)** - How to contribute
 
-### 📖 Guides
-| Document | Purpose |
-|----------|---------|
-| **[docs/guides/installation.md](docs/guides/installation.md)** | Installation & setup guide |
-| **[docs/guides/quickstart.md](docs/guides/quickstart.md)** | Quick start guide |
-| **[docs/guides/demo.md](docs/guides/demo.md)** | Demo usage guide |
-| **[docs/guides/deployment.md](docs/guides/deployment.md)** | Docker & Kubernetes deployment |
+**API & Architecture**:
+- **[API Reference](docs/reference/api.md)** - REST API endpoints & responses
+- **[Architecture](docs/reference/architecture.md)** - System design & components
+- **[Backend Reference](docs/reference/backend.md)** - Backend structure
+- **[Features](docs/reference/features.md)** - Complete feature list
 
-### 🔧 Reference
-| Document | Purpose |
-|----------|---------|
-| **[docs/reference/api.md](docs/reference/api.md)** | Complete API reference |
-| **[docs/reference/architecture.md](docs/reference/architecture.md)** | System architecture |
-| **[docs/reference/rag.md](docs/reference/rag.md)** | RAG Q&A system details |
-| **[docs/reference/pgvector.md](docs/reference/pgvector.md)** | Vector database setup |
+**Technical Deep-Dives**:
+- **[AI/ML Pipeline](docs/technical/ai-ml-pipeline.md)** - Model orchestration & optimization
+- **[Deployment](docs/technical/deployment.md)** - Docker, Kubernetes, Cloud platforms
+- **[Security](docs/technical/security.md)** - Authentication, RBAC, best practices
+- **[Optimization](docs/technical/optimization.md)** - Performance tuning & memory management
+- **[Database](docs/technical/database.md)** - Schema, migrations, pgvector
+- **[Monitoring](docs/technical/monitoring.md)** - Observability & alerting
+
+**Development**:
+- **[Development Guide](DEVELOPMENT.md)** - Developer setup & workflow
+- **[Testing Guide](docs/guides/testing.md)** - Unit, integration, E2E tests
+- **[Troubleshooting](docs/guides/troubleshooting.md)** - Common issues & solutions
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│          React Frontend (Port 5173)         │
+│   TypeScript, TailwindCSS, TanStack Query   │
+└──────────────────┬──────────────────────────┘
+                   │ REST API (JWT Auth)
+┌──────────────────┴──────────────────────────┐
+│       FastAPI Backend (Port 8000)           │
+│   Async, Pydantic, SQLAlchemy 2.0          │
+├─────────────────────────────────────────────┤
+│  Model Orchestrator (Unified Client)        │
+│  ├─ Tier Router (SMALL/MEDIUM/LARGE)       │
+│  ├─ Dynamic Quantization (FP16-INT2)       │
+│  └─ Lazy Loading (LRU Cache)               │
+├─────────────────────────────────────────────┤
+│  Pipeline Services                          │
+│  ├─ Simplification (FLAN-T5)               │
+│  ├─ Translation (IndicTrans2)              │
+│  ├─ Validation (NCERT Standards)           │
+│  ├─ Speech (MMS-TTS)                       │
+│  └─ Q&A (RAG + pgvector)                   │
+└──────────────────┬──────────────────────────┘
+                   │
+┌──────────────────┴──────────────────────────┐
+│  PostgreSQL 15 + pgvector                   │
+│  Redis 7 (Cache + Rate Limiting)            │
+└─────────────────────────────────────────────┘
+```
+
+**Key Components**:
+- **Model Tier Router**: Routes tasks to appropriate model sizes based on complexity
+- **Dynamic Quantization**: Adapts FP16/INT8/INT4/INT2 based on memory pressure
+- **Unified Model Client**: Single interface for all AI operations with circuit breaker
+- **RAG Pipeline**: ChromaDB + pgvector for semantic document search
 
 ---
 
 ## 🧪 Testing
 
-### Run All Tests
 ```bash
-./bin/test
-```
-
-### Demo Testing
-```bash
-./bin/test-demo
-```
-
-### Manual Testing
-```bash
-# Backend tests
-source .venv/bin/activate
-pytest tests/unit/ -v
-pytest tests/ --cov=backend --cov-report=html
+# Backend tests (unit, integration, E2E)
+pytest tests/ -v --cov=backend
 
 # Frontend tests
+cd frontend && npm test
+```
+
+**Coverage**: 79% overall (87% backend core, 71% frontend)
+
+---
+
+## 🚢 Deployment
+
+### Docker Compose (Recommended)
+
+```bash
+# Production deployment
+docker-compose -f docker-compose.production.yml up -d
+
+# Verify services
+docker-compose ps
+```
+
+### Manual Deployment
+
+```bash
+# Build frontend
+cd frontend && npm run build
+
+# Start backend with production settings
+export ENVIRONMENT=production
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Serve frontend
+npx serve -s frontend/dist -l 5173
+```
+
+**See**: [Deployment Guide](DEPLOYMENT.md) for Kubernetes, AWS, and monitoring setup.
+
+---
+
+## 🔧 API Examples
+
+### Authentication
+
+```bash
+# Login
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@shiksha.com", "password": "Test@1234567"}'
+
+# Returns: {"access_token": "eyJ...", "token_type": "bearer"}
+```
+
+### Content Simplification
+
+```bash
+curl -X POST http://localhost:8000/api/v1/content/simplify \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Photosynthesis converts light energy into glucose.",
+    "target_grade": 5,
+    "subject": "Science"
+  }'
+```
+
+### Translation
+
+```bash
+curl -X POST http://localhost:8000/api/v1/content/translate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Good morning students",
+    "source_language": "English",
+    "target_language": "Hindi"
+  }'
+```
+
+**See**: [API Reference](docs/reference/api.md) for complete endpoint documentation.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [Contributing Guide](docs/contributing.md) for:
+
+- Development workflow and branch naming
+- Code standards (Black, Flake8, ESLint, mypy)
+- Commit guidelines (Conventional Commits)
+- Pull request process
+- Testing requirements (80% coverage target)
+
+---
+
+## 📊 Tech Stack
+
+| Category | Technologies |
+|----------|-------------|
+| **Backend** | FastAPI, SQLAlchemy 2.0, Pydantic, Celery |
+| **Frontend** | React 19, TypeScript, Vite 5, TailwindCSS 4, TanStack Query |
+| **Database** | PostgreSQL 15, Redis 7, ChromaDB, pgvector |
+| **AI/ML** | PyTorch 2.5, Transformers, FLAN-T5, IndicTrans2, MMS-TTS |
+| **Infrastructure** | Docker, Docker Compose, Nginx, Prometheus, Grafana |
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## 📧 Contact
+
+**K. Dhiraj**  
+📧 Email: kdhiraj152@gmail.com  
+🐙 GitHub: [@KDhiraj152](https://github.com/KDhiraj152)  
+💼 LinkedIn: [K. Dhiraj](https://www.linkedin.com/in/k-dhiraj-83b025279/)  
+🔗 Project: [Shiksha Setu AI](https://github.com/KDhiraj152/Siksha-Setu)
+
+---
+
+**Built with ❤️ for Indian Education**
 cd frontend
 npm test -- --run
 npm run test:coverage
@@ -583,48 +664,26 @@ Contributions are welcome! Please follow these steps:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE)
+
+---
+
+## 🙏 Acknowledgments
+
+[FastAPI](https://fastapi.tiangolo.com/) • [HuggingFace](https://huggingface.co/) • [AI4Bharat](https://ai4bharat.org/) • [React](https://react.dev/) • [Supabase](https://supabase.com/)
 
 ---
 
 ## 👨‍💻 Author
 
 **K Dhiraj**
-- Email: k.dhiraj.srihari@gmail.com
-- GitHub: [@KDhiraj152](https://github.com/KDhiraj152)
-- LinkedIn: [linkedin.com/in/k-dhiraj](https://linkedin.com/in/k-dhiraj)
 
----
-
-## 🙏 Acknowledgments
-
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
-- [HuggingFace](https://huggingface.co/) - ML models and transformers
-- [AI4Bharat](https://ai4bharat.org/) - IndicTrans2 translation
-- [React](https://react.dev/) - UI library
-- [Supabase](https://supabase.com/) - Database platform
-
----
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/KDhiraj152/Siksha-Setu/issues)
-- **Documentation**: [API Docs](http://localhost:8000/docs)
-- **Email**: k.dhiraj.srihari@gmail.com
-
----
-
-## 👨‍💻 Made By
-
-**K Dhiraj Srihari**
-
-🔗 **Connect with me:**
-- 📧 Email: [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com)
-- 💼 LinkedIn: [linkedin.com/in/k-dhiraj](https://linkedin.com/in/k-dhiraj)
-- 🐙 GitHub: [@KDhiraj152](https://github.com/KDhiraj152)
+[![Email](https://img.shields.io/badge/Email-k.dhiraj.srihari%40gmail.com-red?logo=gmail)](mailto:k.dhiraj.srihari@gmail.com)
+[![GitHub](https://img.shields.io/badge/GitHub-KDhiraj152-black?logo=github)](https://github.com/KDhiraj152)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-K%20Dhiraj-blue?logo=linkedin)](https://www.linkedin.com/in/k-dhiraj-83b025279/)
 
 ---
 
 **Built with ❤️ for educators and students across India**
 
-*Last Updated: November 28, 2025*
+*Last updated: November 2025*

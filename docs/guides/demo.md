@@ -1,54 +1,16 @@
-# ShikshaSetu - Quick Demo Guide
+# 🎮 Interactive Demo Guide
 
-## 🚀 Quick Start (5 minutes)
+## 🚀 Setup
 
-### Prerequisites
-- Python 3.10+
-- PostgreSQL with pgvector extension (or Docker)
-- Redis (or Docker)
-
-### Option 1: Automated Setup (Recommended)
+For detailed setup instructions, see **[Setup Guide](setup.md)**. Quick start:
 
 ```bash
-# Make scripts executable
-chmod +x demo-start.sh
-
-# Start everything
-./demo-start.sh
+./SETUP.sh && ./START.sh
 ```
 
-The script will:
-1. Create `.env` configuration
-2. Start PostgreSQL and Redis (via Docker if not running)
-3. Run database migrations
-4. Create demo user (username: `demo`, password: `demo123`)
-5. Start Celery worker
-6. Start FastAPI server
-
-Access the API at: **http://localhost:8000/docs**
-
-### Option 2: Manual Setup
-
-```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-
-# 2. Start services
-docker-compose up -d postgres redis
-
-# 3. Run migrations
-alembic upgrade head
-
-# 4. Start Celery worker
-celery -A backend.tasks.celery_app worker --loglevel=info &
-
-# 5. Start API server
-uvicorn backend.api.main:app --reload
-```
+Once running, proceed with the demo workflow below.
 
 ---
-
-## 📝 Demo Workflow
 
 ### 1. Authentication
 
@@ -392,3 +354,11 @@ You now have a fully functional AI-powered education platform with:
 - ✅ Background task processing
 
 **Happy learning! 🚀**
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

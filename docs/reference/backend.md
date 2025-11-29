@@ -42,3 +42,11 @@ Safe changes to make
 - Validate `JWT_SECRET_KEY` length on startup and fail fast if insecure.
 - Add stricter upload validation (MIME sniffing + extension checks + size limit config `MAX_UPLOAD_SIZE`).
 - Ensure CORS is configurable via env (allowlist) rather than hardcoded.
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

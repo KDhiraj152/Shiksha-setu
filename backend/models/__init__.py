@@ -29,6 +29,11 @@ from .rag import (
     Embedding,
     ChatHistory
 )
+from .review import (
+    TranslationReview,
+    ReviewComment,
+    ReviewVersion
+)
 
 __all__ = [
     'ProcessedContent',
@@ -49,5 +54,8 @@ __all__ = [
     'Achievement',
     'DocumentChunk',
     'Embedding',
-    'ChatHistory'
+    'ChatHistory',
+    'TranslationReview',
+    'ReviewComment',
+    'ReviewVersion'
 ]

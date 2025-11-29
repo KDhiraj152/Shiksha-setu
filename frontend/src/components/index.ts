@@ -13,6 +13,6 @@ export * from './molecules';
 // Organisms (Complex Compositions)
 export * from './organisms';
 
-// Route Guards
-export { default as ProtectedRoute } from './ProtectedRoute';
-export { default as PublicRoute } from './PublicRoute';
+// Route Guards - moved to app/routes
+// export { default as ProtectedRoute } from './ProtectedRoute';
+// export { default as PublicRoute } from './PublicRoute';

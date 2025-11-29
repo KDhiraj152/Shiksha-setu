@@ -21,10 +21,7 @@ export default defineConfig({
           // Vendor chunks
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'query-vendor': ['@tanstack/react-query'],
-          // Feature chunks
-          'auth': ['./src/pages/LoginPage', './src/pages/RegisterPage'],
-          'content': ['./src/pages/ContentPage', './src/pages/LibraryPage'],
-          'upload': ['./src/pages/UploadPage', './src/pages/SimplifyPage', './src/pages/TranslatePage'],
+          'ui-vendor': ['framer-motion', 'zustand'],
         },
       },
     },

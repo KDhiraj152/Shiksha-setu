@@ -3,7 +3,7 @@ RAG (Retrieval-Augmented Generation) Service for Q&A functionality.
 
 This service handles:
 - Text chunking from documents
-- Embedding generation using sentence-transformers
+- Embedding generation using BGE-M3 (optimized) or sentence-transformers (fallback)
 - Vector similarity search using pgvector
 - Context retrieval for question answering
 """
@@ -15,9 +15,7 @@ import numpy as np
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from sentence_transformers import SentenceTransformer
-
-from ..database import SessionLocal, get_db
+from ..core.database import SessionLocal, get_db
 from ..models import DocumentChunk, Embedding, ProcessedContent
 
 logger = logging.getLogger(__name__)
@@ -26,16 +24,19 @@ logger = logging.getLogger(__name__)
 class RAGService:
     """Service for Retrieval-Augmented Generation operations."""
     
-    def __init__(self, embedding_model: str = "intfloat/multilingual-e5-large"):
+    def __init__(self, embedding_model: str = "BAAI/bge-m3", use_optimized: bool = True):
         """
         Initialize RAG service with embedding model.
         
         Args:
-            embedding_model: HuggingFace model name for embeddings (default: E5-large)
+            embedding_model: Model name for embeddings
+            use_optimized: Whether to use optimized BGE-M3 via AIOrchestrator
         """
         self.embedding_model_name = embedding_model
         self.embedding_model = None
-        self.embedding_dimension = 1024  # E5-large dimension
+        self._use_optimized = use_optimized
+        self._ai_orchestrator = None
+        self.embedding_dimension = 1024  # BGE-M3 dimension
         self._verify_pgvector()
         
     def _verify_pgvector(self):
@@ -57,25 +58,24 @@ class RAGService:
         finally:
             session.close()
     
+    async def _get_orchestrator(self):
+        """Get AI orchestrator for optimized embeddings."""
+        if self._ai_orchestrator is None:
+            from .ai import get_ai_orchestrator
+            self._ai_orchestrator = await get_ai_orchestrator()
+        return self._ai_orchestrator
+    
     def _load_embedding_model(self):
-        """Lazy load the embedding model with optimization."""
-        if self.embedding_model is None:
+        """Lazy load the embedding model with optimization (for sync fallback)."""
+        if self.embedding_model is None and not self._use_optimized:
             logger.info(f"Loading embedding model: {self.embedding_model_name}")
             
-            # Use optimized loader if available
             try:
-                from ..utils.model_loader import ModelLoader
-                from ..core.config import settings
-                
-                loader = ModelLoader()
-                self.embedding_model = loader.load_embedding_model_optimized(
-                    model_id=self.embedding_model_name,
-                    use_onnx=settings.EMBEDDING_USE_ONNX
-                )
-            except (ImportError, AttributeError, Exception) as e:
-                # Fallback to standard SentenceTransformer
-                logger.warning(f"Failed to load optimized model, using standard: {e}")
+                from sentence_transformers import SentenceTransformer
                 self.embedding_model = SentenceTransformer(self.embedding_model_name)
+            except Exception as e:
+                logger.error(f"Failed to load embedding model: {e}")
+                raise
             
             # Verify dimension
             test_embedding = self.embedding_model.encode("test", convert_to_numpy=True)
@@ -89,7 +89,6 @@ class RAGService:
                 self.embedding_dimension = detected_dimension
             
             logger.info(f"Embedding model loaded: {self.embedding_dimension}D vectors")
-            self._verify_embedding_dimension()
     
     def _find_sentence_boundary(self, text: str, start: int, end: int) -> int:
         """Find the best sentence boundary within the range."""
@@ -139,36 +138,32 @@ class RAGService:
         logger.info(f"Split text into {len(chunks)} chunks")
         return chunks
     
-    def _verify_embedding_dimension(self):
-        """Verify embedding dimension matches database vector column."""
-        session = SessionLocal()
-        try:
-            # Query vector column dimension from database
-            result = session.execute(text("""
-                SELECT atttypmod 
-                FROM pg_attribute 
-                WHERE attrelid = 'embeddings'::regclass 
-                  AND attname = 'embedding'
-            """))
-            row = result.fetchone()
+    async def generate_embedding_async(self, text: str, is_query: bool = False) -> List[float]:
+        """
+        Generate embedding vector for text using BGE-M3 (async, optimized).
+        
+        Args:
+            text: Text to embed
+            is_query: Whether this is a query (True) or passage/document (False)
             
-            if row and row[0] > 0:
-                db_dimension = row[0]
-                if db_dimension != self.embedding_dimension:
-                    raise ValueError(
-                        f"Embedding dimension mismatch: model produces {self.embedding_dimension}D "
-                        f"but database expects {db_dimension}D vectors. "
-                        f"Run migration: ALTER TABLE embeddings ALTER COLUMN embedding TYPE vector({self.embedding_dimension});"
-                    )
-                logger.info(f"Embedding dimension verified: {self.embedding_dimension}D")
-        except Exception as e:
-            logger.warning(f"Could not verify embedding dimension: {e}")
-        finally:
-            session.close()
+        Returns:
+            Embedding vector as list of floats
+        """
+        if self._use_optimized:
+            orchestrator = await self._get_orchestrator()
+            result = await orchestrator.generate_embeddings(texts=[text])
+            
+            if result.success and result.data["embeddings"]:
+                return result.data["embeddings"][0]
+            else:
+                logger.warning(f"Optimized embedding failed, using fallback: {result.error}")
+        
+        # Fallback to sync embedding
+        return self.generate_embedding(text, is_query)
     
     def generate_embedding(self, text: str, is_query: bool = False) -> List[float]:
         """
-        Generate embedding vector for text with E5 task prefix.
+        Generate embedding vector for text (sync fallback).
         
         Args:
             text: Text to embed
@@ -179,13 +174,34 @@ class RAGService:
         """
         self._load_embedding_model()
         
-        # E5 models require task prefix for best performance
-        prefix = "query: " if is_query else "passage: "
-        prefixed_text = f"{prefix}{text}"
+        if self.embedding_model is None:
+            raise RuntimeError("Embedding model not loaded. Use async method with AI orchestrator.")
         
         # Generate embedding
-        embedding = self.embedding_model.encode(prefixed_text, convert_to_numpy=True)
+        embedding = self.embedding_model.encode(text, convert_to_numpy=True)
         return embedding.tolist()
+    
+    async def generate_embeddings_batch_async(self, texts: List[str]) -> List[List[float]]:
+        """
+        Generate embeddings for multiple texts using BGE-M3 (batch, async).
+        
+        Args:
+            texts: List of texts to embed
+            
+        Returns:
+            List of embedding vectors
+        """
+        if self._use_optimized:
+            orchestrator = await self._get_orchestrator()
+            result = await orchestrator.generate_embeddings(texts=texts)
+            
+            if result.success:
+                return result.data["embeddings"]
+            else:
+                logger.warning(f"Batch embedding failed: {result.error}")
+        
+        # Fallback to individual embeddings
+        return [self.generate_embedding(text) for text in texts]
     
     def store_document_chunks(
         self,
@@ -196,7 +212,8 @@ class RAGService:
         metadata: Optional[Dict] = None
     ) -> int:
         """
-        Chunk document and store chunks with embeddings in database.
+        Chunk document and store chunks with embeddings in database (sync).
+        For async version with optimized embeddings, use store_document_chunks_async.
         
         Args:
             content_id: ID of the processed content
@@ -208,7 +225,41 @@ class RAGService:
         Returns:
             Number of chunks created
         """
-        logger.info(f"Storing chunks for content {content_id}")
+        import asyncio
+        
+        # Try to use async version if possible
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Already in async context, create task
+                return asyncio.run_coroutine_threadsafe(
+                    self.store_document_chunks_async(content_id, text, chunk_size, overlap, metadata),
+                    loop
+                ).result()
+        except RuntimeError:
+            pass
+        
+        # Run async version in new event loop
+        try:
+            return asyncio.run(
+                self.store_document_chunks_async(content_id, text, chunk_size, overlap, metadata)
+            )
+        except Exception as e:
+            logger.warning(f"Async embedding failed, using sync fallback: {e}")
+        
+        # Sync fallback
+        return self._store_document_chunks_sync(content_id, text, chunk_size, overlap, metadata)
+    
+    def _store_document_chunks_sync(
+        self,
+        content_id: UUID,
+        text: str,
+        chunk_size: int = 512,
+        overlap: int = 50,
+        metadata: Optional[Dict] = None
+    ) -> int:
+        """Sync version of store_document_chunks."""
+        logger.info(f"Storing chunks for content {content_id} (sync)")
         
         # Chunk the text
         chunks = self.chunk_text(text, chunk_size, overlap)
@@ -253,6 +304,81 @@ class RAGService:
             
             session.commit()
             logger.info(f"Stored {len(chunks)} chunks with embeddings for content {content_id}")
+            return len(chunks)
+            
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error storing chunks: {e}")
+            raise
+        finally:
+            session.close()
+    
+    async def store_document_chunks_async(
+        self,
+        content_id: UUID,
+        text: str,
+        chunk_size: int = 512,
+        overlap: int = 50,
+        metadata: Optional[Dict] = None
+    ) -> int:
+        """
+        Chunk document and store chunks with BGE-M3 embeddings (async, optimized).
+        
+        Args:
+            content_id: ID of the processed content
+            text: Full document text
+            chunk_size: Maximum characters per chunk
+            overlap: Characters to overlap between chunks
+            metadata: Optional metadata for chunks (page numbers, etc.)
+            
+        Returns:
+            Number of chunks created
+        """
+        logger.info(f"Storing chunks for content {content_id} (async with BGE-M3)")
+        
+        # Chunk the text
+        chunks = self.chunk_text(text, chunk_size, overlap)
+        
+        if not chunks:
+            logger.warning(f"No chunks generated for content {content_id}")
+            return 0
+        
+        # Generate embeddings in batch using BGE-M3
+        logger.info(f"Generating BGE-M3 embeddings for {len(chunks)} chunks...")
+        embeddings = await self.generate_embeddings_batch_async(chunks)
+        
+        # Store in database
+        session = SessionLocal()
+        try:
+            for idx, (chunk_text, embedding_vector) in enumerate(zip(chunks, embeddings)):
+                # Create chunk record
+                chunk = DocumentChunk(
+                    content_id=content_id,
+                    chunk_index=idx,
+                    chunk_text=chunk_text,
+                    chunk_size=len(chunk_text),
+                    chunk_metadata=metadata or {}
+                )
+                session.add(chunk)
+                session.flush()
+                
+                # Create embedding record
+                embedding_record = Embedding(
+                    chunk_id=chunk.id,
+                    content_id=content_id,
+                    embedding_model="BAAI/bge-m3"
+                )
+                session.add(embedding_record)
+                session.flush()
+                
+                # Update vector column
+                session.execute(
+                    text("UPDATE embeddings SET embedding = :vector::vector WHERE id = :id"),
+                    {"vector": str(embedding_vector), "id": str(embedding_record.id)}
+                )
+            
+            session.commit()
+            logger.info(f"Stored {len(chunks)} chunks with BGE-M3 embeddings for content {content_id}")
             return len(chunks)
             
         except Exception as e:

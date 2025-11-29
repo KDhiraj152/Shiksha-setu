@@ -3,7 +3,7 @@ Celery tasks for Q&A (Question Answering) functionality.
 
 These tasks handle:
 - Processing uploaded documents for Q&A
-- Answering questions using RAG + Flan-T5
+- Answering questions using RAG + Ollama
 - Storing Q&A history
 """
 
@@ -15,10 +15,10 @@ from typing import Dict, Any
 from celery import shared_task
 from sqlalchemy.orm import Session
 
-from ..database import SessionLocal
+from ..core.database import SessionLocal
 from ..models import ProcessedContent, ChatHistory
 from ..services.rag import get_rag_service
-from ..simplify.simplifier import TextSimplifier
+from ..services.simplify.ollama_simplifier import OllamaSimplifier
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +27,10 @@ _text_simplifier = None
 
 
 def get_text_simplifier():
-    """Get or create global TextSimplifier instance."""
+    """Get or create global OllamaSimplifier instance."""
     global _text_simplifier
     if _text_simplifier is None:
-        _text_simplifier = TextSimplifier()
+        _text_simplifier = OllamaSimplifier()
     return _text_simplifier
 
 

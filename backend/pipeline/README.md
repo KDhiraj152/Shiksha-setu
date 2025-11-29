@@ -97,3 +97,11 @@ See `examples/orchestrator_example.py` for complete usage examples.
 - PostgreSQL database
 - Hugging Face API key
 - Dependencies from requirements.txt
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

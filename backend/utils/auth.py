@@ -11,14 +11,11 @@ import logging
 
 # Import schemas for backward compatibility
 from ..schemas.auth import Token, TokenData, UserCreate, UserLogin, UserResponse
-from ..core.config import Settings
+from ..core.config import settings  # Use singleton instance, not class
 
 logger = logging.getLogger(__name__)
 
-# Load settings
-settings = Settings()
-
-# Configuration - MUST be from environment, no fallback generation
+# Configuration - Use the singleton settings instance
 SECRET_KEY = settings.SECRET_KEY
 if not SECRET_KEY:
     raise RuntimeError(

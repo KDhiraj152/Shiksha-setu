@@ -69,7 +69,6 @@ Security notes
 - All write or sensitive endpoints require `Authorization: Bearer <access_token>` unless explicit cookie-based auth is used.
 - Sensitive operations must be further protected by RBAC checks (see `backend/core/security.py`).
 
-
 **Request:**
 ```json
 {
@@ -518,3 +517,11 @@ curl http://localhost:8000/api/v1/tasks/$TASK_ID \
 **K Dhiraj**  
 📧 k.dhiraj.srihari@gmail.com  
 💼 LinkedIn: [linkedin.com/in/k-dhiraj]
+
+---
+
+## 👨‍💻 Author
+
+**K Dhiraj** • [k.dhiraj.srihari@gmail.com](mailto:k.dhiraj.srihari@gmail.com) • [@KDhiraj152](https://github.com/KDhiraj152) • [LinkedIn](https://www.linkedin.com/in/k-dhiraj-83b025279/)
+
+*Last updated: November 2025*

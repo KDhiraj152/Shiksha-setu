@@ -13,8 +13,8 @@ from ...core.config import settings
 from ...utils.logging import get_logger
 from ...utils.auth import get_current_user_ws, TokenData
 from ...utils.request_context import set_request_id, get_request_id
-from ...services.translate import TranslationService
-from ...monitoring import track_websocket_connection, track_translation_latency
+from ...services.ai.orchestrator import get_ai_orchestrator
+from ...core.monitoring import track_websocket_connection, track_translation_latency
 
 logger = get_logger(__name__)
 
@@ -46,7 +46,7 @@ class ConnectionManager:
         self._redis_initialized = True
         
         try:
-            from ...cache import get_redis
+            from ...core.cache import get_redis
             self.redis_client = get_redis()
             if self.redis_client:
                 self.pubsub = self.redis_client.pubsub()
@@ -208,8 +208,9 @@ async def websocket_translate_endpoint(
         return
     
     try:
-        # Initialize translation service
-        translation_service = TranslationService()
+        # Initialize translation service - use new optimized NLLB translator
+        from ...services.ai import get_ai_orchestrator
+        ai_orchestrator = await get_ai_orchestrator()
         
         # Send connection confirmation
         await manager.send_json(client_id, {
@@ -217,6 +218,7 @@ async def websocket_translate_endpoint(
             "client_id": client_id,
             "max_connections": MAX_CONNECTIONS,
             "current_connections": len(manager.active_connections),
+            "model": "nllb-200-1.3B",
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
@@ -259,7 +261,7 @@ async def websocket_translate_endpoint(
             })
             
             try:
-                # Stream translation in chunks
+                # Stream translation in chunks using NLLB-200
                 partial_result = ""
                 last_partial_time = time.time()
                 
@@ -268,12 +270,17 @@ async def websocket_translate_endpoint(
                          for i in range(0, len(text), TRANSLATION_CHUNK_SIZE)]
                 
                 for idx, chunk in enumerate(chunks):
-                    # Translate chunk
-                    chunk_translation = await translation_service.translate_async(
+                    # Translate chunk using AI orchestrator (NLLB-200)
+                    result = await ai_orchestrator.translate(
                         text=chunk,
-                        source_lang=source_lang,
-                        target_lang=target_lang
+                        source_language=source_lang,
+                        target_language=target_lang
                     )
+                    
+                    if result.success:
+                        chunk_translation = result.data["translated_text"]
+                    else:
+                        chunk_translation = f"[Translation error: {result.error}]"
                     
                     partial_result += chunk_translation + " "
                     

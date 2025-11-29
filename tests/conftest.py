@@ -27,10 +27,10 @@ os.environ['JWT_SECRET_KEY'] = 'test-secret-key-minimum-64-characters-required-f
 # Disable rate limiting by default for tests (specific tests can enable it)
 os.environ['RATE_LIMIT_ENABLED'] = 'false'
 
-# Use PostgreSQL test database
+# Use PostgreSQL test database (localhost connection without password for local dev)
 TEST_DATABASE_URL = os.getenv(
     'TEST_DATABASE_URL',
-    'postgresql://kdhiraj_152@localhost:5432/shiksha_setu_test'
+    'postgresql://kdhiraj_152@127.0.0.1:5432/shiksha_setu_test'
 )
 os.environ['DATABASE_URL'] = TEST_DATABASE_URL
 
@@ -46,7 +46,7 @@ os.environ['CELERY_TASK_EAGER_PROPAGATES'] = 'true'
 
 # Import after environment setup
 from backend.api.main import app
-from backend.database import Base, get_db
+from backend.core.database import Base, get_db
 from backend.models import User, ProcessedContent, ContentValidation
 from backend.utils.auth import get_password_hash, create_access_token
 from backend.core.config import settings
@@ -209,7 +209,7 @@ def setup_test_environment():
 @pytest.fixture(scope="function")
 def clean_database():
     """Clean database between tests."""
-    from backend.database import engine, Base
+    from backend.core.database import engine, Base
     
     # Drop all tables
     Base.metadata.drop_all(bind=engine)

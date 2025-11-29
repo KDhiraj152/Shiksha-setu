@@ -1,19 +1,23 @@
-"""Pipeline tasks for async content processing."""
+"""Pipeline tasks for async content processing.
+
+IMPORTANT: All heavy ML imports are done INSIDE task functions to prevent:
+1. Slow cold starts when loading Celery workers
+2. Memory usage when tasks aren't running
+3. Circular import issues
+
+Pattern: Import inside the task function, not at module level.
+"""
 import logging
 from typing import Dict, Any, Optional, List
 from celery import Task, group, chain, chord
 from celery.exceptions import SoftTimeLimitExceeded
 import time
+from datetime import datetime
 
 from .celery_app import celery_app
-from ..services.ocr import OCRService
-from ..simplify.simplifier import TextSimplifier
-from ..translate.engine import TranslationEngine
-from ..validate.validator import ValidationModule
-from ..speech.generator import SpeechGenerator
-from ..database import get_db
-from ..models import ProcessedContent
-from datetime import datetime
+
+# NOTE: Heavy imports (ML models, services) are done INSIDE task functions
+# This is intentional for lazy loading and faster worker startup
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +58,9 @@ def extract_text_task(self, file_path: str, languages: List[str] = None) -> Dict
     Returns:
         Dict with extracted text and metadata
     """
+    # Lazy import - only load when task runs
+    from ..services.ocr import OCRService
+    
     try:
         self.update_progress(self.request.id, 10, 'extraction', 'Starting OCR...')
         
@@ -104,7 +111,7 @@ def simplify_text_task(
     formula_blocks: List[Dict] = None
 ) -> Dict[str, Any]:
     """
-    Simplify text for target grade level.
+    Simplify text for target grade level using Ollama (Llama 3.2 3B).
     
     Args:
         text: Input text
@@ -115,33 +122,37 @@ def simplify_text_task(
     Returns:
         Dict with simplified text
     """
+    import asyncio
+    
     try:
-        self.update_progress(self.request.id, 10, 'simplification', 'Loading model...')
+        self.update_progress(self.request.id, 10, 'simplification', 'Loading AI services...')
         
-        # Initialize simplifier with FLAN-T5 model client
-        from ..pipeline.model_clients import FlanT5Client
-        import os
+        # Use new optimized AI stack
+        from ..services.ai import get_ai_orchestrator
         
-        api_key = os.getenv('HUGGINGFACE_API_KEY')
-        model_client = None
-        if api_key:
-            try:
-                model_client = FlanT5Client(api_key)
-                logger.info("FLAN-T5 model client initialized")
-            except Exception as e:
-                logger.warning(f"Failed to initialize FLAN-T5 client: {e}")
+        async def _simplify():
+            orchestrator = await get_ai_orchestrator()
+            result = await orchestrator.simplify_text(
+                text=text,
+                target_grade=grade_level,
+                subject=subject
+            )
+            return result
         
-        simplifier = TextSimplifier(model_client=model_client)
+        # Run async code in sync context
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(_simplify())
+        finally:
+            loop.close()
         
-        self.update_progress(self.request.id, 40, 'simplification', 'Simplifying content...')
+        self.update_progress(self.request.id, 70, 'simplification', 'Processing complete...')
         
-        # Simplify
-        simplified_result = simplifier.simplify_text(
-            content=text,
-            grade_level=grade_level,
-            subject=subject
-        )
-        simplified = simplified_result.text
+        if not result.success:
+            raise ValueError(f"Simplification failed: {result.error}")
+        
+        simplified = result.data["simplified_text"]
         
         # Restore formulas if present
         if formula_blocks:
@@ -154,7 +165,8 @@ def simplify_text_task(
             'simplified_text': simplified,
             'grade_level': grade_level,
             'subject': subject,
-            'complexity_score': simplified_result.complexity_score
+            'model_used': result.model_used,
+            'processing_time_ms': result.processing_time_ms
         }
         
     except SoftTimeLimitExceeded:
@@ -180,7 +192,7 @@ def translate_text_task(
     formula_blocks: List[Dict] = None
 ) -> Dict[str, Any]:
     """
-    Translate text to multiple languages.
+    Translate text to multiple languages using NLLB-200.
     
     Args:
         text: Input text
@@ -190,63 +202,54 @@ def translate_text_task(
     Returns:
         Dict with translations
     """
+    import asyncio
+    
     try:
-        self.update_progress(self.request.id, 10, 'translation', 'Loading translation model...')
+        self.update_progress(self.request.id, 10, 'translation', 'Loading NLLB-200 translator...')
         
-        # Initialize translator with model client
-        from ..pipeline.model_clients import IndicTrans2Client
-        import os
+        # Use new optimized AI stack with NLLB-200
+        from ..services.ai import get_ai_orchestrator
         
-        api_key = os.getenv('HUGGINGFACE_API_KEY')
-        model_client = None
-        if api_key:
-            try:
-                model_client = IndicTrans2Client(api_key)
-                logger.info("IndicTrans2 model client initialized")
-            except Exception as e:
-                logger.warning(f"Failed to initialize IndicTrans2 client: {e}")
-        
-        translator = TranslationEngine(model_client=model_client)
-        
-        translations = {}
-        progress_step = 80 / len(target_languages)
-        
-        for i, language in enumerate(target_languages):
-            self.update_progress(
-                self.request.id,
-                10 + int((i + 1) * progress_step),
-                'translation',
-                f'Translating to {language}...'
-            )
+        async def _translate_all():
+            orchestrator = await get_ai_orchestrator()
+            translations = {}
             
-            # Translate
-            translated_result = translator.translate(
-                text=text,
-                target_language=language,
-                subject='General',
-                source_language='English'
-            )
-            
-            # TranslatedText dataclass has .text attribute
-            if hasattr(translated_result, 'text'):
-                translated = translated_result.text
-            elif isinstance(translated_result, dict):
-                translated = translated_result.get('text', translated_result.get('translated_text', ''))
-            else:
-                translated = str(translated_result)
-            
-            # Restore formulas
-            if formula_blocks:
-                from ..services.ocr import MathFormulaDetector
-                translated = MathFormulaDetector.restore_formulas(translated, formula_blocks)
-            
-            translations[language] = translated
+            for i, language in enumerate(target_languages):
+                result = await orchestrator.translate(
+                    text=text,
+                    source_language="en",
+                    target_language=language
+                )
+                if result.success:
+                    translations[language] = result.data["translated_text"]
+                else:
+                    logger.warning(f"Translation to {language} failed: {result.error}")
+                    translations[language] = f"[Translation failed] {text}"
+                    
+            return translations
+        
+        # Run async code in sync context
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            translations = loop.run_until_complete(_translate_all())
+        finally:
+            loop.close()
+        
+        self.update_progress(self.request.id, 80, 'translation', 'Post-processing...')
+        
+        # Restore formulas
+        if formula_blocks:
+            from ..services.ocr import MathFormulaDetector
+            for lang, translated in translations.items():
+                translations[lang] = MathFormulaDetector.restore_formulas(translated, formula_blocks)
         
         self.update_progress(self.request.id, 100, 'translation', 'Translation complete')
         
         return {
             'translations': translations,
-            'languages': target_languages
+            'languages': target_languages,
+            'model': 'nllb-200-1.3B'
         }
         
     except SoftTimeLimitExceeded:
@@ -286,6 +289,7 @@ def validate_content_task(
         self.update_progress(self.request.id, 20, 'validation', 'Loading validator...')
         
         # Initialize validator
+        from ..services.validate.validator import ValidationModule
         validator = ValidationModule()
         
         self.update_progress(self.request.id, 60, 'validation', 'Computing similarity...')
@@ -299,17 +303,22 @@ def validate_content_task(
             language='English'
         )
         
-        similarity_score = validation_result.get('similarity_score', 0.0)
+        # ValidationResult is a dataclass, access attributes directly
+        similarity_score = validation_result.semantic_accuracy
         is_valid = similarity_score >= threshold
         
         self.update_progress(self.request.id, 100, 'validation', 'Validation complete')
         
         return {
             'similarity_score': similarity_score,
+            'ncert_alignment_score': validation_result.ncert_alignment_score,
             'threshold': threshold,
             'is_valid': is_valid,
             'requires_review': not is_valid,
-            'validation_details': validation_result
+            'overall_status': validation_result.overall_status,
+            'issues': validation_result.issues,
+            'recommendations': validation_result.recommendations,
+            'quality_metrics': validation_result.quality_metrics
         }
         
     except Exception as e:
@@ -332,7 +341,7 @@ def generate_audio_task(
     content_id: str
 ) -> Dict[str, Any]:
     """
-    Generate audio from text.
+    Generate audio from text using Edge TTS (FREE & unlimited).
     
     Args:
         text: Input text
@@ -342,37 +351,60 @@ def generate_audio_task(
     Returns:
         Dict with audio file path and metadata
     """
+    import asyncio
+    from pathlib import Path
+    
     try:
-        self.update_progress(self.request.id, 20, 'audio', f'Generating {language} audio...')
+        self.update_progress(self.request.id, 20, 'audio', f'Generating {language} audio with Edge TTS...')
         
-        # Initialize speech generator
-        speech_gen = SpeechGenerator()
+        # Use new optimized AI stack with Edge TTS
+        from ..services.ai import get_ai_orchestrator
         
-        self.update_progress(self.request.id, 60, 'audio', 'Processing audio...')
+        async def _generate_audio():
+            orchestrator = await get_ai_orchestrator()
+            result = await orchestrator.synthesize_speech(
+                text=text,
+                language=language,
+                output_format="mp3"
+            )
+            return result
         
-        # Generate audio
-        audio_file = speech_gen.generate_speech(
-            text=text,
-            language=language,
-            subject='General'
-        )
+        # Run async code in sync context
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(_generate_audio())
+        finally:
+            loop.close()
         
-        # Build result dict - AudioFile has file_path, duration_seconds, accuracy_score
-        audio_result = {
-            'audio_path': audio_file.file_path,
-            'audio_url': f'/api/v1/audio/{content_id}',
-            'duration': audio_file.duration_seconds,
-            'accuracy_score': audio_file.accuracy_score or 0.85
-        }
+        self.update_progress(self.request.id, 70, 'audio', 'Saving audio file...')
+        
+        if not result.success or not result.data:
+            raise ValueError(f"Audio generation failed: {result.error}")
+        
+        # Save audio to file
+        audio_dir = Path("data/audio")
+        audio_dir.mkdir(parents=True, exist_ok=True)
+        
+        filename = f"{content_id}_{language}.mp3"
+        file_path = audio_dir / filename
+        
+        with open(file_path, 'wb') as f:
+            f.write(result.data)
+        
+        # Estimate duration (rough estimate: ~150 words per minute)
+        word_count = len(text.split())
+        estimated_duration = word_count / 150 * 60  # seconds
         
         self.update_progress(self.request.id, 100, 'audio', 'Audio generation complete')
         
         return {
-            'audio_path': audio_result['audio_path'],
-            'audio_url': audio_result.get('audio_url'),
-            'duration': audio_result.get('duration'),
+            'audio_path': str(file_path),
+            'audio_url': f'/api/v1/content/audio/{content_id}',
+            'duration': estimated_duration,
             'language': language,
-            'accuracy_score': audio_result.get('accuracy_score', 0.85)
+            'model': 'edge-tts',
+            'processing_time_ms': result.processing_time_ms
         }
         
     except Exception as e:
@@ -467,7 +499,7 @@ def full_pipeline_task(
         # Save to database
         self.update_progress(task_id, 95, 'pipeline', 'Saving results...')
         
-        from ..database import get_db_session
+        from ..core.database import get_db_session
         
         with get_db_session() as session:
             try:

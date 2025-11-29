@@ -1,0 +1,114 @@
+# ShikshaSetu Core Dependencies
+# Python 3.11+ Required (Tested: 3.11, 3.12, 3.13)
+# Updated: 2025-11-29 - Optimized Tech Stack for M4/16GB
+# 
+# Tech Stack:
+# - Translation: NLLB-200-1.3B via ctranslate2 (~2.5GB)
+# - TTS: Edge TTS (primary) + Coqui XTTS (offline fallback) (~1.8GB)
+# - Simplification: Llama 3.2 3B via Ollama (~2GB)
+# - Embeddings: BGE-M3 (~1.2GB)
+# - OCR: Surya (optional) + PyMuPDF (default)
+
+# ============================================================================
+# WEB FRAMEWORK
+# ============================================================================
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+starlette>=0.45.0
+
+# ============================================================================
+# DATABASE & ORM
+# ============================================================================
+SQLAlchemy>=2.0.36
+alembic>=1.14.0
+psycopg[binary]>=3.2.0
+asyncpg>=0.30.0
+pgvector>=0.3.0
+
+# ============================================================================
+# TASK QUEUE & CACHING
+# ============================================================================
+celery>=5.5.0
+redis>=7.0.0
+kombu>=5.4.0
+
+# ============================================================================
+# AI/ML CORE - OPTIMIZED FOR M4/16GB
+# ============================================================================
+torch>=2.5.0
+transformers>=4.40.0
+sentence-transformers>=3.0.0
+sentencepiece>=0.2.0
+accelerate>=0.25.0
+
+# NLLB Translation - High Quality Multilingual (ctranslate2 for speed)
+ctranslate2>=4.0.0
+
+# BGE-M3 Embeddings - State of the art multilingual
+FlagEmbedding>=1.2.0
+
+# ============================================================================
+# TEXT-TO-SPEECH - OPTIMIZED STACK
+# ============================================================================
+# Edge TTS - FREE, unlimited, high quality (Microsoft Neural TTS)
+edge-tts>=6.1.0
+
+# Legacy fallback
+gTTS>=2.5.0
+
+# NOTE: Coqui TTS (TTS>=0.22.0) removed - doesn't support Python 3.13+
+# Edge TTS is the primary TTS engine and works perfectly
+
+# ============================================================================
+# OCR & PDF - ENHANCED
+# ============================================================================
+PyMuPDF>=1.24.0
+pytesseract>=0.3.10
+Pillow>=10.0.0
+
+# Surya OCR - Best quality for complex documents (optional)
+surya-ocr>=0.4.0
+
+# ============================================================================
+# OLLAMA INTEGRATION - For LLM Simplification
+# ============================================================================
+ollama>=0.3.0
+
+# ============================================================================
+# SECURITY & AUTH
+# ============================================================================
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.2.0
+python-multipart>=0.0.17
+
+# ============================================================================
+# HTTP & NETWORKING
+# ============================================================================
+httpx>=0.28.0
+aiohttp>=3.9.0
+aiofiles>=24.1.0
+requests>=2.32.0
+urllib3>=2.0.0
+
+# ============================================================================
+# UTILITIES
+# ============================================================================
+python-dotenv>=1.0.0
+python-magic>=0.4.27
+tenacity>=9.0.0
+langdetect>=1.0.9
+numpy>=1.26.0
+cachetools>=5.3.0
+
+# ============================================================================
+# MONITORING & OBSERVABILITY
+# ============================================================================
+sentry-sdk>=2.0.0
+prometheus-client>=0.20.0
+psutil>=6.0.0
+opentelemetry-api>=1.28.0
+opentelemetry-sdk>=1.28.0
+opentelemetry-instrumentation-fastapi>=0.49b0

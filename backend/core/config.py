@@ -1,10 +1,14 @@
 """Centralized configuration management."""
 import os
 import logging
-from typing import List, Literal
+from typing import List, Literal, Optional
 from pathlib import Path
 from datetime import timedelta
 import secrets
+
+# Load environment variables from .env file FIRST
+from dotenv import load_dotenv
+load_dotenv()
 
 
 DeploymentTier = Literal["local", "production"]
@@ -89,23 +93,36 @@ class Settings:
     PORT: int = int(os.getenv("PORT", "8000"))
     
     # Security Configuration
+    _secret_key_cache: Optional[str] = None
+    
     @property
     def SECRET_KEY(self) -> str:
-        """Get or generate JWT secret key."""
+        """Get JWT secret key - MUST be set via environment variable."""
+        if self._secret_key_cache is not None:
+            return self._secret_key_cache
+            
         key = os.getenv("JWT_SECRET_KEY", "")
-        if not key or len(key) < 64:
-            # Generate a secure random key for development
-            key = secrets.token_hex(32)  # 64 character hex string
-            if self.ENVIRONMENT == "production":
+        
+        # In production, ALWAYS require proper secret key
+        if self.ENVIRONMENT == "production":
+            if not key or len(key) < 32:
                 raise ValueError(
-                    "JWT_SECRET_KEY must be set in production environment! "
+                    "CRITICAL: JWT_SECRET_KEY must be set in production environment! "
+                    "Minimum 32 characters required. "
                     "Generate one with: python -c 'import secrets; print(secrets.token_hex(32))'"
                 )
-            logger = logging.getLogger(__name__)
-            logger.warning(
-                "JWT_SECRET_KEY not set or too short. Generated temporary key. "
-                "Set JWT_SECRET_KEY environment variable (64+ chars) for production!"
-            )
+        else:
+            # Development/test: warn but allow auto-generation for convenience
+            if not key or len(key) < 32:
+                key = secrets.token_hex(32)  # 64 character hex string
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    "⚠️  JWT_SECRET_KEY not set or too short. Using auto-generated key. "
+                    "This is ONLY acceptable for development! "
+                    "Set JWT_SECRET_KEY environment variable for production."
+                )
+        
+        self._secret_key_cache = key
         return key
     
     ALGORITHM: str = "HS256"
@@ -158,16 +175,16 @@ class Settings:
     TASK_REJECT_ON_WORKER_LOST: bool = True
     WORKER_PREFETCH_MULTIPLIER: int = 1
     
-    # Security - JWT
-    SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+    # NOTE: Security/JWT settings are defined above as @property SECRET_KEY
+    # Do NOT redefine SECRET_KEY, ALGORITHM, or token expiry times here
     
     # CORS
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5176",
         "http://localhost:8080",
     ]
     ALLOW_CREDENTIALS: bool = True
@@ -181,13 +198,13 @@ class Settings:
     RATE_LIMIT_BURST_MULTIPLIER: int = int(os.getenv("RATE_LIMIT_BURST_MULTIPLIER", "2"))
     RATE_LIMIT_STORAGE: str = os.getenv("RATE_LIMIT_STORAGE", "memory")  # memory | redis
     
-    # Password Requirements
-    MIN_PASSWORD_LENGTH: int = 12
-    PASSWORD_MIN_LENGTH: int = 12  # Alias for MIN_PASSWORD_LENGTH
-    PASSWORD_REQUIRE_UPPERCASE: bool = True
-    PASSWORD_REQUIRE_LOWERCASE: bool = True
-    PASSWORD_REQUIRE_DIGIT: bool = True
-    PASSWORD_REQUIRE_SPECIAL: bool = True
+    # Password Requirements (relaxed for development - tighten for production)
+    MIN_PASSWORD_LENGTH: int = int(os.getenv("MIN_PASSWORD_LENGTH", "6"))
+    PASSWORD_MIN_LENGTH: int = int(os.getenv("PASSWORD_MIN_LENGTH", "6"))  # Alias
+    PASSWORD_REQUIRE_UPPERCASE: bool = os.getenv("PASSWORD_REQUIRE_UPPERCASE", "false").lower() == "true"
+    PASSWORD_REQUIRE_LOWERCASE: bool = os.getenv("PASSWORD_REQUIRE_LOWERCASE", "false").lower() == "true"
+    PASSWORD_REQUIRE_DIGIT: bool = os.getenv("PASSWORD_REQUIRE_DIGIT", "false").lower() == "true"
+    PASSWORD_REQUIRE_SPECIAL: bool = os.getenv("PASSWORD_REQUIRE_SPECIAL", "false").lower() == "true"
     
     # Logging Configuration
     LOG_MAX_BYTES: int = 10485760  # 10 MB

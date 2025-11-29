@@ -26,6 +26,15 @@ from .qa import (
     DocumentChunk,
     QAStatusResponse,
 )
+from .review import (
+    ReviewCreate,
+    ReviewUpdate,
+    ReviewResponse,
+    CommentCreate,
+    CommentResponse,
+    VersionResponse,
+    ReviewListResponse,
+)
 
 
 __all__ = [
@@ -52,4 +61,12 @@ __all__ = [
     "QAResponse",
     "DocumentChunk",
     "QAStatusResponse",
+    # Review schemas
+    "ReviewCreate",
+    "ReviewUpdate",
+    "ReviewResponse",
+    "CommentCreate",
+    "CommentResponse",
+    "VersionResponse",
+    "ReviewListResponse",
 ]
