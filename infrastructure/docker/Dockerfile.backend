@@ -1,0 +1,85 @@
+# Multi-stage build for optimal image size and security
+# Stage 1: Build dependencies
+FROM python:3.11-slim as builder
+
+LABEL maintainer="Shiksha Setu Team"
+LABEL description="Shiksha Setu Backend API - Production Build"
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies required for building Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy requirements
+COPY requirements.txt /tmp/requirements.txt
+
+# Install Python dependencies in virtual environment
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install -r /tmp/requirements.txt
+
+# Stage 2: Runtime image
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    ENVIRONMENT=production
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Create application directory
+WORKDIR /app
+
+# Create necessary directories with correct permissions
+RUN mkdir -p /app/data/uploads /app/data/cache /app/data/models /app/logs && \
+    chown -R appuser:appuser /app
+
+# Copy application code
+COPY --chown=appuser:appuser backend/ /app/backend/
+COPY --chown=appuser:appuser alembic/ /app/alembic/
+COPY --chown=appuser:appuser alembic.ini /app/alembic.ini
+
+# Copy startup scripts
+COPY --chown=appuser:appuser bin/start-backend /app/bin/start-backend
+RUN chmod +x /app/bin/start-backend
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Default command
+CMD ["/app/bin/start-backend"]

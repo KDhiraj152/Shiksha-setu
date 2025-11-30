@@ -1,0 +1,157 @@
+# Alertmanager Configuration for ShikshaSetu
+# /etc/alertmanager/alertmanager.yml
+
+global:
+  resolve_timeout: 5m
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+# Route tree
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  
+  routes:
+    # Critical alerts - page immediately
+    - match:
+        severity: critical
+      receiver: 'pagerduty-critical'
+      group_wait: 0s
+      repeat_interval: 5m
+      continue: true
+    
+    # Critical alerts also to Slack
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      group_wait: 0s
+      repeat_interval: 5m
+    
+    # Warning alerts - Slack only
+    - match:
+        severity: warning
+      receiver: 'slack-warnings'
+      repeat_interval: 4h
+    
+    # Database alerts - DBA team
+    - match_re:
+        alertname: Database.*
+      receiver: 'slack-dba'
+      repeat_interval: 2h
+    
+    # ML/GPU alerts - ML team
+    - match_re:
+        alertname: (GPU.*|.*ML.*|TTS.*|Translation.*)
+      receiver: 'slack-ml-team'
+      repeat_interval: 2h
+
+# Inhibition rules - suppress alerts
+inhibit_rules:
+  # Inhibit warning if critical is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+  
+  # If API is down, inhibit all other API alerts
+  - source_match:
+      alertname: 'APIInstanceDown'
+    target_match_re:
+      alertname: '(High.*|Slow.*)'
+    equal: ['instance']
+  
+  # If database is down, inhibit query alerts
+  - source_match:
+      alertname: 'DatabaseDown'
+    target_match_re:
+      alertname: '(Slow.*Query|DatabasePool.*)'
+
+# Receivers
+receivers:
+  - name: 'default'
+    slack_configs:
+      - channel: '#alerts'
+        title: 'ShikshaSetu Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}'
+        send_resolved: true
+  
+  - name: 'pagerduty-critical'
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        description: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        severity: '{{ .CommonLabels.severity }}'
+        details:
+          firing: '{{ .Alerts.Firing | len }}'
+          resolved: '{{ .Alerts.Resolved | len }}'
+        client: 'ShikshaSetu Prometheus'
+        client_url: '{{ .ExternalURL }}'
+  
+  - name: 'slack-critical'
+    slack_configs:
+      - channel: '#alerts-critical'
+        color: 'danger'
+        title: '🚨 CRITICAL: {{ .CommonLabels.alertname }}'
+        text: |
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Environment:* {{ .CommonLabels.environment }}
+        actions:
+          - type: button
+            text: 'View in Prometheus'
+            url: '{{ .ExternalURL }}'
+          - type: button
+            text: 'View Dashboard'
+            url: 'https://grafana.example.com/d/shikshasetu'
+        send_resolved: true
+  
+  - name: 'slack-warnings'
+    slack_configs:
+      - channel: '#alerts-warnings'
+        color: 'warning'
+        title: '⚠️ Warning: {{ .CommonLabels.alertname }}'
+        text: |
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+        send_resolved: true
+  
+  - name: 'slack-dba'
+    slack_configs:
+      - channel: '#dba-alerts'
+        color: '{{ if eq .CommonLabels.severity "critical" }}danger{{ else }}warning{{ end }}'
+        title: '🗄️ Database Alert: {{ .CommonLabels.alertname }}'
+        text: |
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+          *Runbook:* {{ range .Alerts }}{{ .Annotations.runbook_url }}{{ end }}
+        send_resolved: true
+  
+  - name: 'slack-ml-team'
+    slack_configs:
+      - channel: '#ml-alerts'
+        color: '{{ if eq .CommonLabels.severity "critical" }}danger{{ else }}warning{{ end }}'
+        title: '🤖 ML Pipeline Alert: {{ .CommonLabels.alertname }}'
+        text: |
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+        send_resolved: true
+
+# Time intervals (for muting during maintenance windows)
+time_intervals:
+  - name: 'weekday-business-hours'
+    time_intervals:
+      - times:
+          - start_time: '09:00'
+            end_time: '18:00'
+        weekdays: ['monday:friday']
+  
+  - name: 'maintenance-window'
+    time_intervals:
+      - times:
+          - start_time: '02:00'
+            end_time: '04:00'
+        weekdays: ['sunday']

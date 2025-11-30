@@ -1,0 +1,58 @@
+"""Q&A (RAG) system schemas."""
+
+from typing import List, Optional
+from pydantic import BaseModel, Field
+
+
+class QAProcessRequest(BaseModel):
+    """Request to process a document for Q&A."""
+    file_path: str = Field(description="Path to the uploaded file")
+    chunk_size: Optional[int] = Field(default=1000, ge=100, le=5000)
+    chunk_overlap: Optional[int] = Field(default=200, ge=0, le=1000)
+
+
+class QAQueryRequest(BaseModel):
+    """Request to ask a question about content."""
+    content_id: str = Field(description="ID of the processed content")
+    question: str = Field(min_length=5, max_length=1000)
+    language: Optional[str] = Field(default="English")
+    max_results: Optional[int] = Field(default=3, ge=1, le=10)
+
+
+class QAResponse(BaseModel):
+    """Response from Q&A system."""
+    answer: str
+    sources: List[str] = Field(description="Source chunk IDs used to generate answer")
+    confidence: float = Field(ge=0.0, le=1.0)
+    context: Optional[List[dict]] = Field(
+        default=None,
+        description="Full context chunks with text and metadata"
+    )
+
+
+class DocumentChunk(BaseModel):
+    """Representation of a document chunk."""
+    chunk_id: str
+    content_id: str
+    text: str
+    chunk_index: int
+    embedding: Optional[List[float]] = None
+    metadata: Optional[dict] = None
+
+
+class QAStatusResponse(BaseModel):
+    """Status of Q&A processing."""
+    content_id: str
+    status: str  # processing, ready, failed
+    total_chunks: Optional[int] = None
+    processed_chunks: Optional[int] = None
+    error: Optional[str] = None
+
+
+__all__ = [
+    "QAProcessRequest",
+    "QAQueryRequest",
+    "QAResponse",
+    "DocumentChunk",
+    "QAStatusResponse",
+]

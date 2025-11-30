@@ -1,0 +1,16 @@
+# Grafana Dashboard Provisioning
+# /etc/grafana/provisioning/dashboards/dashboards.yml
+
+apiVersion: 1
+
+providers:
+  - name: 'ShikshaSetu Dashboards'
+    orgId: 1
+    folder: 'ShikshaSetu'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true

@@ -1,0 +1,239 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/shikshasetu
+
+jobs:
+  pre-deployment-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.version }}
+
+    - name: Verify version tag exists
+      run: |
+        git fetch --tags
+        git tag | grep -q "^${{ inputs.version }}$" || (echo "Tag ${{ inputs.version }} does not exist" && exit 1)
+
+    - name: Check if images exist
+      run: |
+        docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend:${{ inputs.version }}
+        docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:${{ inputs.version }}
+
+  deploy-production:
+    needs: pre-deployment-checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.version }}
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
+
+    - name: Add production servers to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        for host in ${{ secrets.PRODUCTION_HOSTS }}; do
+          ssh-keyscan -H $host >> ~/.ssh/known_hosts
+        done
+
+    - name: Create backup before deployment
+      run: |
+        ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_PRIMARY_HOST }} 'bash -s' << 'ENDSSH'
+          cd /opt/shikshasetu
+          
+          # Backup database
+          mkdir -p backups
+          docker-compose -f docker-compose.production.yml exec -T postgres pg_dump \
+            -U shiksha_user shiksha_setu | gzip > backups/pre-deploy-$(date +%Y%m%d_%H%M%S).sql.gz
+          
+          echo "Backup completed"
+        ENDSSH
+
+    - name: Deploy to production - Phase 1 (Database)
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_PRIMARY_HOST }} 'bash -s' << ENDSSH
+          cd /opt/shikshasetu
+          
+          # Pull latest code
+          git fetch --tags
+          git checkout ${VERSION}
+          
+          # Run database migrations
+          docker-compose -f docker-compose.production.yml run --rm api alembic upgrade head
+          
+          echo "Database migration completed"
+        ENDSSH
+
+    - name: Deploy to production - Phase 2 (Services)
+      env:
+        VERSION: ${{ inputs.version }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_ACTOR: ${{ github.actor }}
+      run: |
+        ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_PRIMARY_HOST }} 'bash -s' << ENDSSH
+          set -e
+          cd /opt/shikshasetu
+          
+          # Pull new images
+          export VERSION=${VERSION}
+          echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          docker-compose -f docker-compose.production.yml pull
+          
+          # Rolling update of services
+          docker-compose -f docker-compose.production.yml up -d --no-deps --scale backend=6 backend
+          sleep 30
+          docker-compose -f docker-compose.production.yml up -d --no-deps --scale backend=3 --remove-orphans backend
+          
+          # Update other services
+          docker-compose -f docker-compose.production.yml up -d celery-worker
+          
+          echo "Services updated"
+        ENDSSH
+
+    - name: Health check and validation
+      run: |
+        # Wait for services to be ready
+        sleep 60
+        
+        # Run health checks
+        for i in {1..10}; do
+          if curl -f https://shikshasetu.in/health; then
+            echo "Health check passed"
+            break
+          fi
+          echo "Health check attempt $i failed, retrying..."
+          sleep 10
+        done
+
+    - name: Run post-deployment verification
+      run: |
+        ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_PRIMARY_HOST }} << 'ENDSSH'
+          cd /opt/shikshasetu
+          
+          # Run deployment verification script
+          ./bin/verify-deployment
+          
+          if [ $? -eq 0 ]; then
+            echo "Deployment verification passed"
+          else
+            echo "Deployment verification failed!"
+            exit 1
+          fi
+        ENDSSH
+
+    - name: Update version in monitoring
+      run: |
+        curl -X POST https://api.shikshasetu.in/api/v1/admin/deployment \
+          -H "Authorization: Bearer ${{ secrets.ADMIN_API_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{"version": "${{ inputs.version }}", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "deployed_by": "${{ github.actor }}"}'
+
+    - name: Notify deployment success
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: '🚀 Production deployment successful!',
+            attachments: [{
+              color: 'good',
+              text: 'Version ${{ inputs.version }} deployed by ${{ github.actor }}',
+              fields: [{
+                title: 'Environment',
+                value: 'Production',
+                short: true
+              }, {
+                title: 'Version',
+                value: '${{ inputs.version }}',
+                short: true
+              }]
+            }]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify deployment failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: '❌ Production deployment failed!',
+            attachments: [{
+              color: 'danger',
+              text: 'Version ${{ inputs.version }} failed to deploy. Manual intervention required.',
+              fields: [{
+                title: 'Environment',
+                value: 'Production',
+                short: true
+              }, {
+                title: 'Failed Version',
+                value: '${{ inputs.version }}',
+                short: true
+              }]
+            }]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  rollback:
+    needs: deploy-production
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Automatic rollback
+      run: |
+        ssh ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_PRIMARY_HOST }} << 'ENDSSH'
+          cd /opt/shikshasetu
+          
+          echo "Starting automatic rollback..."
+          
+          # Get previous version
+          PREVIOUS_VERSION=$(git describe --tags --abbrev=0 HEAD^)
+          
+          # Checkout previous version
+          git checkout $PREVIOUS_VERSION
+          
+          # Restore services
+          docker-compose -f docker-compose.production.yml up -d --remove-orphans
+          
+          echo "Rollback to $PREVIOUS_VERSION completed"
+        ENDSSH
+
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: '⚠️ Automatic rollback executed',
+            attachments: [{
+              color: 'warning',
+              text: 'Production deployment failed and was rolled back automatically.'
+            }]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
