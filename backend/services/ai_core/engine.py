@@ -322,7 +322,7 @@ class AIEngine:
                 history=history,
                 intent=intent,
                 config=config,
-                context_data=None,  # No personalization
+                context_data=context_data,  # Pass through context (subject, language, etc.)
             )
         except Exception as e:
             logger.error(f"Generation failed: {e}")
@@ -478,6 +478,10 @@ class AIEngine:
         # Build prompt with RAG context if available
         system_prompt = self._build_system_prompt(intent, context_data)
         
+        # Check policy mode for context modification
+        policy = self._get_policy_engine()
+        is_unrestricted = policy and policy.mode == PolicyMode.UNRESTRICTED
+        
         # Modify system prompt based on RAG results
         if augmented_context:
             # We have verified sources - instruct model to use them
@@ -486,8 +490,8 @@ class AIEngine:
                 "You MUST base your answer primarily on the provided context below. "
                 "These are trusted sources. Cite specific information from them.\n"
             )
-        elif rag_attempted and rag_empty:
-            # RAG was tried but no documents found - make model more cautious
+        elif rag_attempted and rag_empty and not is_unrestricted:
+            # RAG was tried but no documents found - make model more cautious (only in restricted mode)
             system_prompt += (
                 "\n\nIMPORTANT: No verified reference documents are available for this query.\n"
                 "You should:\n"
@@ -524,12 +528,17 @@ class AIEngine:
             elif rag_attempted and rag_empty:
                 # Lower confidence when RAG found nothing
                 confidence = 0.6
+            
+            # Common uncertainty phrases that reduce confidence
             uncertainty_phrases = [
                 "i'm not sure", "i don't know", "i'm not certain",
                 "might be", "could be", "possibly", "perhaps",
                 "i think", "i believe", "it seems", "general knowledge",
-                "verify with your teacher", "check your textbook"
             ]
+            # Add educational phrases only in restricted mode
+            if not is_unrestricted:
+                uncertainty_phrases.extend(["verify with your teacher", "check your textbook"])
+            
             response_lower = response_text.lower()
             uncertainty_count = sum(1 for phrase in uncertainty_phrases if phrase in response_lower)
             if uncertainty_count >= 2:
@@ -695,28 +704,51 @@ class AIEngine:
         intent: Intent,
         context_data: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Build system prompt based on intent - flexible like ChatGPT/Perplexity."""
-        base_prompt = (
-            "You are ShikshaSetu, an intelligent AI assistant. "
-            "You MUST provide accurate, factual, and verified information only.\n\n"
-            
-            "CRITICAL RULES:\n"
-            "1. NEVER make up facts, dates, names, or statistics\n"
-            "2. If you don't know something with certainty, say 'I'm not certain about this'\n"
-            "3. For factual questions, only state what is definitively true\n"
-            "4. If context/documents are provided, base your answer on them\n"
-            "5. Distinguish between established facts and your reasoning\n"
-            "6. For controversial topics, present multiple perspectives\n\n"
-            
-            "FORMATTING:\n"
-            "- Use markdown for structure (headers, lists, bold)\n"
-            "- Use LaTeX for math: inline $x^2$ or block $$\\frac{a}{b}$$\n"
-            "- Show step-by-step solutions for problems\n"
-            "- Use code blocks with language tags for code\n\n"
-        )
+        """Build system prompt based on intent and policy mode.
+        
+        In UNRESTRICTED mode: Acts as a general-purpose AI assistant
+        In RESTRICTED mode: Education-focused with verification requirements
+        """
+        policy = self._get_policy_engine()
+        is_unrestricted = policy and policy.mode == PolicyMode.UNRESTRICTED
+        
+        if is_unrestricted:
+            # General-purpose AI assistant prompt (like ChatGPT/Claude)
+            base_prompt = (
+                "You are a helpful, knowledgeable AI assistant. "
+                "You can help with any topic the user asks about.\n\n"
+                
+                "GUIDELINES:\n"
+                "- Be helpful, accurate, and thorough in your responses\n"
+                "- Use clear, well-structured explanations\n"
+                "- Admit when you're uncertain about something\n"
+                "- For code, provide complete, working examples\n"
+                "- For math, use LaTeX: inline $x^2$ or block $$\\frac{a}{b}$$\n"
+                "- Use markdown for formatting (headers, lists, code blocks)\n\n"
+            )
+        else:
+            # Education-focused prompt with verification requirements
+            base_prompt = (
+                "You are ShikshaSetu, an intelligent AI assistant. "
+                "You MUST provide accurate, factual, and verified information only.\n\n"
+                
+                "CRITICAL RULES:\n"
+                "1. NEVER make up facts, dates, names, or statistics\n"
+                "2. If you don't know something with certainty, say 'I'm not certain about this'\n"
+                "3. For factual questions, only state what is definitively true\n"
+                "4. If context/documents are provided, base your answer on them\n"
+                "5. Distinguish between established facts and your reasoning\n"
+                "6. For controversial topics, present multiple perspectives\n\n"
+                
+                "FORMATTING:\n"
+                "- Use markdown for structure (headers, lists, bold)\n"
+                "- Use LaTeX for math: inline $x^2$ or block $$\\frac{a}{b}$$\n"
+                "- Show step-by-step solutions for problems\n"
+                "- Use code blocks with language tags for code\n\n"
+            )
         
         context_data = context_data or {}
-        subject = context_data.get("subject", "General")
+        subject = context_data.get("subject")
         
         # Add subject context if provided
         if subject and subject != "General":
