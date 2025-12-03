@@ -1,26 +1,59 @@
 """
-Curriculum validator using IndicBERT fine-tuned on NCERT corpus.
+Curriculum validator using Gemma-2-2B-IT fine-tuned on NCERT corpus.
 For grade-level adaptation and curriculum alignment.
+
+NOTE: Curriculum validation is now controlled by PolicyEngine.
+When ALLOW_UNRESTRICTED_MODE=true or CURRICULUM_ENFORCEMENT=false,
+validation checks are bypassed.
+See backend/policy/policy_module.py for configuration.
 """
-import torch
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from pathlib import Path
 
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from ..core.config import settings
+
+# Import policy module for centralized configuration
+try:
+    from ..policy import get_policy_engine, PolicyMode
+    _POLICY_AVAILABLE = True
+except ImportError:
+    _POLICY_AVAILABLE = False
+
+# Lazy imports for heavy dependencies
+if TYPE_CHECKING:
+    import torch
+    from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 logger = logging.getLogger(__name__)
 
 
+def _should_enforce_curriculum() -> bool:
+    """Check if curriculum enforcement is enabled via PolicyEngine."""
+    if not _POLICY_AVAILABLE:
+        return True  # Default to enforcing if no policy engine
+    try:
+        engine = get_policy_engine()
+        if engine.mode == PolicyMode.UNRESTRICTED:
+            return False
+        return engine.config.curriculum_enforcement
+    except Exception:
+        return True
+
+
 class CurriculumValidator:
-    """Validate content against NCERT curriculum standards."""
+    """Validate content against NCERT curriculum standards.
+    
+    NOTE: When PolicyEngine is in UNRESTRICTED mode or curriculum_enforcement
+    is disabled, validation methods will return success without checking.
+    """
     
     def __init__(self):
         self.model_id = settings.VALIDATOR_MODEL_ID
         self.fine_tune_path = settings.VALIDATOR_FINE_TUNE_PATH
-        self.model = None
-        self.tokenizer = None
+        self._model = None
+        self._tokenizer = None
+        self._torch = None
         
         # Grade level mappings
         self.grade_ranges = {
@@ -36,9 +69,35 @@ class CurriculumValidator:
             "english", "hindi", "languages", "arts", "physical_education"
         ]
     
+    def _import_deps(self):
+        """Lazy import torch and transformers."""
+        if self._torch is None:
+            import torch
+            from transformers import AutoTokenizer, AutoModelForSequenceClassification
+            self._torch = torch
+            self._AutoTokenizer = AutoTokenizer
+            self._AutoModelForSeqClass = AutoModelForSequenceClassification
+    
+    @property
+    def model(self):
+        return self._model
+    
+    @model.setter
+    def model(self, value):
+        self._model = value
+    
+    @property
+    def tokenizer(self):
+        return self._tokenizer
+    
+    @tokenizer.setter
+    def tokenizer(self, value):
+        self._tokenizer = value
+    
     def _load_model(self):
-        """Load IndicBERT model for validation."""
-        if self.model is None:
+        """Load Gemma model for validation."""
+        if self._model is None:
+            self._import_deps()
             logger.info(f"Loading curriculum validator: {self.model_id}")
             
             # Try to load fine-tuned model first
@@ -46,10 +105,10 @@ class CurriculumValidator:
             if fine_tune_path.exists():
                 try:
                     logger.info(f"Loading fine-tuned model from: {self.fine_tune_path}")
-                    self.tokenizer = AutoTokenizer.from_pretrained(self.fine_tune_path)
-                    self.model = AutoModelForSequenceClassification.from_pretrained(
+                    self._tokenizer = self._AutoTokenizer.from_pretrained(self.fine_tune_path)
+                    self._model = self._AutoModelForSeqClass.from_pretrained(
                         self.fine_tune_path,
-                        torch_dtype=torch.float16,
+                        torch_dtype=self._torch.float16,
                         device_map="auto"
                     )
                     logger.info("Fine-tuned curriculum validator loaded successfully")
@@ -60,14 +119,14 @@ class CurriculumValidator:
             # Fallback to base model
             try:
                 logger.info(f"Loading base model: {self.model_id}")
-                self.tokenizer = AutoTokenizer.from_pretrained(
+                self._tokenizer = self._AutoTokenizer.from_pretrained(
                     self.model_id,
                     cache_dir=str(settings.MODEL_CACHE_DIR)
                 )
-                self.model = AutoModelForSequenceClassification.from_pretrained(
+                self._model = self._AutoModelForSeqClass.from_pretrained(
                     self.model_id,
                     num_labels=12,  # 12 grades
-                    torch_dtype=torch.float16,
+                    torch_dtype=self._torch.float16,
                     device_map="auto",
                     cache_dir=str(settings.MODEL_CACHE_DIR)
                 )
@@ -79,14 +138,14 @@ class CurriculumValidator:
                     logger.info("Trying ungated alternative: google/muril-base-cased")
                     try:
                         fallback_model = 'google/muril-base-cased'
-                        self.tokenizer = AutoTokenizer.from_pretrained(
+                        self._tokenizer = self._AutoTokenizer.from_pretrained(
                             fallback_model,
                             cache_dir=str(settings.MODEL_CACHE_DIR)
                         )
-                        self.model = AutoModelForSequenceClassification.from_pretrained(
+                        self._model = self._AutoModelForSeqClass.from_pretrained(
                             fallback_model,
                             num_labels=12,
-                            torch_dtype=torch.float16,
+                            torch_dtype=self._torch.float16,
                             device_map="auto",
                             cache_dir=str(settings.MODEL_CACHE_DIR)
                         )
@@ -113,6 +172,9 @@ class CurriculumValidator:
         """
         Validate if text is appropriate for target grade.
         
+        NOTE: When curriculum enforcement is disabled via PolicyEngine,
+        returns success without validation.
+        
         Args:
             text: Content to validate
             target_grade: Target grade level (1-12)
@@ -122,6 +184,21 @@ class CurriculumValidator:
         Returns:
             Dict with validation results
         """
+        # Check if curriculum enforcement is enabled
+        if not _should_enforce_curriculum():
+            logger.info("Curriculum enforcement disabled via PolicyEngine - skipping validation")
+            return {
+                "is_appropriate": True,
+                "predicted_grade": target_grade,
+                "target_grade": target_grade,
+                "confidence": 1.0,
+                "grade_difference": 0,
+                "grade_category": self._get_grade_category(target_grade),
+                "subject": subject,
+                "recommendation": "Curriculum enforcement disabled - validation skipped",
+                "policy_bypassed": True
+            }
+        
         if not 1 <= target_grade <= 12:
             raise ValueError("target_grade must be between 1 and 12")
         
@@ -137,7 +214,7 @@ class CurriculumValidator:
         ).to(self.model.device)
         
         # Get predictions
-        with torch.no_grad():
+        with torch.inference_mode():  # Faster than no_grad on M4
             outputs = self.model(**inputs)
             logits = outputs.logits
             probabilities = torch.softmax(logits, dim=-1)
