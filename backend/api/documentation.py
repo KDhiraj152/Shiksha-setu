@@ -5,24 +5,25 @@ Issue: CODE-REVIEW-GPT #21 (LOW)
 Purpose: Comprehensive OpenAPI/Swagger documentation
 """
 
+from typing import Any, Dict
+
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
-from typing import Dict, Any
 
 
-def custom_openapi_schema(app: FastAPI) -> Dict[str, Any]:
+def custom_openapi_schema(app: FastAPI) -> dict[str, Any]:
     """
     Generate custom OpenAPI schema with enhanced documentation.
-    
+
     Args:
         app: FastAPI application
-        
+
     Returns:
         OpenAPI schema dictionary
     """
     if app.openapi_schema:
         return app.openapi_schema
-    
+
     openapi_schema = get_openapi(
         title="ShikshaSetu AI Education API",
         version="2.1.0",
@@ -89,89 +90,74 @@ Content processing flow:
         tags=[
             {
                 "name": "Authentication",
-                "description": "User authentication and authorization"
+                "description": "User authentication and authorization",
             },
             {
                 "name": "Content",
-                "description": "Content creation, processing, and management"
+                "description": "Content creation, processing, and management",
             },
-            {
-                "name": "Translation",
-                "description": "Multilingual translation services"
-            },
-            {
-                "name": "Q&A",
-                "description": "Question-answering and semantic search"
-            },
+            {"name": "Translation", "description": "Multilingual translation services"},
+            {"name": "Q&A", "description": "Question-answering and semantic search"},
             {
                 "name": "Progress",
-                "description": "Student progress tracking and analytics"
+                "description": "Student progress tracking and analytics",
             },
             {
                 "name": "Teacher Evaluation",
-                "description": "Teacher performance evaluation and metrics"
+                "description": "Teacher performance evaluation and metrics",
             },
             {
                 "name": "Validation",
-                "description": "Content validation and quality checks"
+                "description": "Content validation and quality checks",
             },
-            {
-                "name": "Health",
-                "description": "System health and monitoring"
-            }
-        ]
+            {"name": "Health", "description": "System health and monitoring"},
+        ],
     )
-    
+
     # Add security schemes
     openapi_schema["components"]["securitySchemes"] = {
         "BearerAuth": {
             "type": "http",
             "scheme": "bearer",
             "bearerFormat": "JWT",
-            "description": "JWT token from /api/auth/login"
+            "description": "JWT token from /api/auth/login",
         },
         "APIKeyAuth": {
             "type": "apiKey",
             "in": "header",
             "name": "X-API-Key",
-            "description": "API key for service-to-service authentication"
-        }
+            "description": "API key for service-to-service authentication",
+        },
     }
-    
+
     # Add servers
     openapi_schema["servers"] = [
-        {
-            "url": "https://api.shiksha-setu.com",
-            "description": "Production server"
-        },
+        {"url": "https://api.shiksha-setu.com", "description": "Production server"},
         {
             "url": "https://staging-api.shiksha-setu.com",
-            "description": "Staging server"
+            "description": "Staging server",
         },
-        {
-            "url": "http://localhost:8000",
-            "description": "Development server"
-        }
+        {"url": "http://localhost:8000", "description": "Development server"},
     ]
-    
+
     # Add contact info
     openapi_schema["info"]["contact"] = {
         "name": "ShikshaSetu Support",
         "email": "support@shiksha-setu.com",
-        "url": "https://shiksha-setu.com/support"
+        "url": "https://shiksha-setu.com/support",
     }
-    
+
     openapi_schema["info"]["license"] = {
         "name": "MIT",
-        "url": "https://opensource.org/licenses/MIT"
+        "url": "https://opensource.org/licenses/MIT",
     }
-    
+
     # Add external docs
     openapi_schema["externalDocs"] = {
         "description": "Complete Documentation",
-        "url": "https://docs.shiksha-setu.com"
+        "url": "https://docs.shiksha-setu.com",
     }
-    
+
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
@@ -179,13 +165,13 @@ Content processing flow:
 def configure_api_docs(app: FastAPI):
     """
     Configure enhanced API documentation.
-    
+
     Args:
         app: FastAPI application
     """
     # Set custom OpenAPI schema
     app.openapi = lambda: custom_openapi_schema(app)
-    
+
     # Configure Swagger UI
     app.swagger_ui_parameters = {
         "deepLinking": True,
@@ -194,7 +180,7 @@ def configure_api_docs(app: FastAPI):
         "filter": True,
         "showExtensions": True,
         "showCommonExtensions": True,
-        "tryItOutEnabled": True
+        "tryItOutEnabled": True,
     }
 
 
@@ -208,11 +194,11 @@ COMMON_RESPONSES = {
                     "error": {
                         "code": "VALIDATION_ERROR",
                         "message": "Invalid input",
-                        "details": {"field": "grade_level", "error": "Must be between 1-12"}
+                        "details": {"field": "text", "error": "Text is required"},
                     }
                 }
             }
-        }
+        },
     },
     "401": {
         "description": "Unauthorized",
@@ -221,11 +207,11 @@ COMMON_RESPONSES = {
                 "example": {
                     "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Authentication required"
+                        "message": "Authentication required",
                     }
                 }
             }
-        }
+        },
     },
     "403": {
         "description": "Forbidden",
@@ -234,11 +220,11 @@ COMMON_RESPONSES = {
                 "example": {
                     "error": {
                         "code": "FORBIDDEN",
-                        "message": "Insufficient permissions"
+                        "message": "Insufficient permissions",
                     }
                 }
             }
-        }
+        },
     },
     "429": {
         "description": "Too Many Requests",
@@ -248,11 +234,11 @@ COMMON_RESPONSES = {
                     "error": {
                         "code": "RATE_LIMIT_EXCEEDED",
                         "message": "Rate limit exceeded",
-                        "retry_after": 60
+                        "retry_after": 60,
                     }
                 }
             }
-        }
+        },
     },
     "500": {
         "description": "Internal Server Error",
@@ -262,10 +248,10 @@ COMMON_RESPONSES = {
                     "error": {
                         "code": "INTERNAL_ERROR",
                         "message": "An unexpected error occurred",
-                        "request_id": "req_123abc"
+                        "request_id": "req_123abc",
                     }
                 }
             }
-        }
-    }
+        },
+    },
 }

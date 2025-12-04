@@ -2,126 +2,189 @@
 
 Optimal 2025 Model Stack: ai4bharat/indictrans2-en-indic-1B
 - Purpose-built for Indian languages
-- 2GB with INT4 quantization
+- Optimized for Apple Silicon M4 (MPS GPU acceleration)
 - Supports 22 Indian languages
-- Superior to mBART/NLLB for Indic languages
+- Best quality for Indic language translation
+
+Hardware Optimization:
+- MPS (Metal Performance Shaders): Primary compute for M4 GPU
+- CPU fallback for unsupported operations
+- FP16 precision on MPS for 2x memory efficiency
 """
+
 import logging
-from typing import Optional, List, Dict, Tuple
+import os
 from dataclasses import dataclass
+from typing import Dict, List, Optional
+
 import torch
 
 from ...core.config import settings
 
+# M4 Hardware optimization imports
+try:
+    from ...core.optimized import get_memory_pool
+    from ...core.optimized.device_router import (
+        TaskType,
+        get_device_router,
+        get_resource_manager,
+    )
+
+    HARDWARE_OPT_AVAILABLE = True
+except ImportError:
+    HARDWARE_OPT_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
+
+# Enable MPS fallback for operations not supported on Metal
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+
+# Try to import IndicTransToolkit for proper preprocessing
+try:
+    from IndicTransToolkit.processor import IndicProcessor
+
+    INDIC_PROCESSOR_AVAILABLE = True
+except ImportError:
+    INDIC_PROCESSOR_AVAILABLE = False
+    logger.warning(
+        "IndicTransToolkit not available - translation quality may be reduced"
+    )
 
 
 @dataclass
 class TranslationResult:
     """Result of translation operation."""
+
     source_text: str
     translated_text: str
     source_lang: str
     target_lang: str
     confidence: float
-    metadata: Dict
+    metadata: dict
 
 
 class IndicTrans2:
     """
     IndicTrans2 translation model wrapper.
-    
+
     Best-in-class for English ↔ Indian language translation.
-    Supports: Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati, 
+    Supports: Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati,
               Kannada, Malayalam, Punjabi, Odia, Assamese, Urdu, etc.
     """
-    
+
     # IndicTrans2 language codes (BCP-47 format)
     LANG_CODES = {
         # Indian languages
-        'Hindi': 'hin_Deva',
-        'Tamil': 'tam_Taml',
-        'Telugu': 'tel_Telu',
-        'Bengali': 'ben_Beng',
-        'Marathi': 'mar_Deva',
-        'Gujarati': 'guj_Gujr',
-        'Kannada': 'kan_Knda',
-        'Malayalam': 'mal_Mlym',
-        'Punjabi': 'pan_Guru',
-        'Odia': 'ory_Orya',
-        'Assamese': 'asm_Beng',
-        'Urdu': 'urd_Arab',
-        'Konkani': 'kok_Deva',
-        'Maithili': 'mai_Deva',
-        'Nepali': 'npi_Deva',
-        'Sanskrit': 'san_Deva',
-        'Sindhi': 'snd_Arab',
-        'Santali': 'sat_Olck',
-        'Kashmiri': 'kas_Arab',
-        'Dogri': 'doi_Deva',
-        'Manipuri': 'mni_Beng',
-        'Bodo': 'brx_Deva',
+        "Hindi": "hin_Deva",
+        "Tamil": "tam_Taml",
+        "Telugu": "tel_Telu",
+        "Bengali": "ben_Beng",
+        "Marathi": "mar_Deva",
+        "Gujarati": "guj_Gujr",
+        "Kannada": "kan_Knda",
+        "Malayalam": "mal_Mlym",
+        "Punjabi": "pan_Guru",
+        "Odia": "ory_Orya",
+        "Assamese": "asm_Beng",
+        "Urdu": "urd_Arab",
+        "Konkani": "kok_Deva",
+        "Maithili": "mai_Deva",
+        "Nepali": "npi_Deva",
+        "Sanskrit": "san_Deva",
+        "Sindhi": "snd_Arab",
+        "Santali": "sat_Olck",
+        "Kashmiri": "kas_Arab",
+        "Dogri": "doi_Deva",
+        "Manipuri": "mni_Beng",
+        "Bodo": "brx_Deva",
         # English
-        'English': 'eng_Latn',
+        "English": "eng_Latn",
     }
-    
+
     # Reverse mapping
     CODE_TO_LANG = {v: k for k, v in LANG_CODES.items()}
-    
-    def __init__(self, model_id: str = None, device: str = None):
+
+    def __init__(self, model_id: str | None = None, device: str | None = None):
         """
         Initialize IndicTrans2 model.
-        
+
         Args:
             model_id: Model identifier (default from config)
             device: Device to use (auto-detected if not specified)
         """
         self.model_id = model_id or settings.TRANSLATION_MODEL_ID
-        
-        # Auto-detect device
-        if device is None:
+
+        # Use hardware optimizer for intelligent device routing if available
+        if device is None and HARDWARE_OPT_AVAILABLE:
+            try:
+                router = get_device_router()
+                routing = router.route(TaskType.TRANSLATION)
+                self.device = routing.device_str
+                logger.info(
+                    f"IndicTrans2: Using {self.device} (via hardware optimizer, speedup: {routing.estimated_speedup}x)"
+                )
+            except Exception as e:
+                logger.debug(f"Hardware optimizer failed, using fallback: {e}")
+                device = None  # Fall through to manual detection
+
+        # Fallback auto-detect device
+        if device is None and not hasattr(self, "device"):
             if torch.cuda.is_available():
                 self.device = "cuda"
-            elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
                 self.device = "mps"
             else:
                 self.device = "cpu"
-        else:
+        elif device is not None:
             self.device = device
-        
+
         self._model = None
         self._tokenizer = None
-        self._processor = None
-        
+        self._processor = None  # IndicProcessor for pre/post processing
+
         logger.info(f"IndicTrans2 initialized: {self.model_id} on {self.device}")
-    
+
     def _load_model(self):
         """Lazy load the model."""
         if self._model is not None:
             return
-        
+
         logger.info(f"Loading IndicTrans2 model: {self.model_id}")
-        
+
         try:
             # Try loading with AI4Bharat's IndicTrans2 library
             from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-            
+
+            # M4 Optimization: Enable MPS fallback
+            os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+
             # Load tokenizer
             self._tokenizer = AutoTokenizer.from_pretrained(
                 self.model_id,
                 trust_remote_code=True,
-                cache_dir=str(settings.MODEL_CACHE_DIR)
+                cache_dir=str(settings.MODEL_CACHE_DIR),
             )
-            
-            # Load model with quantization if available
+
+            # Initialize IndicProcessor for proper pre/post processing
+            if INDIC_PROCESSOR_AVAILABLE:
+                self._processor = IndicProcessor(inference=True)
+                logger.info("IndicProcessor initialized for translation preprocessing")
+            else:
+                logger.warning(
+                    "IndicProcessor not available - using basic tokenization"
+                )
+
+            # Load model with device-appropriate settings
             load_kwargs = {
                 "trust_remote_code": True,
                 "cache_dir": str(settings.MODEL_CACHE_DIR),
+                "low_cpu_mem_usage": True,  # M4: Essential for 16GB unified memory
             }
-            
+
             if self.device == "cuda" and settings.USE_QUANTIZATION:
                 try:
                     from transformers import BitsAndBytesConfig
+
                     load_kwargs["quantization_config"] = BitsAndBytesConfig(
                         load_in_4bit=True,
                         bnb_4bit_compute_dtype=torch.float16,
@@ -133,73 +196,55 @@ class IndicTrans2:
             elif self.device == "cuda":
                 load_kwargs["torch_dtype"] = torch.float16
                 load_kwargs["device_map"] = "auto"
-            
+            elif self.device == "mps":
+                # M4 Optimization: float16 for MPS
+                load_kwargs["torch_dtype"] = torch.float16
+
             self._model = AutoModelForSeq2SeqLM.from_pretrained(
-                self.model_id,
-                **load_kwargs
+                self.model_id, **load_kwargs
             )
-            
+
             # Move to device if not using device_map
             if "device_map" not in load_kwargs:
                 self._model = self._model.to(self.device)
-            
+
             self._model.eval()
-            logger.info(f"IndicTrans2 model loaded successfully on {self.device}")
-            
+
+            # M4 Memory cleanup
+            if self.device == "mps":
+                torch.mps.empty_cache()
+
+            logger.info(f"IndicTrans2 model loaded on {self.device} (M4 optimized)")
+
         except Exception as e:
             logger.error(f"Failed to load IndicTrans2: {e}")
-            logger.info("Attempting fallback to NLLB...")
-            self._load_nllb_fallback()
-    
-    def _load_nllb_fallback(self):
-        """Load NLLB as fallback if IndicTrans2 fails."""
-        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-        
-        fallback_model = "facebook/nllb-200-distilled-600M"
-        logger.info(f"Loading fallback model: {fallback_model}")
-        
-        try:
-            self._tokenizer = AutoTokenizer.from_pretrained(
-                fallback_model,
-                cache_dir=str(settings.MODEL_CACHE_DIR)
-            )
-            self._model = AutoModelForSeq2SeqLM.from_pretrained(
-                fallback_model,
-                cache_dir=str(settings.MODEL_CACHE_DIR)
-            ).to(self.device)
-            
-            self.model_id = fallback_model
-            self._model.eval()
-            logger.info("NLLB fallback model loaded")
-        except Exception as e:
-            logger.error(f"Fallback model loading also failed: {e}")
-            raise
-    
+            raise RuntimeError(f"IndicTrans2 model loading failed: {e}")
+
     def get_lang_code(self, language: str) -> str:
-        """Get IndicTrans2/NLLB language code."""
+        """Get IndicTrans2 language code."""
         return self.LANG_CODES.get(language, language)
-    
+
     def translate(
         self,
         text: str,
         source_lang: str = "English",
         target_lang: str = "Hindi",
-        max_length: int = None
+        max_length: int | None = None,
     ) -> TranslationResult:
         """
         Translate text between languages.
-        
+
         Args:
             text: Source text to translate
             source_lang: Source language name
             target_lang: Target language name
             max_length: Maximum output length
-        
+
         Returns:
             TranslationResult with translated text
         """
         self._load_model()
-        
+
         if not text or not text.strip():
             return TranslationResult(
                 source_text=text,
@@ -207,66 +252,84 @@ class IndicTrans2:
                 source_lang=source_lang,
                 target_lang=target_lang,
                 confidence=1.0,
-                metadata={"error": "empty_input"}
+                metadata={"error": "empty_input"},
             )
-        
+
         max_length = max_length or settings.TRANSLATION_MAX_LENGTH
-        
+
         src_code = self.get_lang_code(source_lang)
         tgt_code = self.get_lang_code(target_lang)
-        
+
         try:
-            # Tokenize with source language
-            if hasattr(self._tokenizer, 'src_lang'):
-                self._tokenizer.src_lang = src_code
-            
+            # Use IndicProcessor for proper preprocessing if available
+            if self._processor is not None:
+                # Preprocess batch (even for single text)
+                preprocessed = self._processor.preprocess_batch(
+                    [text],
+                    src_lang=src_code,
+                    tgt_lang=tgt_code,
+                )
+                input_text = preprocessed[0]
+            else:
+                input_text = text
+
+            # Tokenize
             inputs = self._tokenizer(
-                text,
+                input_text,
                 return_tensors="pt",
                 padding=True,
                 truncation=True,
-                max_length=max_length
+                max_length=max_length,
+                return_attention_mask=True,
             )
-            
+
             # Move to device
             inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
-            
-            # Generate translation
-            with torch.no_grad():
-                # Get forced BOS token for target language
-                if hasattr(self._tokenizer, 'lang_code_to_id'):
-                    forced_bos_token_id = self._tokenizer.lang_code_to_id.get(tgt_code)
-                else:
-                    forced_bos_token_id = self._tokenizer.convert_tokens_to_ids(tgt_code)
-                
+
+            # Generate translation - M4 optimized with inference_mode
+            # Note: use_cache=False required due to IndicTrans2 decoder compatibility
+            with torch.inference_mode():
                 outputs = self._model.generate(
                     **inputs,
-                    forced_bos_token_id=forced_bos_token_id,
                     max_length=max_length,
                     num_beams=5,
+                    min_length=0,
                     early_stopping=True,
-                    no_repeat_ngram_size=3,
+                    num_return_sequences=1,
+                    use_cache=False,  # Required for IndicTrans2 compatibility
                 )
-            
+
+            # M4 Memory cleanup
+            if self.device == "mps":
+                torch.mps.empty_cache()
+
             # Decode
-            translated_text = self._tokenizer.decode(
-                outputs[0],
-                skip_special_tokens=True
-            )
-            
+            translated_raw = self._tokenizer.batch_decode(
+                outputs, skip_special_tokens=True, clean_up_tokenization_spaces=True
+            )[0]
+
+            # Use IndicProcessor for proper postprocessing if available
+            if self._processor is not None:
+                translated_text = self._processor.postprocess_batch(
+                    [translated_raw], lang=tgt_code
+                )[0]
+            else:
+                translated_text = translated_raw.strip()
+
             return TranslationResult(
                 source_text=text,
-                translated_text=translated_text.strip(),
+                translated_text=translated_text,
                 source_lang=source_lang,
                 target_lang=target_lang,
                 confidence=0.95,  # IndicTrans2 is highly accurate
                 metadata={
                     "model": self.model_id,
                     "src_code": src_code,
-                    "tgt_code": tgt_code
-                }
+                    "tgt_code": tgt_code,
+                    "processor_used": self._processor is not None,
+                },
             )
-            
+
         except Exception as e:
             logger.error(f"Translation failed: {e}")
             return TranslationResult(
@@ -275,139 +338,247 @@ class IndicTrans2:
                 source_lang=source_lang,
                 target_lang=target_lang,
                 confidence=0.0,
-                metadata={"error": str(e)}
+                metadata={"error": str(e)},
             )
-    
+
     async def translate_async(
         self,
         text: str,
         source_lang: str = "English",
         target_lang: str = "Hindi",
-        max_length: int = None
+        max_length: int | None = None,
     ) -> TranslationResult:
         """Async wrapper for translation."""
         import asyncio
-        loop = asyncio.get_event_loop()
+
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None,
-            lambda: self.translate(text, source_lang, target_lang, max_length)
+            None, lambda: self.translate(text, source_lang, target_lang, max_length)
         )
-    
+
     def translate_batch(
         self,
-        texts: List[str],
+        texts: list[str],
         source_lang: str = "English",
         target_lang: str = "Hindi",
-        max_length: int = None
-    ) -> List[TranslationResult]:
+        max_length: int | None = None,
+    ) -> list[TranslationResult]:
         """
         Translate multiple texts efficiently.
-        
+
         Args:
             texts: List of texts to translate
             source_lang: Source language
             target_lang: Target language
             max_length: Maximum output length per text
-        
+
         Returns:
             List of TranslationResults
         """
         self._load_model()
-        
+
         if not texts:
             return []
-        
+
         max_length = max_length or settings.TRANSLATION_MAX_LENGTH
         src_code = self.get_lang_code(source_lang)
         tgt_code = self.get_lang_code(target_lang)
-        
+
         results = []
-        
+
         try:
-            if hasattr(self._tokenizer, 'src_lang'):
-                self._tokenizer.src_lang = src_code
-            
+            # Preprocess batch using IndicProcessor if available
+            if self._processor is not None:
+                preprocessed = self._processor.preprocess_batch(
+                    texts,
+                    src_lang=src_code,
+                    tgt_lang=tgt_code,
+                )
+            else:
+                preprocessed = texts
+
             # Batch tokenize
             inputs = self._tokenizer(
-                texts,
+                preprocessed,
                 return_tensors="pt",
-                padding=True,
+                padding="longest",
                 truncation=True,
-                max_length=max_length
+                max_length=max_length,
+                return_attention_mask=True,
             )
             inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
-            
+
             # Generate
-            with torch.no_grad():
-                if hasattr(self._tokenizer, 'lang_code_to_id'):
-                    forced_bos_token_id = self._tokenizer.lang_code_to_id.get(tgt_code)
-                else:
-                    forced_bos_token_id = self._tokenizer.convert_tokens_to_ids(tgt_code)
-                
+            with torch.inference_mode():
                 outputs = self._model.generate(
                     **inputs,
-                    forced_bos_token_id=forced_bos_token_id,
                     max_length=max_length,
                     num_beams=5,
+                    min_length=0,
                     early_stopping=True,
+                    num_return_sequences=1,
+                    use_cache=False,  # Required for IndicTrans2 compatibility
                 )
-            
+
             # Decode all
-            translated_texts = self._tokenizer.batch_decode(
-                outputs,
-                skip_special_tokens=True
+            translated_raw = self._tokenizer.batch_decode(
+                outputs, skip_special_tokens=True, clean_up_tokenization_spaces=True
             )
-            
-            for src_text, tgt_text in zip(texts, translated_texts):
-                results.append(TranslationResult(
-                    source_text=src_text,
-                    translated_text=tgt_text.strip(),
-                    source_lang=source_lang,
-                    target_lang=target_lang,
-                    confidence=0.95,
-                    metadata={"model": self.model_id}
-                ))
-            
+
+            # Postprocess using IndicProcessor if available
+            if self._processor is not None:
+                translated_texts = self._processor.postprocess_batch(
+                    translated_raw, lang=tgt_code
+                )
+            else:
+                translated_texts = [t.strip() for t in translated_raw]
+
+            for src_text, tgt_text in zip(texts, translated_texts, strict=False):
+                results.append(
+                    TranslationResult(
+                        source_text=src_text,
+                        translated_text=tgt_text,
+                        source_lang=source_lang,
+                        target_lang=target_lang,
+                        confidence=0.95,
+                        metadata={
+                            "model": self.model_id,
+                            "processor_used": self._processor is not None,
+                        },
+                    )
+                )
+
         except Exception as e:
             logger.error(f"Batch translation failed: {e}")
             # Return individual failures
             for text in texts:
-                results.append(TranslationResult(
-                    source_text=text,
-                    translated_text=text,
-                    source_lang=source_lang,
-                    target_lang=target_lang,
-                    confidence=0.0,
-                    metadata={"error": str(e)}
-                ))
-        
+                results.append(
+                    TranslationResult(
+                        source_text=text,
+                        translated_text=text,
+                        source_lang=source_lang,
+                        target_lang=target_lang,
+                        confidence=0.0,
+                        metadata={"error": str(e)},
+                    )
+                )
+
         return results
-    
+
     @property
-    def supported_languages(self) -> List[str]:
+    def supported_languages(self) -> list[str]:
         """Get list of supported languages."""
         return list(self.LANG_CODES.keys())
-    
+
     def is_language_supported(self, language: str) -> bool:
         """Check if language is supported."""
         return language in self.LANG_CODES
 
+    @property
+    def is_loaded(self) -> bool:
+        """Check if model is loaded."""
+        return self._model is not None
 
-# Singleton instance
-_translator_instance: Optional[IndicTrans2] = None
+    def unload(self) -> None:
+        """Unload model and free memory (for coordinated shutdown)."""
+        if self._model is not None:
+            logger.info("Unloading IndicTrans2 model...")
+
+            # Release memory via coordinator
+            try:
+                from ...core.optimized.memory_coordinator import get_memory_coordinator
+
+                coordinator = get_memory_coordinator()
+                coordinator.release("translation")
+            except ImportError:
+                pass
+
+            # Delete model references
+            del self._model
+            self._model = None
+
+            if self._tokenizer is not None:
+                del self._tokenizer
+                self._tokenizer = None
+
+            if self._processor is not None:
+                del self._processor
+                self._processor = None
+
+            # Free MPS cache
+            try:
+                if self.device == "mps":
+                    torch.mps.empty_cache()
+            except Exception:
+                pass
+
+            # Force garbage collection
+            import gc
+
+            gc.collect()
+
+            logger.info("IndicTrans2 model unloaded")
+
+
+# Thread-safe singleton with memory coordinator integration
+import threading
+
+_translator_lock = threading.Lock()
+_translator_instance: IndicTrans2 | None = None
 
 
 def get_translator() -> IndicTrans2:
-    """Get or create translator singleton."""
+    """Get or create translator singleton (thread-safe with memory coordination)."""
     global _translator_instance
-    if _translator_instance is None:
+
+    if _translator_instance is not None and _translator_instance.is_loaded:
+        return _translator_instance
+
+    with _translator_lock:
+        # Double-check pattern
+        if _translator_instance is not None and _translator_instance.is_loaded:
+            return _translator_instance
+
+        # Create new instance with memory coordinator
+        try:
+            import asyncio
+
+            from ...core.optimized.memory_coordinator import get_memory_coordinator
+
+            coordinator = get_memory_coordinator()
+
+            # Try to acquire memory (use sync version if not in async context)
+            try:
+                # Check if we're in an async context
+                asyncio.get_running_loop()
+                # We're in async context - proceed optimistically
+                # Memory will be managed at the async caller level
+                acquired = True
+            except RuntimeError:
+                # Not in async context - use sync acquisition
+                acquired = coordinator.try_acquire_sync("translation")
+
+            if not acquired:
+                logger.warning(
+                    "Could not acquire memory for translation model - "
+                    "memory pressure may occur"
+                )
+        except ImportError:
+            pass  # Memory coordinator not available
+
         _translator_instance = IndicTrans2()
-    return _translator_instance
+        return _translator_instance
+
+
+def unload_translator() -> None:
+    """Unload the translator singleton."""
+    global _translator_instance
+
+    with _translator_lock:
+        if _translator_instance is not None:
+            _translator_instance.unload()
+            _translator_instance = None
 
 
 # Export
-__all__ = [
-    'IndicTrans2',
-    'TranslationResult',
-    'get_translator'
-]
+__all__ = ["IndicTrans2", "TranslationResult", "get_translator", "unload_translator"]

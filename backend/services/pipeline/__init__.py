@@ -1,74 +1,117 @@
-# Pipeline orchestrator module
+# Pipeline orchestrator module - import from v2 directly for main classes
+# Early stop heuristics (Principle L)
+from .early_stop import (
+    EarlyStopConfig,
+    EarlyStopDetector,
+    StopReason,
+    StreamingEarlyStopCallback,
+    check_should_stop,
+    create_early_stop_detector,
+    get_clean_output,
+)
+
+# NEW: Model Collaboration System (multi-model orchestration)
+from .model_collaboration import (
+    CollaborationConfig,
+    CollaborationPattern,
+    CollaborationResult,
+    ModelCollaborator,
+    ModelMessage,
+    ModelRole,
+    collaborate_and_simplify,
+    collaborate_and_translate,
+    ensemble_evaluate,
+    full_educational_pipeline,
+    generate_best_output,
+    get_model_collaborator,
+    process_document,
+    # NEW: 8-model collaboration functions
+    verify_audio_output,
+)
+
+# Backward compatibility aliases
 from .orchestrator import (
-    ContentPipelineOrchestrator,
-    ProcessedContentResult,
-    StageMetrics,
-    PipelineValidationError,
+    ContentPipelineOrchestrator,  # Alias for ConcurrentPipelineOrchestrator
     PipelineStageError,
+    PipelineValidationError,
+)
+from .orchestrator_v2 import (
+    ConcurrentPipelineOrchestrator,
+    PipelineCircuitBreaker,
     PipelineStage,
-    ProcessingStatus
+    ProcessedContentResult,
+    ProcessingStatus,
+    StageMetrics,
+)
+from .sentence_pipeline import (
+    DocumentResult,
+    SentenceResult,
 )
 
 # Sentence-level processing (Principle M)
 from .sentence_pipeline import (
-    SentenceLevelProcessor,
-    ProcessingConfig,
-    SentenceResult,
-    DocumentResult
+    SentencePipeline as SentenceLevelProcessor,
 )
 
 # Pre-tokenization (Principle G)
 from .tokenization_worker import (
     PreTokenizationWorker,
-    TokenizerType,
-    TokenizedInput,
     TokenizationConfig,
+    TokenizedInput,
+    TokenizerType,
+    chunk_text,
+    get_tokenization_worker,
     pre_tokenize,
     pre_tokenize_batch,
-    chunk_text,
-    get_tokenization_worker
 )
 
-# Early stop heuristics (Principle L)
-from .early_stop import (
-    EarlyStopDetector,
-    EarlyStopConfig,
-    StopReason,
-    StreamingEarlyStopCallback,
-    create_early_stop_detector,
-    check_should_stop,
-    get_clean_output
+# NEW: Unified pipeline (optimized for Apple Silicon)
+from .unified_pipeline import (
+    ProcessingProgress,
+    ProcessingRequest,
+    ProcessingResult,
+    UnifiedPipelineService,
+    get_pipeline_service,
+)
+from .unified_pipeline import (
+    ProcessingStage as UnifiedProcessingStage,
 )
 
 __all__ = [
-    # Orchestrator
-    'ContentPipelineOrchestrator',
-    'ProcessedContentResult',
-    'StageMetrics',
-    'PipelineValidationError',
-    'PipelineStageError',
-    'PipelineStage',
-    'ProcessingStatus',
-    # Sentence processing (Principle M)
-    'SentenceLevelProcessor',
-    'ProcessingConfig',
-    'SentenceResult',
-    'DocumentResult',
-    # Pre-tokenization (Principle G)
-    'PreTokenizationWorker',
-    'TokenizerType',
-    'TokenizedInput',
-    'TokenizationConfig',
-    'pre_tokenize',
-    'pre_tokenize_batch',
-    'chunk_text',
-    'get_tokenization_worker',
+    # Legacy Orchestrator (backward compatibility)
+    "ContentPipelineOrchestrator",
+    "DocumentResult",
+    "EarlyStopConfig",
     # Early stop (Principle L)
-    'EarlyStopDetector',
-    'EarlyStopConfig',
-    'StopReason',
-    'StreamingEarlyStopCallback',
-    'create_early_stop_detector',
-    'check_should_stop',
-    'get_clean_output',
+    "EarlyStopDetector",
+    "PipelineStage",
+    "PipelineStageError",
+    "PipelineValidationError",
+    # Pre-tokenization (Principle G)
+    "PreTokenizationWorker",
+    "ProcessedContentResult",
+    "ProcessingProgress",
+    "ProcessingRequest",
+    "ProcessingResult",
+    "ProcessingStatus",
+    # Sentence processing (Principle M)
+    "SentenceLevelProcessor",
+    "SentenceResult",
+    "StageMetrics",
+    "StopReason",
+    "StreamingEarlyStopCallback",
+    "TokenizationConfig",
+    "TokenizedInput",
+    "TokenizerType",
+    # NEW: Unified Pipeline (recommended)
+    "UnifiedPipelineService",
+    "UnifiedProcessingStage",
+    "check_should_stop",
+    "chunk_text",
+    "create_early_stop_detector",
+    "get_clean_output",
+    "get_pipeline_service",
+    "get_tokenization_worker",
+    "pre_tokenize",
+    "pre_tokenize_batch",
 ]

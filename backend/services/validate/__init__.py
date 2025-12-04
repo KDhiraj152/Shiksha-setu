@@ -1,13 +1,17 @@
 """Validation module for educational content quality assurance."""
 
-from .validator import ValidationModule, ValidationResult, QualityReport
-from .standards import NCERTStandardsLoader, NCERTStandardData, initialize_ncert_standards
+from .standards import (
+    NCERTStandardData,
+    NCERTStandardsLoader,
+    initialize_ncert_standards,
+)
+from .validator import QualityReport, ValidationModule, ValidationResult
 
 __all__ = [
-    'ValidationModule',
-    'ValidationResult', 
-    'QualityReport',
-    'NCERTStandardsLoader',
-    'NCERTStandardData',
-    'initialize_ncert_standards'
+    "NCERTStandardData",
+    "NCERTStandardsLoader",
+    "QualityReport",
+    "ValidationModule",
+    "ValidationResult",
+    "initialize_ncert_standards",
 ]

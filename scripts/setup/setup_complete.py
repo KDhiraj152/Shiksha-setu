@@ -41,14 +41,17 @@ class SetupManager:
             return False
     
     def check_python_version(self) -> bool:
-        """Check Python version >= 3.11."""
+        """Check Python version - 3.11 required for ML stack."""
         logger.info("🔍 Checking Python version...")
         version = sys.version_info
-        if version.major >= 3 and version.minor >= 11:
-            logger.info(f"✅ Python {version.major}.{version.minor}.{version.micro}")
+        if version.major == 3 and version.minor == 11:
+            logger.info(f"✅ Python {version.major}.{version.minor}.{version.micro} (optimal for ML stack)")
+            return True
+        elif version.major >= 3 and version.minor >= 11 and version.minor <= 13:
+            logger.warning(f"⚠️ Python {version.major}.{version.minor}.{version.micro} (3.11 recommended for best compatibility)")
             return True
         else:
-            error = f"❌ Python 3.11+ required, found {version.major}.{version.minor}"
+            error = f"❌ Python 3.11 required, found {version.major}.{version.minor}"
             self.errors.append(error)
             logger.error(error)
             return False
@@ -174,19 +177,19 @@ logger = logging.getLogger(__name__)
 
 manager = get_model_manager()
 
-# Download models
+# Download optimal 2025 model stack
 try:
-    logger.info("Downloading Flan-T5 base...")
-    manager.load_flan_t5("base")
+    logger.info("Downloading Qwen2.5-3B-Instruct (LLM)...")
+    manager.load_text_model("Qwen/Qwen2.5-3B-Instruct")
     
-    logger.info("Downloading Sentence-BERT...")
-    manager.load_sentence_bert()
+    logger.info("Downloading BGE-M3 (Embeddings)...")
+    manager.load_embedding_model("BAAI/bge-m3")
     
-    logger.info("Downloading BERT multilingual...")
-    manager.load_bert_multilingual()
+    logger.info("Downloading Whisper Large V3 Turbo (STT)...")
+    manager.load_whisper("large-v3-turbo")
     
-    logger.info("Downloading Whisper base...")
-    manager.load_whisper("base")
+    logger.info("Downloading MMS-TTS Hindi (TTS)...")
+    manager.load_tts_model("facebook/mms-tts-hin")
     
     logger.info("All models downloaded successfully!")
 except Exception as e:
@@ -241,10 +244,15 @@ FLASK_PORT=5000
 # Hugging Face (optional - for model downloads)
 HUGGINGFACE_API_KEY=
 
-# Model Configuration
-FLANT5_MODEL_ID=google/flan-t5-base
-INDICTRANS2_MODEL_ID=ai4bharat/indictrans2-en-indic-1B
-BERT_MODEL_ID=bert-base-multilingual-cased
+# Model Configuration (Optimal 2025 Stack)
+SIMPLIFICATION_MODEL_ID=Qwen/Qwen2.5-3B-Instruct
+TRANSLATION_MODEL_ID=ai4bharat/indictrans2-en-indic-1B
+VALIDATION_MODEL_ID=google/gemma-2-2b-it
+EMBEDDING_MODEL_ID=BAAI/bge-m3
+RERANKER_MODEL_ID=BAAI/bge-reranker-v2-m3
+TTS_MODEL_ID=facebook/mms-tts-hin
+STT_MODEL_ID=openai/whisper-large-v3-turbo
+OCR_MODEL_ID=ucaslcl/GOT-OCR2_0
 
 # Storage
 AUDIO_STORAGE_DIR=data/audio
@@ -288,8 +296,8 @@ CACHE_DIR=data/cache
         print("  make docker-up     - Start with Docker")
         print("  make lint          - Check code quality")
         print("\n📖 Documentation:")
-        print("  docs/README.md     - Complete setup guide")
-        print("  docs/API.md        - API reference")
+        print("  README.md          - Complete setup guide")
+        print("  /docs endpoint     - API reference (when running)")
         print("\n🚀 Access Points:")
         print("  API:               http://localhost:8000")
         print("  API Docs:          http://localhost:8000/docs")

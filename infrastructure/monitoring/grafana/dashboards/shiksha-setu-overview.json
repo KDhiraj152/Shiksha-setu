@@ -1,9 +1,3 @@
-"""
-Grafana Dashboard Configuration for ShikshaSetu
-
-Issue: CODE-REVIEW-GPT #20 (MEDIUM)
-Comprehensive dashboards for monitoring application performance.
-"""
 {
   "dashboard": {
     "title": "ShikshaSetu - Application Overview",

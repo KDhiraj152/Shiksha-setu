@@ -30,11 +30,11 @@ echo ""
 
 # Step 2: Activate virtual environment
 echo -e "${YELLOW}[2/6] Activating virtual environment...${NC}"
-if [ ! -d ".venv" ]; then
-    echo -e "${RED}Error: Virtual environment not found. Run: python -m venv .venv${NC}"
+if [ ! -d "venv" ]; then
+    echo -e "${RED}Error: Virtual environment not found. Run: python3.11 -m venv venv${NC}"
     exit 1
 fi
-source .venv/bin/activate
+source venv/bin/activate
 echo -e "${GREEN}✓ Virtual environment activated${NC}"
 echo ""
 

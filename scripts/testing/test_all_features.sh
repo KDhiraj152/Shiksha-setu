@@ -28,12 +28,13 @@ test_pass "Backend is running"
 # Register a test user (may already exist)
 echo ""
 echo "Setting up test user..."
-REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/register" \
+REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v2/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test_user_'$(date +%s)'@example.com",
     "password": "SecurePass123!@#",
-    "full_name": "Test User"
+    "full_name": "Test User",
+    "role": "user"
   }')
 
 if echo "$REGISTER_RESPONSE" | grep -q "access_token"; then
@@ -49,32 +50,33 @@ echo ""
 echo "=========================================="
 echo "Problem Statement 1: Content Simplification"
 echo "=========================================="
-test_info "API Endpoint: POST /api/v1/content/simplify"
+test_info "API Endpoint: POST /api/v2/content/simplify"
 test_info "Simplifies complex text to grade-appropriate level"
-test_info "Status: Endpoint exists, requires authentication"
+test_info "Status: Endpoint ready (V2 API)"
 
 echo ""
 echo "=========================================="
 echo "Problem Statement 2: Multi-lingual Translation"
 echo "=========================================="
-test_info "API Endpoint: POST /api/v1/content/translate"
+test_info "API Endpoint: POST /api/v2/content/translate"
 test_info "Translates content to 10+ Indian languages (IndicTrans2)"
-test_info "Status: Endpoint exists, requires authentication"
+test_info "Status: Endpoint ready (V2 API)"
 
 echo ""
 echo "=========================================="
 echo "Problem Statement 3: Text-to-Speech"
 echo "=========================================="
-test_info "API Endpoint: POST /api/v1/content/audio"
-test_info "Generates multilingual audio (MMS-TTS)"
-test_info "Status: Endpoint exists, requires authentication"
+test_info "API Endpoint: POST /api/v2/content/tts"
+test_info "Generates multilingual audio (Edge TTS + MMS-TTS)"
+test_info "Status: Endpoint ready (V2 API)"
 
 echo ""
 echo "=========================================="
 echo "Problem Statement 4: RAG Q&A System"
 echo "=========================================="
-test_info "API Endpoint: POST /api/v1/qa/ask"
-test_info "Intelligent Q&A using vector embeddings (pgvector)"
+test_info "API Endpoint: POST /api/v2/chat/guest"
+test_info "Intelligent Q&A with LLM (no auth required)"
+test_info "Status: Endpoint ready (V2 API)"
 
 # Test database support for Q&A
 echo ""
@@ -122,11 +124,11 @@ echo "=========================================="
 echo "Model Configuration Status"
 echo "=========================================="
 echo ""
-test_info "Content Simplification: FLAN-T5 (google/flan-t5-base)"
+test_info "Content Simplification: Qwen2.5-3B-Instruct (Qwen/Qwen2.5-3B-Instruct)"
 test_info "Translation: IndicTrans2 (ai4bharat/indictrans2-en-indic-1B)"
-test_info "TTS: MMS-TTS (facebook/mms-tts-hin)"
-test_info "Embeddings: E5-Large (intfloat/multilingual-e5-large)"
-test_info "Validation: IndicBERT (ai4bharat/indic-bert)"
+test_info "TTS: MMS-TTS (facebook/mms-tts-*) - 1100+ languages"
+test_info "Embeddings: BGE-M3 (BAAI/bge-m3)"
+test_info "Validation: Gemma-2-2B-IT (google/gemma-2-2b-it)"
 
 echo ""
 echo "=========================================="

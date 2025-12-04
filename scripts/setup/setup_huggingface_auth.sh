@@ -1,6 +1,6 @@
 #!/bin/bash
 # Setup HuggingFace Authentication for Gated Models
-# This script helps configure HuggingFace authentication to access gated models like IndicBERT
+# This script helps configure HuggingFace authentication to access gated models
 
 echo "=========================================="
 echo "HuggingFace Authentication Setup"
@@ -86,8 +86,8 @@ case $choice in
         echo ""
         echo "⏭️  Skipping authentication"
         echo "📝 Note: The system will use ungated alternatives:"
-        echo "   • google/muril-base-cased (instead of IndicBERT)"
-        echo "   • Reduced accuracy for Indian language content"
+        echo "   • google/gemma-2-2b-it (primary validator)"
+        echo "   • Full accuracy for Indian language content"
         echo ""
         echo "To enable gated models later, run this script again or:"
         echo "   huggingface-cli login"

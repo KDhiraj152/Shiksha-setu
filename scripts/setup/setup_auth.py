@@ -130,7 +130,7 @@ def main():
     # 1. Setup JWT secret
     print("📋 Step 1: JWT Secret Key Configuration")
     print("-" * 60)
-    secret = setup_jwt_secret()
+    _ = setup_jwt_secret()  # Result logged internally
     print()
     
     # 2. Create test users
@@ -199,15 +199,15 @@ def main():
     print("🔧 Usage Examples:")
     print("-" * 60)
     print("1. Login to get token:")
-    print('   curl -X POST http://localhost:8000/api/v1/auth/login \\')
+    print('   curl -X POST http://localhost:8000/api/v2/auth/login \\')
     print('     -H "Content-Type: application/json" \\')
     print('     -d \'{"email": "test@shiksha.com", "password": "Test@123456"}\'')
     print()
     print("2. Use token to access protected endpoints:")
-    print('   curl -X POST http://localhost:8000/api/v1/qa/ask \\')
+    print('   curl -X POST http://localhost:8000/api/v2/chat/guest \\')
     print('     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\')
     print('     -H "Content-Type: application/json" \\')
-    print('     -d \'{"question": "What is photosynthesis?", "content_id": 1}\'')
+    print('     -d \'{"message": "What is photosynthesis?", "language": "English"}\'')
     print()
     print("=" * 60)
 

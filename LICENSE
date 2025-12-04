@@ -1,6 +1,9 @@
 MIT License
 
-Copyright (c) 2025 ShikshaSetu - AI-Powered Multilingual Education Platform
+Copyright (c) 2025 ShikshaSetu Contributors
+
+ShikshaSetu - AI-Powered Multilingual Education Platform
+https://github.com/shikshasetu/shikshasetu
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +22,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Third-Party Licenses:
+
+This project incorporates components from various open-source projects.
+Each component retains its original license. See the respective project
+repositories for detailed license information.
+
+Notable dependencies include:
+- FastAPI (MIT License)
+- SvelteKit (MIT License)
+- PostgreSQL (PostgreSQL License)
+- Redis (BSD License)
+- PyTorch (BSD License)
+- Hugging Face Transformers (Apache 2.0 License)

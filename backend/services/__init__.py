@@ -1,14 +1,111 @@
-"""Service package exports."""
-from .ocr import OCRService, PDFExtractor, TesseractOCR, MathFormulaDetector, ExtractionResult
-from .captions import WhisperCaptionService, CaptionResult, Caption
+"""
+ShikshaSetu Services Module
+============================
+
+Business logic services for the ShikshaSetu platform.
+
+Active Services:
+- inference/: LLM and embedding generation (MLX, CoreML, Unified)
+- pipeline/: Content processing pipeline (unified, optimized)
+- evaluation/: Semantic accuracy evaluation
+- cultural/: Cultural context adaptation for Indian regions
+- health/: System health monitoring
+- ocr.py: Document text extraction (GOT-OCR2)
+- rag.py: Retrieval augmented generation (BGE-M3)
+- speech/: Speech processing
+- translate/: Translation services (IndicTrans2)
+- tts/: Text-to-speech (MMS-TTS, Edge-TTS)
+- stt/: Speech-to-text (Whisper V3 Turbo)
+- validate/: Curriculum validation
+- simplify/: Content simplification
+- ai_core/: AI service core
+- review_queue.py: Teacher review queue
+- student_profile.py: Student personalization
+
+Usage:
+    from backend.services import get_inference_engine
+    engine = get_inference_engine()
+"""
+
+
+# OCR imports are lazy to avoid fitz dependency issues
+def get_ocr_service():
+    """Get the OCR service (lazy import to avoid fitz dependency)."""
+    from .ocr import OCRService
+
+    return OCRService()
+
+
+# Lazy imports to avoid circular dependencies
+def get_inference_engine():
+    """Get the unified inference engine."""
+    from .inference import get_inference_engine as _get
+
+    return _get()
+
+
+def get_pipeline_service():
+    """Get the unified pipeline service."""
+    from .pipeline import get_pipeline_service as _get
+
+    return _get()
+
+
+def get_semantic_evaluator():
+    """Get the semantic accuracy evaluator."""
+    from .evaluation import get_semantic_evaluator as _get
+
+    return _get()
+
+
+def get_cultural_context():
+    """Get the cultural context service."""
+    from .cultural import get_cultural_context as _get
+
+    return _get()
+
+
+def get_health_checker():
+    """Get the health checker service."""
+    from .health import get_health_checker as _get
+
+    return _get()
+
+
+def get_review_queue():
+    """Get the response review queue."""
+    from .review_queue import get_review_queue as _get
+
+    return _get()
+
+
+# Alias for backwards compatibility
+ReviewQueue = None
+
+
+def _get_review_queue_class():
+    """Get the ReviewQueue class (ResponseReviewQueue)."""
+    global ReviewQueue
+    if ReviewQueue is None:
+        from .review_queue import ResponseReviewQueue
+
+        ReviewQueue = ResponseReviewQueue
+    return ReviewQueue
+
 
 __all__ = [
-    'OCRService',
-    'PDFExtractor',
-    'TesseractOCR',
-    'MathFormulaDetector',
-    'ExtractionResult',
-    'WhisperCaptionService',
-    'CaptionResult',
-    'Caption'
+    "GOTOCR2",
+    "ExtractionResult",
+    # OCR
+    "OCRService",
+    "PDFProcessor",
+    # Review Queue
+    "ReviewQueue",
+    "get_cultural_context",
+    "get_health_checker",
+    # Factory functions
+    "get_inference_engine",
+    "get_pipeline_service",
+    "get_review_queue",
+    "get_semantic_evaluator",
 ]

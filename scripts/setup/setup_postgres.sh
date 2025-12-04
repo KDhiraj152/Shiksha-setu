@@ -189,8 +189,8 @@ echo -e "${GREEN}✓ .env updated with PostgreSQL connection${NC}"
 
 # Run Alembic migrations
 echo -e "${YELLOW}→ Running database migrations...${NC}"
-if [ -f .venv/bin/activate ]; then
-    source .venv/bin/activate
+if [ -f venv/bin/activate ]; then
+    source venv/bin/activate
 fi
 
 python -m alembic upgrade head
@@ -301,6 +301,6 @@ echo ""
 echo -e "${YELLOW}Next Steps:${NC}"
 echo -e "  1. Review /tmp/postgresql_performance.conf"
 echo -e "  2. Apply settings to postgresql.conf if desired"
-echo -e "  3. Run: ./bin/start-backend"
+echo -e "  3. Run: ./scripts/deployment/start-backend"
 echo -e "  4. Run tests: pytest tests/"
 echo ""

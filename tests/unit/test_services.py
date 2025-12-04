@@ -1,12 +1,18 @@
 """
 Unit tests for backend services.
-Tests core functionality of translation, storage, and curriculum validation services.
+Tests core functionality of translation and curriculum validation services.
+
+Note: Storage and VLLMClient tests removed - these modules have been superseded by:
+- Storage: Direct file handling in API routes
+- VLLMClient: MLX-based inference via core.optimized
 """
-import pytest
+
 import io
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
 
 # Translation Service Tests
 from backend.services.translate import TranslationService
@@ -14,218 +20,194 @@ from backend.services.translate import TranslationService
 
 class TestTranslationService:
     """Tests for TranslationService."""
-    
+
     @pytest.fixture
     def translation_service(self):
         """Create TranslationService instance."""
         return TranslationService()
-    
+
     @pytest.fixture
     def mock_translation_engine(self):
         """Mock TranslationEngine."""
-        with patch('backend.services.translate.TranslationEngine') as mock:
+        with patch("backend.services.translate.TranslationEngine") as mock:
             instance = mock.return_value
             instance.translate.return_value = "translated text"
             yield instance
-    
+
     @pytest.mark.asyncio
-    async def test_translate_async_basic(self, translation_service, mock_translation_engine):
+    async def test_translate_async_basic(
+        self, translation_service, mock_translation_engine
+    ):
         """Test async translation with basic text."""
         translation_service.engine = mock_translation_engine
-        
+
         result = await translation_service.translate_async(
-            text="Hello world",
-            source_lang="en",
-            target_lang="hi"
+            text="Hello world", source_lang="en", target_lang="hi"
         )
-        
+
         assert result == "translated text"
+        # The engine is called with keyword arguments
         mock_translation_engine.translate.assert_called_once_with(
-            "Hello world", "en", "hi"
+            text="Hello world",
+            target_language="hi",
+            subject="General",
+            source_language="en",
         )
-    
+
     @pytest.mark.asyncio
-    async def test_translate_async_empty_text(self, translation_service, mock_translation_engine):
+    async def test_translate_async_empty_text(
+        self, translation_service, mock_translation_engine
+    ):
         """Test async translation with empty text."""
         translation_service.engine = mock_translation_engine
         mock_translation_engine.translate.return_value = ""
-        
+
         result = await translation_service.translate_async(
-            text="",
-            source_lang="en",
-            target_lang="hi"
+            text="", source_lang="en", target_lang="hi"
         )
-        
+
         assert result == ""
-    
+
     @pytest.mark.asyncio
-    async def test_translate_async_multiple_languages(self, translation_service, mock_translation_engine):
+    async def test_translate_async_multiple_languages(
+        self, translation_service, mock_translation_engine
+    ):
         """Test async translation with various language pairs."""
         translation_service.engine = mock_translation_engine
-        
+
         language_pairs = [
             ("en", "hi", "Hello", "नमस्ते"),
             ("hi", "en", "नमस्ते", "Hello"),
             ("en", "ta", "Welcome", "வரவேற்பு"),
         ]
-        
+
         for source, target, input_text, expected in language_pairs:
             mock_translation_engine.translate.return_value = expected
             result = await translation_service.translate_async(
-                text=input_text,
-                source_lang=source,
-                target_lang=target
+                text=input_text, source_lang=source, target_lang=target
             )
             assert result == expected
 
 
-# Storage Service Tests
-from backend.services.storage import LocalStorageService, S3StorageService, StorageService
+# ============================================================================
+# Device Router Tests (Replaces Storage/VLLMClient)
+# ============================================================================
 
 
-class TestLocalStorageService:
-    """Tests for LocalStorageService."""
-    
+class TestDeviceRouter:
+    """Tests for optimized DeviceRouter."""
+
     @pytest.fixture
-    def storage_service(self, tmp_path):
-        """Create LocalStorageService with temp directory."""
-        with patch('backend.services.storage.settings') as mock_settings:
-            mock_settings.UPLOAD_DIR = tmp_path / "uploads"
-            mock_settings.API_V1_PREFIX = "/api/v1"
-            service = LocalStorageService()
-            yield service
-    
-    def test_upload_file_basic(self, storage_service):
-        """Test basic file upload."""
-        file_content = b"test file content"
-        file_obj = io.BytesIO(file_content)
-        
-        result = storage_service.upload_file(
-            file_obj=file_obj,
-            key="test/file.txt",
-            content_type="text/plain"
+    def device_router(self):
+        """Get DeviceRouter instance."""
+        from backend.core.optimized import get_device_router
+
+        return get_device_router()
+
+    def test_device_router_initialization(self, device_router):
+        """Test device router initializes correctly."""
+        assert device_router is not None
+        assert device_router.capabilities is not None
+        # Check capabilities has expected attributes
+        assert device_router.capabilities.memory_gb > 0
+
+    def test_device_info(self, device_router):
+        """Test device info retrieval."""
+        info = device_router.get_info()
+
+        assert (
+            "chip" in info
+            or "chip_name" in info
+            or device_router.capabilities.chip_name
         )
-        
-        assert result is not None
-        assert Path(result).exists()
-        assert Path(result).read_bytes() == file_content
-    
-    def test_upload_file_creates_subdirectories(self, storage_service):
-        """Test file upload creates nested directories."""
-        file_obj = io.BytesIO(b"content")
-        
-        result = storage_service.upload_file(
-            file_obj=file_obj,
-            key="deep/nested/path/file.txt"
-        )
-        
-        assert Path(result).exists()
-        assert Path(result).parent.name == "path"
-    
-    def test_download_file_exists(self, storage_service):
-        """Test downloading existing file."""
-        # First upload
-        upload_content = b"download test content"
-        upload_obj = io.BytesIO(upload_content)
-        storage_service.upload_file(upload_obj, "download_test.txt")
-        
-        # Then download
-        download_obj = io.BytesIO()
-        storage_service.download_file("download_test.txt", download_obj)
-        
-        download_obj.seek(0)
-        assert download_obj.read() == upload_content
-    
-    def test_download_file_not_found(self, storage_service):
-        """Test downloading non-existent file raises error."""
-        download_obj = io.BytesIO()
-        
-        with pytest.raises(FileNotFoundError):
-            storage_service.download_file("nonexistent.txt", download_obj)
-    
-    def test_delete_file_exists(self, storage_service):
-        """Test deleting existing file."""
-        file_obj = io.BytesIO(b"to be deleted")
-        result = storage_service.upload_file(file_obj, "delete_me.txt")
-        
-        assert Path(result).exists()
-        
-        deleted = storage_service.delete_file("delete_me.txt")
-        assert deleted is True
-        assert not Path(result).exists()
-    
-    def test_delete_file_not_exists(self, storage_service):
-        """Test deleting non-existent file returns False."""
-        deleted = storage_service.delete_file("never_existed.txt")
-        assert deleted is False
-    
-    def test_generate_presigned_url(self, storage_service):
-        """Test presigned URL generation for local storage."""
-        url = storage_service.generate_presigned_url("test_file.txt")
-        
-        assert "/api/v1/static/uploads/test_file.txt" in url
+        assert device_router.capabilities.memory_gb > 0
+
+    def test_task_device_routing(self, device_router):
+        """Test task-specific device routing."""
+        from backend.core.optimized.device_router import TaskType
+
+        tasks = [
+            TaskType.EMBEDDING,
+            TaskType.RERANKING,
+            TaskType.TRANSLATION,
+            TaskType.TTS,
+            TaskType.STT,
+            TaskType.LLM_INFERENCE,
+        ]
+
+        for task in tasks:
+            decision = device_router.route(task)
+            assert decision.backend is not None
+            assert decision.device_str != ""
 
 
-class TestS3StorageService:
-    """Tests for S3StorageService."""
-    
+class TestModelManager:
+    """Tests for optimized ModelManager."""
+
     @pytest.fixture
-    def mock_s3_client(self):
-        """Mock boto3 S3 client."""
-        with patch('backend.services.storage.boto3.client') as mock_client:
-            mock_instance = Mock()
-            mock_client.return_value = mock_instance
-            yield mock_instance
-    
-    @pytest.fixture
-    def storage_service(self, mock_s3_client):
-        """Create S3StorageService with mocked client."""
-        with patch('backend.services.storage.settings') as mock_settings:
-            mock_settings.AWS_ACCESS_KEY_ID = "test_key"
-            mock_settings.AWS_SECRET_ACCESS_KEY = "test_secret"
-            mock_settings.AWS_REGION = "us-east-1"
-            mock_settings.S3_BUCKET_NAME = "test-bucket"
-            service = S3StorageService()
-            service.s3_client = mock_s3_client
-            service.bucket_name = "test-bucket"
-            yield service
-    
-    def test_upload_file_to_s3(self, storage_service, mock_s3_client):
-        """Test uploading file to S3."""
-        file_content = b"s3 test content"
-        file_obj = io.BytesIO(file_content)
-        
-        mock_s3_client.upload_fileobj.return_value = None
-        
-        result = storage_service.upload_file(
-            file_obj=file_obj,
-            key="s3/test.txt",
-            content_type="text/plain"
-        )
-        
-        assert result == "s3://test-bucket/s3/test.txt"
-        mock_s3_client.upload_fileobj.assert_called_once()
-    
-    def test_generate_presigned_url_s3(self, storage_service, mock_s3_client):
-        """Test generating presigned URL for S3."""
-        mock_s3_client.generate_presigned_url.return_value = "https://s3.amazonaws.com/test-bucket/file.txt?signature=xyz"
-        
-        url = storage_service.generate_presigned_url("test_file.txt")
-        
-        assert url.startswith("https://s3.amazonaws.com")
-        mock_s3_client.generate_presigned_url.assert_called_once()
-    
-    def test_delete_file_from_s3(self, storage_service, mock_s3_client):
-        """Test deleting file from S3."""
-        mock_s3_client.delete_object.return_value = {'DeleteMarker': True}
-        
-        result = storage_service.delete_file("s3/delete_test.txt")
-        
-        assert result is True
-        mock_s3_client.delete_object.assert_called_once_with(
-            Bucket="test-bucket",
-            Key="s3/delete_test.txt"
-        )
+    def model_manager(self):
+        """Get ModelManager instance."""
+        from backend.core.optimized import get_model_manager
+
+        return get_model_manager()
+
+    def test_model_manager_initialization(self, model_manager):
+        """Test model manager initializes correctly."""
+        assert model_manager is not None
+        # Should have stats method
+        assert hasattr(model_manager, "get_stats")
+
+    def test_model_types_defined(self, model_manager):
+        """Test model types are properly defined."""
+        from backend.core.optimized import ModelType
+
+        expected_types = ["EMBEDDING", "LLM", "RERANKER", "TTS", "STT"]
+        for model_type in expected_types:
+            assert hasattr(ModelType, model_type)
+
+    def test_model_manager_methods(self, model_manager):
+        """Test model manager has expected methods."""
+        expected_methods = [
+            "get_embedding_model",
+            "get_llm_model",
+            "get_reranker_model",
+            "get_tts_model",
+            "get_stt_model",
+            "is_loaded",
+            "get_stats",
+        ]
+
+        for method in expected_methods:
+            assert hasattr(model_manager, method)
+
+
+class TestAsyncBatchProcessor:
+    """Tests for async batch processor."""
+
+    def test_batch_processor_initialization(self):
+        """Test batch processor can be imported and has correct signature."""
+        import inspect
+
+        from backend.core.optimized import AsyncBatchProcessor
+
+        # Check constructor signature
+        sig = inspect.signature(AsyncBatchProcessor.__init__)
+        params = list(sig.parameters.keys())
+
+        assert "processor" in params
+        assert "batch_size" in params
+
+    @pytest.mark.asyncio
+    async def test_batch_processor_with_mock(self):
+        """Test batch processor with mock processor function."""
+        from backend.core.optimized import AsyncBatchProcessor
+
+        # Create mock processor
+        async def mock_processor(items):
+            return [f"processed_{i}" for i in items]
+
+        proc = AsyncBatchProcessor(processor=mock_processor, batch_size=32)
+        assert proc is not None
 
 
 # Curriculum Validator Tests
@@ -234,7 +216,7 @@ from backend.services.curriculum_validator import CurriculumValidator
 
 class TestCurriculumValidator:
     """Tests for CurriculumValidator."""
-    
+
     @pytest.fixture
     def mock_model(self):
         """Mock transformer model."""
@@ -245,104 +227,108 @@ class TestCurriculumValidator:
         mock_output.logits = Mock()
         mock.return_value = mock_output
         return mock
-    
+
     @pytest.fixture
     def mock_tokenizer(self):
         """Mock tokenizer."""
         mock = Mock()
-        mock.return_value = {
-            'input_ids': Mock(),
-            'attention_mask': Mock()
-        }
+        mock.return_value = {"input_ids": Mock(), "attention_mask": Mock()}
         return mock
-    
+
     @pytest.fixture
     def validator(self, mock_model, mock_tokenizer):
         """Create CurriculumValidator with mocked model."""
-        with patch('backend.services.curriculum_validator.settings') as mock_settings:
+        with patch("backend.services.curriculum_validator.settings") as mock_settings:
             mock_settings.VALIDATOR_MODEL_ID = "ai4bharat/indic-bert"
             mock_settings.VALIDATOR_FINE_TUNE_PATH = "/tmp/nonexistent"
-            
+
             validator = CurriculumValidator()
             validator.model = mock_model
             validator.tokenizer = mock_tokenizer
             yield validator
-    
+
     def test_grade_ranges_defined(self, validator):
         """Test grade ranges are properly defined."""
         assert "primary" in validator.grade_ranges
         assert "middle" in validator.grade_ranges
         assert "secondary" in validator.grade_ranges
         assert "senior_secondary" in validator.grade_ranges
-        
+
         assert validator.grade_ranges["primary"] == (1, 5)
         assert validator.grade_ranges["middle"] == (6, 8)
         assert validator.grade_ranges["secondary"] == (9, 10)
         assert validator.grade_ranges["senior_secondary"] == (11, 12)
-    
+
     def test_subjects_defined(self, validator):
         """Test subject categories are defined."""
         expected_subjects = [
-            "mathematics", "science", "social_science",
-            "english", "hindi", "languages", "arts", "physical_education"
+            "mathematics",
+            "science",
+            "social_science",
+            "english",
+            "hindi",
+            "languages",
+            "arts",
+            "physical_education",
         ]
-        
+
         for subject in expected_subjects:
             assert subject in validator.subjects
-    
+
     def test_model_initialization(self):
         """Test validator can be initialized."""
-        with patch('backend.services.curriculum_validator.settings') as mock_settings:
+        with patch("backend.services.curriculum_validator.settings") as mock_settings:
             mock_settings.VALIDATOR_MODEL_ID = "test-model"
             mock_settings.VALIDATOR_FINE_TUNE_PATH = "/tmp/test"
-            
+
             validator = CurriculumValidator()
-            
+
             assert validator.model_id == "test-model"
             assert validator.fine_tune_path == "/tmp/test"
             assert validator.model is None
             assert validator.tokenizer is None
 
 
-# Bhashini Client Tests
-from backend.services.bhashini import BhashiniClient
+# ============================================================================
+# Unified Cache Tests
+# ============================================================================
 
 
-class TestBhashiniClient:
-    """Tests for BhashiniClient."""
-    
-    @pytest.mark.skip(reason="BhashiniClient requires environment variables set before initialization")
-    def test_client_initialization(self):
-        """Test Bhashini client initializes correctly."""
-        # This test would require actual environment variables or deeper mocking
-        pass
+class TestUnifiedCache:
+    """Tests for unified multi-tier cache."""
 
-
-# vLLM Client Tests
-from backend.services.vllm_serve import VLLMClient
-
-
-class TestVLLMClient:
-    """Tests for VLLMClient."""
-    
     @pytest.fixture
-    def mock_requests(self):
-        """Mock requests library."""
-        with patch('backend.services.vllm_serve.requests') as mock:
-            yield mock
-    
+    def cache(self):
+        """Get unified cache instance."""
+        from backend.cache.unified import get_unified_cache
+
+        return get_unified_cache()
+
+    def test_cache_initialization(self, cache):
+        """Test cache initializes correctly."""
+        assert cache is not None
+
+    def test_cache_stats(self, cache):
+        """Test cache statistics."""
+        stats = cache.get_stats()
+
+        assert "l1_hits" in stats or "total_requests" in stats
+        assert "l1_misses" in stats or "overall_hit_rate" in stats
+
+
+class TestEmbeddingCache:
+    """Tests for embedding-specific cache."""
+
     @pytest.fixture
-    def vllm_client(self):
-        """Create VLLMClient instance."""
-        with patch('backend.services.vllm_serve.settings') as mock_settings:
-            mock_settings.VLLM_API_URL = "http://localhost:8001"
-            client = VLLMClient()
-            yield client
-    
-    def test_client_initialization(self, vllm_client):
-        """Test vLLM client initializes with correct URL."""
-        assert vllm_client is not None
-        # Add more specific assertions based on actual VLLMClient implementation
+    def embedding_cache(self):
+        """Get embedding cache instance."""
+        from backend.cache.unified import get_embedding_cache
+
+        return get_embedding_cache()
+
+    def test_embedding_cache_initialization(self, embedding_cache):
+        """Test embedding cache initializes correctly."""
+        assert embedding_cache is not None
 
 
 if __name__ == "__main__":

@@ -1,10 +1,18 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.0.0",
-  "description": "Policy configuration for ShikshaSetu AI Engine. Controls content filtering, curriculum enforcement, and safety features.",
-  "last_updated": "2025-12-04T00:00:00Z",
+  "version": "2.0.0",
+  "description": "Policy configuration for ShikshaSetu AI Engine. A safe, general-purpose AI for education and noble purposes.",
+  "last_updated": "2025-12-04T04:00:00Z",
   
   "meta": {
+    "vision": "A safe AI that empowers users for education, research, creativity, and noble purposes without artificial restrictions",
+    "principles": [
+      "Safety without unnecessary restrictions",
+      "Empower users to learn and create",
+      "Block only genuinely harmful content",
+      "Trust users with good intent",
+      "Enable noble purposes beyond education"
+    ],
     "extracted_from": [
       "backend/services/ai_core/safety.py",
       "backend/services/ai_core/engine.py",
@@ -12,24 +20,26 @@
       "backend/services/grade_adaptation.py",
       "backend/services/validate/ncert.py"
     ],
-    "purpose": "Consolidate all hardcoded alignment/filtering logic into configurable rules"
+    "purpose": "Minimal safety guardrails that block real harm while enabling maximum utility"
   },
 
   "modes": {
-    "RESTRICTED": {
-      "description": "Default mode with full policy enforcement",
-      "policy_filters_enabled": true,
-      "curriculum_enforcement": true,
-      "harmful_content_blocking": true
-    },
-    "UNRESTRICTED": {
-      "description": "Bypass curriculum and educational filters, keep system safety",
+    "OPEN": {
+      "description": "Default mode - open AI with essential safety only",
       "policy_filters_enabled": false,
       "curriculum_enforcement": false,
-      "harmful_content_blocking": true
+      "harmful_content_blocking": true,
+      "allow_general_queries": true
     },
-    "EXTERNAL_ALLOWED": {
-      "description": "Unrestricted mode plus external API calls allowed",
+    "EDUCATION": {
+      "description": "Education-focused mode with curriculum alignment",
+      "policy_filters_enabled": true,
+      "curriculum_enforcement": true,
+      "harmful_content_blocking": true,
+      "allow_general_queries": true
+    },
+    "RESEARCH": {
+      "description": "Research mode - maximum freedom for academic work",
       "policy_filters_enabled": false,
       "curriculum_enforcement": false,
       "harmful_content_blocking": true,

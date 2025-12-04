@@ -1,49 +1,98 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import ProtectedRoute from './components/ProtectedRoute';
-import PublicRoute from './components/PublicRoute';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import UploadPage from './pages/UploadPage';
-import TaskPage from './pages/TaskPage';
-import ContentPage from './pages/ContentPage';
-import LibraryPage from './pages/LibraryPage';
-import LandingPage from './pages/LandingPage';
-import AboutPage from './pages/AboutPage';
-import FeaturesPage from './pages/FeaturesPage';
-import SimplifyPage from './pages/SimplifyPage';
-import TranslatePage from './pages/TranslatePage';
-import QAPage from './pages/QAPage';
+import { lazy, Suspense, useEffect, memo } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from './store';
+import { ThemeProvider } from './context/ThemeContext';
+import { SystemStatusProvider } from './context/SystemStatusContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { SkipLink } from './lib/accessibility';
+import AppLayout from './components/layout/AppLayout';
 
-function App() {
+// Lazy load pages for better initial load performance
+const Chat = lazy(() => import('./pages/Chat'));
+const Auth = lazy(() => import('./pages/Auth'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Settings = lazy(() => import('./pages/Settings'));
+
+// Lightweight loading fallback - no heavy components
+const PageLoader = memo(function PageLoader() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<PublicRoute />}>
-            <Route index element={<LandingPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
-            <Route path="about" element={<AboutPage />} />
-          </Route>
-
-          {/* Protected routes */}
-          <Route path="/" element={<ProtectedRoute />}>
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="features" element={<FeaturesPage />} />
-            <Route path="upload" element={<UploadPage />} />
-            <Route path="simplify" element={<SimplifyPage />} />
-            <Route path="translate" element={<TranslatePage />} />
-            <Route path="qa" element={<QAPage />} />
-            <Route path="library" element={<LibraryPage />} />
-            <Route path="tasks/:taskId" element={<TaskPage />} />
-            <Route path="content/:contentId" element={<ContentPage />} />
-          </Route>
-        </Routes>
-      </div>
-    </BrowserRouter>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+      <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin opacity-30" />
+    </div>
   );
-}
+});
+
+// OPTIMIZATION: Prefetch components based on current route
+const RoutePrefetcher = memo(function RoutePrefetcher() {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Prefetch likely next routes based on current location
+    // Use requestIdleCallback for non-blocking prefetch
+    const prefetch = () => {
+      if (location.pathname === '/') {
+        // On landing page, likely to go to auth or chat
+        import('./pages/Auth');
+        import('./pages/Chat');
+      } else if (location.pathname === '/auth') {
+        // After auth, likely to go to chat
+        import('./pages/Chat');
+      } else if (location.pathname === '/chat') {
+        // In chat, might go to settings
+        import('./pages/Settings');
+      }
+    };
+
+    if ('requestIdleCallback' in globalThis) {
+      (globalThis as typeof globalThis & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(prefetch);
+    } else {
+      setTimeout(prefetch, 100);
+    }
+  }, [location.pathname]);
+  
+  return null;
+});
+
+// Main App component wrapped in memo
+const App = memo(function App() {
+  const { isAuthenticated } = useAuthStore();
+
+  return (
+    <ErrorBoundary>
+      <ThemeProvider>
+        <SystemStatusProvider>
+          {/* Skip link for keyboard users */}
+          <SkipLink href="#main-content" />
+          
+          <Router>
+            {/* Prefetch routes based on navigation patterns */}
+            <RoutePrefetcher />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public Landing Page */}
+                <Route path="/" element={<LandingPage />} />
+                
+                {/* Auth Route */}
+                <Route path="/auth" element={<Auth />} />
+                
+                {/* Protected Application Routes */}
+                <Route element={<AppLayout />}>
+                  <Route
+                    path="/chat"
+                    element={<Chat />}
+                  />
+                  <Route
+                    path="/settings"
+                    element={isAuthenticated ? <Settings /> : <Navigate to="/auth" />}
+                  />
+                </Route>
+              </Routes>
+            </Suspense>
+          </Router>
+        </SystemStatusProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+});
 
 export default App;

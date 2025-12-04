@@ -70,24 +70,26 @@ def test_configuration():
         return False
 
 # ============================================================================
-# TEST 2: Model Loader
+# TEST 2: Model Manager (Optimized)
 # ============================================================================
 def test_model_loader():
-    """Test model loader initialization."""
-    print_section("TEST 2: Model Loader")
+    """Test model manager initialization."""
+    print_section("TEST 2: Model Manager (Optimized)")
     
     try:
-        from backend.utils.model_loader import ModelLoader
-        loader = ModelLoader()
-        print_result("Model Loader Init", "✅", f"Device: {loader.device_manager.device_str}")
+        from backend.core.optimized import get_model_manager, get_device_router, M4_BATCH_SIZES
+        manager = get_model_manager()
+        router = get_device_router()
+        print_result("Model Manager Init", "✅", f"Device: {router.device_type}")
         
         # Check device capabilities
-        device_info = loader.device_manager.get_device_info()
-        print(f"   Available Memory: {device_info.get('available_memory', 'N/A')}")
-        print(f"   Device Type: {device_info.get('device_type', 'N/A')}")
+        device_info = router.get_device_info()
+        print(f"   Available Memory: {device_info.get('memory_gb', 'N/A')}GB")
+        print(f"   GPU Cores: {device_info.get('gpu_cores', 'N/A')}")
+        print(f"   Batch Sizes: {M4_BATCH_SIZES}")
         return True
     except Exception as e:
-        print_result("Model Loader Init", "❌", str(e))
+        print_result("Model Manager Init", "❌", str(e))
         return False
 
 # ============================================================================
@@ -125,75 +127,57 @@ def test_translation():
         return False
 
 # ============================================================================
-# TEST 4: Content Generation (Qwen/FlanT5)
+# TEST 4: Content Generation (Qwen2.5-3B-Instruct)
 # ============================================================================
 def test_content_generation():
     """Test content generation."""
-    print_section("TEST 4: Content Generation")
+    print_section("TEST 4: Content Generation (Qwen2.5-3B-Instruct)")
     
     try:
-        from backend.pipeline.model_clients import QwenClient, FlanT5Client
+        from backend.pipeline.model_clients import QwenSimplificationClient
         from backend.core.config import settings
         
-        # Try Qwen first if not legacy mode
-        if not settings.USE_LEGACY_MODELS:
-            print("⏳ Testing Qwen2.5-7B content generation...")
+        print("⏳ Testing Qwen2.5-3B-Instruct content generation...")
+        try:
+            client = QwenSimplificationClient()
+            test_prompt = "Explain photosynthesis in simple terms for grade 5 students."
+            print(f"\n📝 Test Prompt: {test_prompt}")
+            
+            # Try API mode first (faster, no download)
             try:
-                client = QwenClient()
-                test_prompt = "Explain photosynthesis in simple terms for grade 5 students."
-                print(f"\n📝 Test Prompt: {test_prompt}")
+                result = client.generate(
+                    prompt=test_prompt,
+                    max_length=200,
+                    temperature=0.7,
+                    use_local=False
+                )
                 
-                # Try API mode first (faster, no download)
+                if result and len(result) > 20:
+                    print(f"🎯 Generated Content:\n{result[:300]}...")
+                    print_result("Content Generation (Qwen)", "✅", "API generation successful")
+                    return True
+            except Exception as api_error:
+                print(f"   API unavailable: {str(api_error)[:60]}")
+                print("   Note: Set HUGGINGFACE_API_KEY for API access")
+                print("   Trying local model (FP16)...")
+                
+                # Try local model with FP16
                 try:
                     result = client.generate(
                         prompt=test_prompt,
                         max_length=200,
                         temperature=0.7,
-                        use_local=False
+                        use_local=True
                     )
-                    
                     if result and len(result) > 20:
                         print(f"🎯 Generated Content:\n{result[:300]}...")
-                        print_result("Content Generation (Qwen)", "✅", "API generation successful")
+                        print_result("Content Generation (Qwen)", "✅", "Local generation successful (FP16)")
                         return True
-                except Exception as api_error:
-                    print(f"   API unavailable: {str(api_error)[:60]}")
-                    print("   Note: Set HUGGINGFACE_API_KEY for API access")
-                    print("   Trying local model (FP16)...")
-                    
-                    # Try local model with FP16
-                    try:
-                        result = client.generate(
-                            prompt=test_prompt,
-                            max_length=200,
-                            temperature=0.7,
-                            use_local=True
-                        )
-                        if result and len(result) > 20:
-                            print(f"🎯 Generated Content:\n{result[:300]}...")
-                            print_result("Content Generation (Qwen)", "✅", "Local generation successful (FP16)")
-                            return True
-                    except Exception as local_error:
-                        print(f"   Local model unavailable: {str(local_error)[:60]}")
-                        print_result("Content Generation (Qwen)", "⏭", "Requires HuggingFace API key or local model download")
-            except Exception as e:
-                print_result("Content Generation (Qwen)", "⏭", f"Qwen unavailable, using FlanT5")
-                print("   Falling back to FlanT5...")
-        
-        # Fallback to FlanT5
-        try:
-            client = FlanT5Client()
-            test_text = "Photosynthesis is the process by which plants convert sunlight into energy."
-            result = client.process(
-                text=test_text,
-                grade_level=5,
-                subject="science"
-            )
-            print(f"🎯 Simplified Content:\n{result[:300]}...")
-            print_result("Content Simplification (FlanT5)", "✅", "Simplification successful")
-            return True
+                except Exception as local_error:
+                    print(f"   Local model unavailable: {str(local_error)[:60]}")
+                    print_result("Content Generation (Qwen)", "⏭", "Requires HuggingFace API key or local model download")
         except Exception as e:
-            print_result("Content Simplification (FlanT5)", "❌", f"{str(e)[:100]}")
+            print_result("Content Generation (Qwen)", "❌", f"{str(e)[:100]}")
             return False
             
     except Exception as e:
@@ -201,17 +185,17 @@ def test_content_generation():
         return False
 
 # ============================================================================
-# TEST 5: Text-to-Speech (VITS/MMS-TTS)
+# TEST 5: Text-to-Speech (MMS-TTS)
 # ============================================================================
 def test_text_to_speech():
     """Test text-to-speech service."""
     print_section("TEST 5: Text-to-Speech (MMS-TTS)")
     
     try:
-        from backend.pipeline.model_clients import VITSClient
+        from backend.pipeline.model_clients import MMSTTSClient
         
         print("⏳ Initializing TTS client...")
-        client = VITSClient()
+        client = MMSTTSClient()
         
         test_text = "नमस्ते, आप कैसे हैं?"  # Hindi: Hello, how are you?
         print(f"\n📝 Test Input (Hindi): {test_text}")
@@ -237,11 +221,11 @@ def test_text_to_speech():
         return False
 
 # ============================================================================
-# TEST 6: Embeddings (E5/MiniLM)
+# TEST 6: Embeddings (BGE-M3)
 # ============================================================================
 def test_embeddings():
     """Test embedding generation."""
-    print_section("TEST 6: Embeddings (E5-Large/MiniLM)")
+    print_section("TEST 6: Embeddings (BGE-M3)"))
     
     try:
         from backend.services.rag import RAGService
@@ -275,7 +259,7 @@ def test_embeddings():
 # ============================================================================
 def test_curriculum_validator():
     """Test curriculum validator."""
-    print_section("TEST 7: Curriculum Validator (IndicBERT)")
+    print_section("TEST 7: Curriculum Validator (Gemma-2-2B-IT)"))
     
     try:
         from backend.services.curriculum_validator import get_curriculum_validator
@@ -298,7 +282,7 @@ def test_curriculum_validator():
         
         # Try grade validation (may fail if model not downloaded)
         try:
-            print("\n⏳ Testing grade-level validation (requires IndicBERT model)...")
+            print("\n⏳ Testing grade-level validation (requires Gemma-2-2B-IT model)...")
             result = validator.validate_grade_level(
                 text=test_text,
                 target_grade=9,

@@ -1,13 +1,24 @@
 #!/usr/bin/env python3
-"""Download and cache required ML models for the ShikshaSetu platform."""
+"""Download and cache required ML models for the ShikshaSetu platform.
+
+2025 Optimal Model Stack:
+- Simplification: Qwen2.5-3B-Instruct
+- Translation: IndicTrans2 1B
+- Validation: Gemma-2-2B-IT
+- TTS: MMS-TTS (facebook/mms-tts-*)
+- STT: Whisper Large V3 Turbo
+- OCR: GOT-OCR2.0
+- Embeddings: BGE-M3
+- Reranker: BGE-Reranker-v2-M3
+"""
 import os
 import sys
 from pathlib import Path
 
 def download_models():
-    """Download FLAN-T5 and other required models."""
+    """Download required AI models for the ShikshaSetu platform."""
     print("=" * 60)
-    print("ShikshaSetu Model Downloader")
+    print("ShikshaSetu Model Downloader - 2025 Optimal Stack")
     print("=" * 60)
     
     # Set cache directory
@@ -17,31 +28,62 @@ def download_models():
     print(f"\n📁 Cache directory: {cache_dir}")
     
     try:
-        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+        from transformers import AutoTokenizer, AutoModelForCausalLM
         print("\n✓ Transformers library loaded successfully")
     except ImportError:
         print("\n✗ Error: transformers library not installed")
         print("Run: pip install transformers sentencepiece")
         sys.exit(1)
     
-    # Model configurations
+    # Model configurations - 2025 Optimal Stack
     models = [
         {
-            "name": "FLAN-T5 Base",
-            "id": "google/flan-t5-base",
-            "description": "Text simplification and adaptation",
-            "size": "~900MB"
+            "name": "Qwen2.5-3B-Instruct",
+            "id": "Qwen/Qwen2.5-3B-Instruct",
+            "description": "Text simplification and grade-level adaptation",
+            "size": "~6GB (FP16), ~2GB (INT4)",
+            "type": "causal_lm"
         },
         {
-            "name": "FLAN-T5 Small",
-            "id": "google/flan-t5-small",
-            "description": "Lightweight alternative for testing",
-            "size": "~300MB"
+            "name": "IndicTrans2 1B",
+            "id": "ai4bharat/indictrans2-en-indic-1B",
+            "description": "10-language Indian translation",
+            "size": "~2GB",
+            "type": "translation"
+        },
+        {
+            "name": "Gemma-2-2B-IT",
+            "id": "google/gemma-2-2b-it",
+            "description": "NCERT alignment & quality checking",
+            "size": "~4GB (FP16)",
+            "type": "causal_lm"
+        },
+        {
+            "name": "BGE-M3",
+            "id": "BAAI/bge-m3",
+            "description": "RAG embeddings (1024D, multilingual)",
+            "size": "~1.2GB",
+            "type": "embeddings"
+        },
+        {
+            "name": "BGE-Reranker-v2-M3",
+            "id": "BAAI/bge-reranker-v2-m3",
+            "description": "Improve retrieval accuracy",
+            "size": "~1GB",
+            "type": "reranker"
+        },
+        {
+            "name": "GOT-OCR2.0",
+            "id": "ucaslcl/GOT-OCR2_0",
+            "description": "High-accuracy text extraction from images",
+            "size": "~1.5GB",
+            "type": "ocr"
         }
     ]
     
     print("\n" + "=" * 60)
-    print("Available models:")
+    print("2025 Optimal Model Stack:")
+    print("=" * 60)
     for i, model in enumerate(models, 1):
         print(f"\n{i}. {model['name']}")
         print(f"   ID: {model['id']}")
@@ -49,23 +91,28 @@ def download_models():
         print(f"   Size: {model['size']}")
     
     print("\n" + "=" * 60)
-    choice = input("\nWhich model to download? (1/2/both) [both]: ").strip().lower()
+    print("\nNote: MMS-TTS models are downloaded automatically on first use.")
+    print("      STT uses openai/whisper-large-v3-turbo.")
+    print("=" * 60)
     
-    if not choice:
-        choice = "both"
+    choice = input("\nDownload which models? (1-6, 'all', or 'essential'): ").strip().lower()
     
     models_to_download = []
-    if choice in ["1", "both"]:
-        models_to_download.append(models[0])
-    if choice in ["2", "both"]:
-        models_to_download.append(models[1])
-    
-    if not models_to_download:
-        print("Invalid choice. Defaulting to both models.")
+    if choice == "all":
         models_to_download = models
+    elif choice == "essential":
+        # Essential: Simplification + Embeddings + Translation
+        models_to_download = [models[0], models[1], models[3]]
+    else:
+        try:
+            indices = [int(x.strip()) - 1 for x in choice.split(",")]
+            models_to_download = [models[i] for i in indices if 0 <= i < len(models)]
+        except (ValueError, IndexError):
+            print("Invalid choice. Downloading essential models.")
+            models_to_download = [models[0], models[1], models[3]]
     
     print("\n" + "=" * 60)
-    print("Downloading models...")
+    print("Downloading selected models...")
     print("=" * 60)
     
     for model in models_to_download:
@@ -74,70 +121,56 @@ def download_models():
         
         try:
             # Download tokenizer
-            print(f"   → Loading tokenizer...")
-            tokenizer = AutoTokenizer.from_pretrained(
+            print("   → Loading tokenizer...")
+            _tokenizer = AutoTokenizer.from_pretrained(
                 model['id'],
-                cache_dir=cache_dir
+                cache_dir=cache_dir,
+                trust_remote_code=True
             )
-            print(f"   ✓ Tokenizer downloaded")
+            print("   ✓ Tokenizer downloaded")
             
-            # Download model
-            print(f"   → Loading model (this may take a while)...")
-            model_obj = AutoModelForSeq2SeqLM.from_pretrained(
-                model['id'],
-                cache_dir=cache_dir
-            )
-            print(f"   ✓ Model downloaded successfully")
+            # Download model based on type
+            print("   → Loading model (this may take a while)...")
+            if model['type'] == 'causal_lm':
+                _model_obj = AutoModelForCausalLM.from_pretrained(
+                    model['id'],
+                    cache_dir=cache_dir,
+                    trust_remote_code=True,
+                    torch_dtype="auto",
+                    device_map="auto"
+                )
+            elif model['type'] == 'embeddings':
+                from sentence_transformers import SentenceTransformer
+                _model_obj = SentenceTransformer(model['id'], cache_folder=str(cache_dir))
+            elif model['type'] == 'reranker':
+                from sentence_transformers import CrossEncoder
+                _model_obj = CrossEncoder(model['id'])
+            else:
+                # Generic loading
+                from transformers import AutoModel
+                _model_obj = AutoModel.from_pretrained(
+                    model['id'],
+                    cache_dir=cache_dir,
+                    trust_remote_code=True
+                )
             
-            # Test the model
-            print(f"   → Testing model...")
-            test_input = "Simplify this text for grade 5 students: Photosynthesis is the process by which plants convert light energy into chemical energy."
-            inputs = tokenizer(test_input, return_tensors="pt", max_length=512, truncation=True)
-            outputs = model_obj.generate(
-                **inputs,
-                max_length=128,
-                num_beams=4,
-                early_stopping=True
-            )
-            result = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            print(f"   ✓ Model test passed")
-            print(f"   Test output: {result[:100]}...")
+            print("   ✓ Model downloaded successfully")
             
         except Exception as e:
-            print(f"   ✗ Error downloading {model['name']}: {e}")
+            print(f"   ⚠️  Error downloading {model['name']}: {e}")
+            print("   You can manually download later with:")
+            print(f"   huggingface-cli download {model['id']}")
             continue
     
     print("\n" + "=" * 60)
     print("✓ Model download complete!")
     print("=" * 60)
     
-    # Create .env file if it doesn't exist
-    env_file = Path(__file__).parent / ".env"
-    if not env_file.exists():
-        print("\n📝 Creating .env file...")
-        with open(env_file, "w") as f:
-            f.write("# ShikshaSetu Environment Variables\n\n")
-            f.write("# Hugging Face API Configuration\n")
-            f.write("HUGGINGFACE_API_KEY=your_api_key_here\n\n")
-            f.write("# Model IDs\n")
-            f.write("FLANT5_MODEL_ID=google/flan-t5-base\n")
-            f.write("INDICTRANS2_MODEL_ID=ai4bharat/indictrans2-en-indic-1B\n")
-            f.write("BERT_MODEL_ID=bert-base-multilingual-cased\n")
-            f.write("VITS_MODEL_ID=facebook/mms-tts-hin\n\n")
-            f.write("# Database Configuration\n")
-            f.write("DATABASE_URL=postgresql://postgres:password@localhost:5432/education_content\n\n")
-            f.write("# API Configuration\n")
-            f.write("FLASK_PORT=5000\n")
-            f.write("FASTAPI_PORT=8000\n")
-        print(f"   ✓ Created {env_file}")
-        print("   ⚠️  Remember to add your HUGGINGFACE_API_KEY to .env file")
-    
     print("\n🚀 Ready to start the application!")
     print("\nNext steps:")
-    print("1. Add your Hugging Face API key to .env file")
-    print("2. Set up the database: alembic upgrade head")
-    print("3. Start the FastAPI server: uvicorn backend.api.fastapi_app:app --reload")
-    print("4. Or start Flask server: python -m backend.api.flask_app")
+    print("1. Ensure DATABASE_URL is set in .env")
+    print("2. Run migrations: alembic upgrade head")
+    print("3. Start the server: ./start.sh")
 
 if __name__ == "__main__":
     download_models()

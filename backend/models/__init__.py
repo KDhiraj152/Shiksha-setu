@@ -2,52 +2,52 @@
 Models package.
 Exports all models for easier access.
 """
+
+from .auth import APIKey, RefreshToken, TokenBlacklist, User
+from .chat import Conversation, FileUpload, Message, MessageRole
 from .content import (
-    ProcessedContent,
-    NCERTStandard,
-    ContentTranslation,
     ContentAudio,
+    ContentTranslation,
     ContentValidation,
     Feedback,
-    PipelineLog
-)
-from .auth import (
-    User,
-    APIKey,
-    TokenBlacklist,
-    RefreshToken
+    NCERTStandard,
+    PipelineLog,
+    ProcessedContent,
 )
 from .progress import (
-    StudentProgress,
-    QuizScore,
+    Achievement,
     LearningSession,
     ParentReport,
-    Achievement
+    QuizScore,
+    StudentProgress,
 )
-from .rag import (
-    DocumentChunk,
-    Embedding,
-    ChatHistory
-)
+from .rag import ChatHistory, DocumentChunk, Embedding
+from .student import LearningStyle, StudentProfile
 
 __all__ = [
-    'ProcessedContent',
-    'NCERTStandard',
-    'ContentTranslation',
-    'ContentAudio',
-    'ContentValidation',
-    'Feedback',
-    'PipelineLog',
-    'User',
-    'APIKey',
-    'TokenBlacklist',
-    'RefreshToken',
-    'StudentProgress',
-    'QuizScore',
-    'LearningSession',
-    'ParentReport',
-    'Achievement',
-    'DocumentChunk',
-    'Embedding',
-    'ChatHistory'
+    "APIKey",
+    "Achievement",
+    "ChatHistory",
+    "ContentAudio",
+    "ContentTranslation",
+    "ContentValidation",
+    "Conversation",
+    "DocumentChunk",
+    "Embedding",
+    "Feedback",
+    "FileUpload",
+    "LearningSession",
+    "LearningStyle",
+    "Message",
+    "MessageRole",
+    "NCERTStandard",
+    "ParentReport",
+    "PipelineLog",
+    "ProcessedContent",
+    "QuizScore",
+    "RefreshToken",
+    "StudentProfile",
+    "StudentProgress",
+    "TokenBlacklist",
+    "User",
 ]

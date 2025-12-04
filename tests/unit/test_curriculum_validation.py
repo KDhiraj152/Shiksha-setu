@@ -4,15 +4,16 @@ Unit Tests for Curriculum Validation Service
 Tests Issue #11 implementation
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+
+from backend.models import ContentValidation, NCERTStandard, ProcessedContent
 from backend.services.curriculum_validation import (
     CurriculumValidationService,
-    validate_in_pipeline
+    validate_in_pipeline,
 )
-from backend.models import ProcessedContent, NCERTStandard, ContentValidation
 
 
 @pytest.fixture
@@ -42,28 +43,28 @@ def sample_standards():
     return [
         NCERTStandard(
             id=1,
-            grade_level=8,
             subject="Mathematics",
             topic="Algebra",
-            description="Basic algebraic expressions"
+            description="Basic algebraic expressions",
         ),
         NCERTStandard(
             id=2,
-            grade_level=8,
             subject="Mathematics",
             topic="Geometry",
-            description="Properties of triangles"
-        )
+            description="Properties of triangles",
+        ),
     ]
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_validate_content_against_curriculum_success(mock_db, mock_validator, sample_standards):
+async def test_validate_content_against_curriculum_success(
+    mock_db, mock_validator, sample_standards
+):
     """Test successful curriculum validation."""
     # Setup
     mock_db.query.return_value.filter.return_value.all.return_value = sample_standards
-    
+
     mock_validator.validate_content.return_value = {
         "alignment_score": 0.85,
         "errors": [],
@@ -71,21 +72,21 @@ async def test_validate_content_against_curriculum_success(mock_db, mock_validat
         "suggestions": ["Consider adding more examples"],
         "matched_topics": ["Algebra", "Geometry"],
         "missing_topics": [],
-        "terminology_issues": []
+        "terminology_issues": [],
     }
-    
+
     service = CurriculumValidationService(mock_db)
     service.validator = mock_validator
-    
+
     # Execute
     validation = await service.validate_content_against_curriculum(
         content_id="test-content-123",
-        grade_level=8,
+        grade_level=10,
         subject="Mathematics",
         text="This lesson covers algebraic expressions and geometric properties.",
-        language="en"
+        language="en",
     )
-    
+
     # Assert
     assert validation.content_id == "test-content-123"
     assert validation.validation_type == "ncert"
@@ -93,18 +94,20 @@ async def test_validate_content_against_curriculum_success(mock_db, mock_validat
     assert validation.passed is True
     assert len(validation.issues_found["errors"]) == 0
     assert "Algebra" in validation.issues_found["matched_topics"]
-    
+
     mock_db.add.assert_called_once()
     mock_db.commit.assert_called_once()
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_validate_content_below_threshold(mock_db, mock_validator, sample_standards):
+async def test_validate_content_below_threshold(
+    mock_db, mock_validator, sample_standards
+):
     """Test validation failure when score below threshold."""
     # Setup
     mock_db.query.return_value.filter.return_value.all.return_value = sample_standards
-    
+
     mock_validator.validate_content.return_value = {
         "alignment_score": 0.55,
         "errors": ["Topic coverage incomplete"],
@@ -112,21 +115,21 @@ async def test_validate_content_below_threshold(mock_db, mock_validator, sample_
         "suggestions": ["Add coverage of quadratic equations"],
         "matched_topics": ["Algebra"],
         "missing_topics": ["Quadratic Equations", "Functions"],
-        "terminology_issues": ["Unclear definition of 'variable'"]
+        "terminology_issues": ["Unclear definition of 'variable'"],
     }
-    
+
     service = CurriculumValidationService(mock_db)
     service.validator = mock_validator
-    
+
     # Execute
     validation = await service.validate_content_against_curriculum(
         content_id="test-content-456",
-        grade_level=8,
+        grade_level=10,
         subject="Mathematics",
         text="Basic algebra content.",
-        language="en"
+        language="en",
     )
-    
+
     # Assert
     assert validation.passed is False
     assert validation.alignment_score == 0.55
@@ -140,24 +143,24 @@ async def test_validate_no_standards_available(mock_db, mock_validator):
     """Test handling when no curriculum standards exist."""
     # Setup - no standards found
     mock_db.query.return_value.filter.return_value.all.return_value = []
-    
+
     service = CurriculumValidationService(mock_db)
     service.validator = mock_validator
-    
+
     # Execute
     validation = await service.validate_content_against_curriculum(
         content_id="test-content-789",
-        grade_level=10,
+        grade_level=11,
         subject="Physics",
         text="Physics content.",
-        language="en"
+        language="en",
     )
-    
+
     # Assert
     assert validation.passed is False
     assert validation.alignment_score == 0.0
     assert "No curriculum standards available" in validation.issues_found["errors"][0]
-    
+
     # Validator should not be called
     mock_validator.validate_content.assert_not_called()
 
@@ -171,19 +174,19 @@ async def test_validate_factual_accuracy(mock_db, mock_validator):
         "accuracy_score": 0.92,
         "factual_errors": [],
         "warnings": ["Verify latest scientific consensus on topic X"],
-        "corrections": []
+        "corrections": [],
     }
-    
+
     service = CurriculumValidationService(mock_db)
     service.validator = mock_validator
-    
+
     # Execute
     validation = await service.validate_factual_accuracy(
         content_id="test-content-fact",
         text="Water boils at 100°C at sea level.",
-        subject="Science"
+        subject="Science",
     )
-    
+
     # Assert
     assert validation.validation_type == "factual"
     assert validation.passed is True
@@ -200,25 +203,25 @@ async def test_validate_factual_accuracy_failure(mock_db, mock_validator):
         "accuracy_score": 0.45,
         "factual_errors": [
             "Incorrect statement: Earth is flat",
-            "Outdated information about speed of light"
+            "Outdated information about speed of light",
         ],
         "warnings": [],
         "corrections": [
             "Earth is approximately spherical",
-            "Update speed of light to 299,792,458 m/s"
-        ]
+            "Update speed of light to 299,792,458 m/s",
+        ],
     }
-    
+
     service = CurriculumValidationService(mock_db)
     service.validator = mock_validator
-    
+
     # Execute
     validation = await service.validate_factual_accuracy(
         content_id="test-content-bad-facts",
         text="The Earth is flat and light travels at 300,000 km/s exactly.",
-        subject="Science"
+        subject="Science",
     )
-    
+
     # Assert
     assert validation.passed is False
     assert validation.alignment_score == 0.45
@@ -235,24 +238,21 @@ async def test_validate_language_appropriateness(mock_db, mock_validator):
         "errors": [],
         "warnings": ["Some sentences are long"],
         "complex_words": ["photosynthesis", "chlorophyll"],
-        "readability": {
-            "flesch_reading_ease": 65.0,
-            "flesch_kincaid_grade": 6.5
-        },
-        "simplification_suggestions": ["Break down complex sentences"]
+        "readability": {"flesch_reading_ease": 65.0, "flesch_kincaid_grade": 6.5},
+        "simplification_suggestions": ["Break down complex sentences"],
     }
-    
+
     service = CurriculumValidationService(mock_db)
     service.validator = mock_validator
-    
+
     # Execute
     validation = await service.validate_language_appropriateness(
         content_id="test-content-lang",
         text="Photosynthesis is the process by which plants make food.",
-        grade_level=6,
-        language="en"
+        language="en",
+        grade_level=10,
     )
-    
+
     # Assert
     assert validation.validation_type == "language"
     assert validation.passed is True
@@ -266,7 +266,7 @@ async def test_comprehensive_validation(mock_db, mock_validator, sample_standard
     """Test comprehensive validation runs all checks."""
     # Setup
     mock_db.query.return_value.filter.return_value.all.return_value = sample_standards
-    
+
     mock_validator.validate_content.return_value = {
         "alignment_score": 0.80,
         "errors": [],
@@ -274,37 +274,37 @@ async def test_comprehensive_validation(mock_db, mock_validator, sample_standard
         "suggestions": [],
         "matched_topics": ["Algebra"],
         "missing_topics": [],
-        "terminology_issues": []
+        "terminology_issues": [],
     }
-    
+
     mock_validator.check_factual_accuracy.return_value = {
         "accuracy_score": 0.85,
         "factual_errors": [],
         "warnings": [],
-        "corrections": []
+        "corrections": [],
     }
-    
+
     mock_validator.check_language_complexity.return_value = {
         "appropriateness_score": 0.78,
         "errors": [],
         "warnings": [],
         "complex_words": [],
         "readability": {},
-        "simplification_suggestions": []
+        "simplification_suggestions": [],
     }
-    
+
     service = CurriculumValidationService(mock_db)
     service.validator = mock_validator
-    
+
     # Execute
     validations = await service.comprehensive_validation(
         content_id="test-content-comp",
         text="Sample educational content.",
-        grade_level=8,
         subject="Mathematics",
-        language="en"
+        language="en",
+        grade_level=10,
     )
-    
+
     # Assert
     assert len(validations) == 3
     assert "ncert" in validations
@@ -324,7 +324,7 @@ def test_get_validation_summary(mock_db):
             alignment_score=0.85,
             passed=True,
             issues_found={"errors": [], "warnings": ["Minor issue"]},
-            validated_at=datetime.now(timezone.utc)
+            validated_at=datetime.now(UTC),
         ),
         ContentValidation(
             content_id="test-123",
@@ -332,7 +332,7 @@ def test_get_validation_summary(mock_db):
             alignment_score=0.90,
             passed=True,
             issues_found={"errors": [], "warnings": []},
-            validated_at=datetime.now(timezone.utc)
+            validated_at=datetime.now(UTC),
         ),
         ContentValidation(
             content_id="test-123",
@@ -340,17 +340,17 @@ def test_get_validation_summary(mock_db):
             alignment_score=0.70,
             passed=False,
             issues_found={"errors": ["Too complex"], "warnings": []},
-            validated_at=datetime.now(timezone.utc)
-        )
+            validated_at=datetime.now(UTC),
+        ),
     ]
-    
+
     mock_db.query.return_value.filter.return_value.all.return_value = validations
-    
+
     service = CurriculumValidationService(mock_db)
-    
+
     # Execute
     summary = service.get_validation_summary("test-123")
-    
+
     # Assert
     assert summary["validated"] is True
     assert summary["total_checks"] == 3
@@ -374,8 +374,8 @@ def test_get_improvement_suggestions(mock_db):
                 "errors": [],
                 "warnings": [],
                 "suggestions": ["Add more examples", "Cover missing topics"],
-                "missing_topics": ["Quadratic Equations", "Functions"]
-            }
+                "missing_topics": ["Quadratic Equations", "Functions"],
+            },
         ),
         ContentValidation(
             content_id="test-456",
@@ -384,18 +384,18 @@ def test_get_improvement_suggestions(mock_db):
             passed=False,
             issues_found={
                 "errors": ["Incorrect fact"],
-                "suggestions": ["Verify sources"]
-            }
-        )
+                "suggestions": ["Verify sources"],
+            },
+        ),
     ]
-    
+
     mock_db.query.return_value.filter.return_value.all.return_value = validations
-    
+
     service = CurriculumValidationService(mock_db)
-    
+
     # Execute
     suggestions = service.get_improvement_suggestions("test-456")
-    
+
     # Assert
     assert len(suggestions) > 0
     assert "Add more examples" in suggestions

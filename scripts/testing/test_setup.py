@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Quick test to verify all dependencies and FLAN-T5 model are working."""
+"""Quick test to verify all dependencies and Qwen model are working."""
 import sys
 
 def test_imports():
@@ -21,21 +21,21 @@ def test_imports():
         print(f"✗ Import failed: {e}")
         return False
 
-def test_flan_t5():
-    """Test FLAN-T5 model."""
-    print("\nTesting FLAN-T5 model...")
+def test_qwen():
+    """Test Qwen2.5-3B-Instruct model."""
+    print("\nTesting Qwen2.5-3B-Instruct model...")
     try:
-        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+        from transformers import AutoTokenizer, AutoModelForCausalLM
         
-        model_id = "google/flan-t5-base"
+        model_id = "Qwen/Qwen2.5-3B-Instruct"
         print(f"Loading model: {model_id}")
         
-        tokenizer = AutoTokenizer.from_pretrained(model_id)
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
+        tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True)
         
         test_text = "Simplify this for grade 5: The mitochondria is the powerhouse of the cell."
         inputs = tokenizer(test_text, return_tensors="pt", max_length=512, truncation=True)
-        outputs = model.generate(**inputs, max_length=100)
+        outputs = model.generate(**inputs, max_new_tokens=100)
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
         
         print(f"✓ Model loaded and tested successfully")
@@ -43,7 +43,7 @@ def test_flan_t5():
         print(f"Output: {result}")
         return True
     except Exception as e:
-        print(f"✗ FLAN-T5 test failed: {e}")
+        print(f"✗ Qwen test failed: {e}")
         return False
 
 def test_database():
@@ -74,7 +74,7 @@ def main():
     
     results = {
         "Imports": test_imports(),
-        "FLAN-T5 Model": test_flan_t5(),
+        "Qwen2.5-3B Model": test_qwen(),
         "Database": test_database()
     }
     

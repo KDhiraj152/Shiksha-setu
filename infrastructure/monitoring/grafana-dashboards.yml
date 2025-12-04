@@ -4,13 +4,24 @@
 apiVersion: 1
 
 providers:
-  - name: 'ShikshaSetu Dashboards'
+  - name: 'ShikshaSetu'
     orgId: 1
     folder: 'ShikshaSetu'
     type: file
     disableDeletion: false
-    updateIntervalSeconds: 10
+    updateIntervalSeconds: 30
     allowUiUpdates: true
     options:
       path: /etc/grafana/provisioning/dashboards
-      foldersFromFilesStructure: true
+      foldersFromFilesStructure: false
+
+  - name: 'ShikshaSetu Custom'
+    orgId: 1
+    folder: 'ShikshaSetu/Custom'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/custom
+      foldersFromFilesStructure: false

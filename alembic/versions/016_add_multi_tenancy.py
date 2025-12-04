@@ -15,6 +15,9 @@ down_revision = '015_add_learning_recommendations'
 branch_labels = None
 depends_on = None
 
+# Constants for server defaults
+NOW_DEFAULT = 'now()'
+
 
 def upgrade():
     # Organizations table
@@ -29,8 +32,8 @@ def upgrade():
         sa.Column('subscription_tier', sa.String(50), default='free'),
         sa.Column('max_users', sa.Integer, default=10),
         sa.Column('is_active', sa.Boolean, default=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False)
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text(NOW_DEFAULT), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text(NOW_DEFAULT), nullable=False)
     )
     
     op.create_index('idx_organizations_slug', 'organizations', ['slug'])
@@ -53,10 +56,6 @@ def upgrade():
     
     tables_to_update = [
         'processed_content',
-        # 'documents',  # This table doesn't exist in our schema
-        # 'translation_reviews',  # This table doesn't exist in our schema
-        # 'user_performance',  # This table doesn't exist in our schema
-        # 'learning_paths'  # This table doesn't exist in our schema
     ]
     
     # Only update tables that actually exist
@@ -110,7 +109,7 @@ def upgrade():
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('role', sa.String(50), default='member'),
         sa.Column('invited_by', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('joined_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('joined_at', sa.DateTime(timezone=True), server_default=sa.text(NOW_DEFAULT), nullable=False),
         
         sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),

@@ -21,7 +21,7 @@ print("✅ Test 1: Importing AI/ML Components...")
 try:
     from backend.pipeline.orchestrator import ContentPipelineOrchestrator, PipelineStage
     from backend.pipeline.model_clients import (
-        FlanT5Client, IndicTrans2Client, BERTClient, VITSClient
+        QwenSimplificationClient, IndicTrans2Client, BERTClient, MMSTTSClient
     )
     from backend.validate.ncert import NCERTValidator
     from backend.validate.standards import NCERTStandardsLoader
@@ -71,19 +71,19 @@ except Exception as e:
 # Test 4: Check Model Clients
 print("✅ Test 4: Checking Model Client Initialization...")
 try:
-    flant5 = FlanT5Client()
+    qwen = QwenSimplificationClient()
     indictrans2 = IndicTrans2Client()
     bert = BERTClient()
-    vits = VITSClient()
+    mms_tts = MMSTTSClient()
     
-    print(f"   ✓ Flan-T5 Client: {flant5.model_id}")
+    print(f"   ✓ Qwen2.5 Client: {qwen.model_id}")
     print(f"   ✓ IndicTrans2 Client: {indictrans2.model_id}")
     print(f"   ✓ BERT Client: {bert.model_id}")
-    print(f"   ✓ VITS Client: {vits.model_id}")
+    print(f"   ✓ MMS-TTS Client: {mms_tts.model_id}")
     print()
 except Exception as e:
     print(f"   ✗ Model client initialization failed: {e}")
-    print(f"   Note: This is expected if models aren't downloaded yet")
+    print("   Note: This is expected if models aren't downloaded yet")
     print()
 
 # Test 5: NCERT Validator
@@ -100,14 +100,14 @@ except Exception as e:
 # Test 6: Check Device Configuration
 print("✅ Test 6: Checking Device Configuration...")
 try:
-    from backend.utils.device_manager import get_device_manager
-    device_mgr = get_device_manager()
-    print(f"   ✓ Device Manager initialized")
-    print(f"   ✓ Available: {device_mgr}")
+    from backend.core.optimized import get_device_router, M4_BATCH_SIZES
+    device_router = get_device_router()
+    print("   ✓ Device Router initialized")
+    print(f"   ✓ Batch sizes: {M4_BATCH_SIZES}")
     print()
 except Exception as e:
-    print(f"   ⚠️  Device manager: {e}")
-    print(f"   Note: Will use CPU if CUDA/MPS not available")
+    print(f"   ⚠️  Device router: {e}")
+    print("   Note: Will use CPU if CUDA/MPS not available")
     print()
 
 # Test 7: API Endpoints Check
@@ -117,19 +117,18 @@ try:
     from fastapi.openapi.utils import get_openapi
     
     routes = [route for route in app.routes if hasattr(route, 'methods')]
-    api_routes = [r for r in routes if r.path.startswith('/api/v1')]
+    api_routes = [r for r in routes if r.path.startswith('/api/v2')]
     
-    print(f"   ✓ FastAPI app loaded")
+    print("   ✓ FastAPI app loaded")
     print(f"   ✓ Total API routes: {len(api_routes)}")
     
-    # Key AI/ML endpoints
+    # Key AI/ML endpoints (V2 API)
     ml_endpoints = [
-        '/api/v1/content/process',
-        '/api/v1/content/simplify',
-        '/api/v1/content/translate',
-        '/api/v1/content/validate',
-        '/api/v1/qa/process',
-        '/api/v1/qa/ask'
+        '/api/v2/content/process',
+        '/api/v2/content/simplify',
+        '/api/v2/content/translate',
+        '/api/v2/chat/guest',
+        '/api/v2/ai/explain'
     ]
     
     existing = [ep for ep in ml_endpoints if any(r.path == ep for r in api_routes)]
@@ -182,6 +181,6 @@ print("Next Steps:")
 print("  1. Download models: python scripts/download_models.py")
 print("  2. Start server: uvicorn backend.api.main:app --reload")
 print("  3. Visit API docs: http://localhost:8000/docs")
-print("  4. Test pipeline: POST /api/v1/content/process")
+print("  4. Test pipeline: POST /api/v2/content/process")
 print()
 print("=" * 80)

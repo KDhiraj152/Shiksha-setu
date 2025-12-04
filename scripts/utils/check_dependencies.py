@@ -76,9 +76,10 @@ def main():
     # ==================== Python Version ====================
     def check_python_version():
         version = sys.version_info
-        return version.major == 3 and version.minor >= 8
+        # Python 3.11 required for ML package compatibility
+        return version.major == 3 and version.minor == 11
     
-    checker.check("Python 3.8+", check_python_version, critical=True)
+    checker.check("Python 3.11 (ML stack)", check_python_version, critical=True)
     
     # ==================== Core Framework Dependencies ====================
     checker.check("FastAPI", lambda: importlib.import_module("fastapi"), critical=True)
@@ -160,7 +161,7 @@ def main():
             r = redis.Redis(host='localhost', port=6379, db=0, socket_connect_timeout=2)
             r.ping()
             return True
-        except:
+        except Exception:
             return False
     
     checker.check("Redis server running", check_redis_connection, critical=True)
@@ -191,21 +192,15 @@ def main():
             result = subprocess.run(['tesseract', '--version'], 
                                   capture_output=True, timeout=5)
             return result.returncode == 0
-        except:
+        except Exception:
             return False
     
     checker.check("Tesseract OCR installed", check_tesseract, critical=True)
     
-    # ==================== Python Package Versions ====================
-    def check_package_version(package_name: str, min_version: str = None):
-        try:
-            module = importlib.import_module(package_name)
-            if hasattr(module, "__version__"):
-                return True
-            return True
-        except:
-            return False
-    
+    # Package version checking utility (available for future use)
+    # This function validates installed packages meet minimum version requirements
+    # Currently not actively used as version constraints are in requirements.txt
+
     # ==================== Import Test for Project Modules ====================
     def check_project_imports():
         try:

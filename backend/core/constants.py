@@ -43,6 +43,10 @@ DEFAULT_CHUNK_OVERLAP = 50
 DEFAULT_MAX_UPLOAD_SIZE_MB = 100
 DEFAULT_RATE_LIMIT_PER_MINUTE = 60
 
+# Grade Level Bounds
+MIN_GRADE_LEVEL = 1
+MAX_GRADE_LEVEL = 12
+
 # Supported Languages
 SUPPORTED_LANGUAGES = [
     "English",
@@ -62,62 +66,48 @@ SUPPORTED_FILE_TYPES = {
     "text/plain": [".txt"],
     "application/pdf": [".pdf"],
     "application/msword": [".doc"],
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+        ".docx"
+    ],
 }
 
-# Supported Subjects
-SUPPORTED_SUBJECTS = [
-    "Mathematics",
-    "Science",
-    "Social Studies",
-    "English",
-    "History",
-    "Geography",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "Computer Science",
-]
-
-# Grade Range
-MIN_GRADE_LEVEL = 1
-MAX_GRADE_LEVEL = 12
+# NOTE: Subject constraints removed - system is now unconstrained like ChatGPT/Perplexity
+# The multimodel RAG system handles any topic without hardcoded subject lists
 
 # Supported Formats
 SUPPORTED_FORMATS = ["text", "audio", "both"]
 
 __all__ = [
+    "CONNECTION_ERROR",
     "CONTENT_NOT_FOUND",
-    "UNAUTHORIZED",
-    "INVALID_CREDENTIALS",
-    "USER_NOT_FOUND",
-    "USER_ALREADY_EXISTS",
-    "TASK_NOT_FOUND",
-    "TASK_PROCESSING",
-    "TASK_FAILED",
-    "FILE_TOO_LARGE",
-    "INVALID_FILE_TYPE",
+    "DATABASE_ERROR",
+    "DEFAULT_CHUNK_OVERLAP",
+    "DEFAULT_CHUNK_SIZE",
+    "DEFAULT_GRADE_LEVEL",
+    "DEFAULT_LANGUAGE",
+    "DEFAULT_MAX_UPLOAD_SIZE_MB",
+    "DEFAULT_RATE_LIMIT_PER_MINUTE",
+    "DEFAULT_SUBJECT",
     "FILE_NOT_FOUND",
+    "FILE_TOO_LARGE",
+    "INVALID_CREDENTIALS",
+    "INVALID_FILE_TYPE",
     "INVALID_GRADE_LEVEL",
     "INVALID_LANGUAGE",
-    "TEXT_TOO_SHORT",
-    "TEXT_TOO_LONG",
+    "MAX_GRADE_LEVEL",
+    "MIN_GRADE_LEVEL",
     "NO_TEXT_AVAILABLE",
     "QUESTION_TOO_SHORT",
     "RATE_LIMIT_EXCEEDED",
-    "DATABASE_ERROR",
-    "CONNECTION_ERROR",
-    "DEFAULT_GRADE_LEVEL",
-    "DEFAULT_SUBJECT",
-    "DEFAULT_LANGUAGE",
-    "DEFAULT_CHUNK_SIZE",
-    "DEFAULT_CHUNK_OVERLAP",
-    "DEFAULT_MAX_UPLOAD_SIZE_MB",
-    "DEFAULT_RATE_LIMIT_PER_MINUTE",
-    "SUPPORTED_LANGUAGES",
     "SUPPORTED_FILE_TYPES",
-    "SUPPORTED_SUBJECTS",
-    "MIN_GRADE_LEVEL",
-    "MAX_GRADE_LEVEL",
     "SUPPORTED_FORMATS",
+    "SUPPORTED_LANGUAGES",
+    "TASK_FAILED",
+    "TASK_NOT_FOUND",
+    "TASK_PROCESSING",
+    "TEXT_TOO_LONG",
+    "TEXT_TOO_SHORT",
+    "UNAUTHORIZED",
+    "USER_ALREADY_EXISTS",
+    "USER_NOT_FOUND",
 ]

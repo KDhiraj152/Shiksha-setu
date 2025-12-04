@@ -1,11 +1,11 @@
 """
 Simplification Tasks (Celery)
 ==============================
-Tasks for text simplification using Llama-3.2-3B.
+Tasks for text simplification using Qwen2.5-3B-Instruct.
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from .celery_config import celery_app
 
@@ -19,7 +19,8 @@ def get_simplifier():
     """Get or initialize simplifier (lazy loading)."""
     global _simplifier
     if _simplifier is None:
-        from backend.services.simplify.simplifier import TextSimplifier
+        from backend.services.simplify_simplifier import TextSimplifier
+
         _simplifier = TextSimplifier()
     return _simplifier
 
@@ -37,37 +38,37 @@ def simplify_text(
     text: str,
     grade_level: int = 5,
     language: str = "en",
-    options: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    options: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Simplify text for a given grade level.
-    
+
     Args:
         text: Input text to simplify
         grade_level: Target grade level (1-12)
         language: Language code
         options: Additional options
-        
+
     Returns:
         Dict with simplified text and metadata
     """
     try:
         import asyncio
-        
+
         simplifier = get_simplifier()
         options = options or {}
-        
+
         # Run async simplification
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         try:
             result = loop.run_until_complete(
                 simplifier.simplify(text, grade_level, language)
             )
         finally:
             loop.close()
-        
+
         return {
             "success": True,
             "simplified_text": result.get("simplified_text", ""),
@@ -76,14 +77,14 @@ def simplify_text(
             "simplified_length": len(result.get("simplified_text", "")),
             "metadata": result.get("metadata", {}),
         }
-        
+
     except Exception as e:
         logger.error(f"Simplification failed: {e}")
-        
+
         # Retry on transient errors
         if self.request.retries < self.max_retries:
             raise self.retry(exc=e)
-        
+
         return {
             "success": False,
             "error": str(e),
@@ -103,39 +104,39 @@ def simplify_batch(
     texts: list,
     grade_level: int = 5,
     language: str = "en",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Batch simplify multiple texts.
-    
+
     Args:
         texts: List of texts to simplify
         grade_level: Target grade level
         language: Language code
-        
+
     Returns:
         Dict with results for each text
     """
     try:
         import asyncio
-        
+
         simplifier = get_simplifier()
-        
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         try:
             result = loop.run_until_complete(
                 simplifier.simplify_batch(texts, grade_level, language)
             )
         finally:
             loop.close()
-        
+
         return {
             "success": True,
             "results": result,
             "count": len(texts),
         }
-        
+
     except Exception as e:
         logger.error(f"Batch simplification failed: {e}")
         return {
@@ -156,33 +157,35 @@ def simplify_document(
     document_id: str,
     grade_level: int = 5,
     language: str = "en",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Simplify an entire document.
-    
+
     Uses sentence-level processing for efficiency.
-    
+
     Args:
         document_id: Document ID in storage
         grade_level: Target grade level
         language: Language code
-        
+
     Returns:
         Dict with simplified document
     """
     try:
         import asyncio
+
         from backend.services.pipeline import SentenceLevelProcessor
-        
+
         # Load document
         # document = load_document(document_id)
-        
+
         # Process with sentence pipeline
-        processor = SentenceLevelProcessor()
-        
+        # TODO: Implement document processing with SentenceLevelProcessor
+        _ = SentenceLevelProcessor  # Reference to avoid import issues
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         try:
             # result = loop.run_until_complete(
             #     processor.process_document(document, "simplify", grade_level=grade_level)
@@ -190,13 +193,13 @@ def simplify_document(
             pass
         finally:
             loop.close()
-        
+
         return {
             "success": True,
             "document_id": document_id,
             # "simplified_document": result,
         }
-        
+
     except Exception as e:
         logger.error(f"Document simplification failed: {e}")
         return {

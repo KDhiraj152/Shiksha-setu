@@ -28,11 +28,15 @@ def print_status(check: str, status: bool, message: str = ""):
     print(f"{color}{status_str}{reset} {check}{msg}")
 
 def check_python_version() -> Tuple[bool, str]:
-    """Check Python version"""
+    """Check Python version - 3.11 required for ML stack compatibility"""
     version = sys.version_info
-    if version >= (3, 11):
-        return True, f"Python {version.major}.{version.minor}.{version.micro}"
-    return False, f"Python {version.major}.{version.minor}.{version.micro} (requires 3.11+)"
+    if version >= (3, 11) and version < (3, 14):
+        is_optimal = version.minor == 11
+        status = "(optimal)" if is_optimal else "(3.11 recommended)"
+        return True, f"Python {version.major}.{version.minor}.{version.micro} {status}"
+    elif version >= (3, 14):
+        return False, f"Python {version.major}.{version.minor}.{version.micro} (3.14+ not supported, use 3.11)"
+    return False, f"Python {version.major}.{version.minor}.{version.micro} (requires 3.11)"
 
 def check_environment_file() -> Tuple[bool, str]:
     """Check if .env file exists"""

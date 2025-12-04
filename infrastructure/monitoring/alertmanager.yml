@@ -1,21 +1,38 @@
-# Alertmanager Configuration for ShikshaSetu
-# /etc/alertmanager/alertmanager.yml
+# =============================================================================
+# SHIKSHA SETU - ALERTMANAGER CONFIGURATION
+# =============================================================================
+# Production alerting with:
+# - Multi-channel routing (Slack, PagerDuty)
+# - Severity-based escalation
+# - Team-specific routing
+# - Inhibition rules
+# - Maintenance windows
+# =============================================================================
 
 global:
   resolve_timeout: 5m
   slack_api_url: '${SLACK_WEBHOOK_URL}'
   pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+  # SMTP for email alerts (configure if needed)
+  # smtp_smarthost: 'smtp.gmail.com:587'
+  # smtp_from: 'alerts@shikshasetu.in'
+  # smtp_auth_username: 'alerts@shikshasetu.in'
+  # smtp_auth_password: '${SMTP_PASSWORD}'
 
-# Route tree
+# Templates for consistent formatting
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree - determines how alerts are handled
 route:
   receiver: 'default'
   group_by: ['alertname', 'cluster', 'service']
-  group_wait: 10s
-  group_interval: 10s
+  group_wait: 30s
+  group_interval: 5m
   repeat_interval: 12h
   
   routes:
-    # Critical alerts - page immediately
+    # Critical alerts - immediate escalation
     - match:
         severity: critical
       receiver: 'pagerduty-critical'
@@ -23,7 +40,7 @@ route:
       repeat_interval: 5m
       continue: true
     
-    # Critical alerts also to Slack
+    # Critical also goes to Slack
     - match:
         severity: critical
       receiver: 'slack-critical'
@@ -38,55 +55,87 @@ route:
     
     # Database alerts - DBA team
     - match_re:
-        alertname: Database.*
+        alertname: (Database.*|Postgres.*|Slow.*Query)
       receiver: 'slack-dba'
       repeat_interval: 2h
     
     # ML/GPU alerts - ML team
     - match_re:
-        alertname: (GPU.*|.*ML.*|TTS.*|Translation.*)
+        alertname: (GPU.*|ML.*|TTS.*|Translation.*|vLLM.*|Inference.*)
       receiver: 'slack-ml-team'
       repeat_interval: 2h
+    
+    # Infrastructure alerts - DevOps team
+    - match_re:
+        alertname: (Node.*|Disk.*|Memory.*|CPU.*)
+      receiver: 'slack-infra'
+      repeat_interval: 4h
 
-# Inhibition rules - suppress alerts
+# Inhibition rules - prevent alert storms
 inhibit_rules:
-  # Inhibit warning if critical is firing
+  # Suppress warning if critical is already firing
   - source_match:
       severity: 'critical'
     target_match:
       severity: 'warning'
     equal: ['alertname', 'instance']
   
-  # If API is down, inhibit all other API alerts
+  # If API is down, suppress related alerts
   - source_match:
       alertname: 'APIInstanceDown'
     target_match_re:
-      alertname: '(High.*|Slow.*)'
+      alertname: '(HighErrorRate|HighResponseTime|SlowMLInference)'
     equal: ['instance']
   
-  # If database is down, inhibit query alerts
+  # If database is down, suppress query alerts
   - source_match:
       alertname: 'DatabaseDown'
     target_match_re:
-      alertname: '(Slow.*Query|DatabasePool.*)'
+      alertname: '(SlowDatabaseQueries|DatabasePoolExhausted)'
+  
+  # If Redis is down, suppress cache alerts
+  - source_match:
+      alertname: 'RedisDown'
+    target_match_re:
+      alertname: '(LowCacheHitRate|HighTaskQueueDepth)'
+  
+  # If node is down, suppress all pod alerts on that node
+  - source_match:
+      alertname: 'NodeDown'
+    target_match_re:
+      alertname: '.*'
+    equal: ['node']
 
-# Receivers
+# Receivers - where alerts go
 receivers:
   - name: 'default'
     slack_configs:
       - channel: '#alerts'
-        title: 'ShikshaSetu Alert'
-        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}'
+        title: '{{ .Status | toUpper }} | {{ .CommonLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Summary:* {{ .Annotations.summary }}
+          *Severity:* {{ .Labels.severity }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
         send_resolved: true
+        actions:
+          - type: button
+            text: 'View Runbook'
+            url: '{{ (index .Alerts 0).Annotations.runbook_url }}'
   
   - name: 'pagerduty-critical'
     pagerduty_configs:
       - service_key: '${PAGERDUTY_SERVICE_KEY}'
         description: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
         severity: '{{ .CommonLabels.severity }}'
+        component: '{{ .CommonLabels.component }}'
+        group: '{{ .CommonLabels.cluster }}'
+        class: '{{ .CommonLabels.alertname }}'
         details:
           firing: '{{ .Alerts.Firing | len }}'
           resolved: '{{ .Alerts.Resolved | len }}'
+          runbook: '{{ (index .Alerts 0).Annotations.runbook_url }}'
         client: 'ShikshaSetu Prometheus'
         client_url: '{{ .ExternalURL }}'
   
@@ -100,15 +149,18 @@ receivers:
           *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
           *Severity:* {{ .CommonLabels.severity }}
           *Environment:* {{ .CommonLabels.environment }}
+          *Runbook:* {{ (index .Alerts 0).Annotations.runbook_url }}
         actions:
           - type: button
-            text: 'View in Prometheus'
-            url: '{{ .ExternalURL }}'
+            text: '📖 Runbook'
+            url: '{{ (index .Alerts 0).Annotations.runbook_url }}'
           - type: button
-            text: 'View Dashboard'
-            url: 'https://grafana.example.com/d/shikshasetu'
+            text: '📊 Grafana'
+            url: 'https://monitoring.shikshasetu.in/d/shikshasetu'
+          - type: button
+            text: '🔍 Prometheus'
+            url: '{{ .ExternalURL }}'
         send_resolved: true
-  
   - name: 'slack-warnings'
     slack_configs:
       - channel: '#alerts-warnings'
@@ -117,6 +169,7 @@ receivers:
         text: |
           *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
           *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+          *Runbook:* {{ (index .Alerts 0).Annotations.runbook_url }}
         send_resolved: true
   
   - name: 'slack-dba'
@@ -127,7 +180,11 @@ receivers:
         text: |
           *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
           *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
-          *Runbook:* {{ range .Alerts }}{{ .Annotations.runbook_url }}{{ end }}
+          *Runbook:* {{ (index .Alerts 0).Annotations.runbook_url }}
+        actions:
+          - type: button
+            text: '📖 DB Runbook'
+            url: '{{ (index .Alerts 0).Annotations.runbook_url }}'
         send_resolved: true
   
   - name: 'slack-ml-team'
@@ -138,9 +195,21 @@ receivers:
         text: |
           *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
           *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+          *Runbook:* {{ (index .Alerts 0).Annotations.runbook_url }}
+        send_resolved: true
+  
+  - name: 'slack-infra'
+    slack_configs:
+      - channel: '#infra-alerts'
+        color: '{{ if eq .CommonLabels.severity "critical" }}danger{{ else }}warning{{ end }}'
+        title: '🖥️ Infrastructure Alert: {{ .CommonLabels.alertname }}'
+        text: |
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+          *Node:* {{ .CommonLabels.node }}
         send_resolved: true
 
-# Time intervals (for muting during maintenance windows)
+# Time intervals for muting during maintenance
 time_intervals:
   - name: 'weekday-business-hours'
     time_intervals:
@@ -148,6 +217,7 @@ time_intervals:
           - start_time: '09:00'
             end_time: '18:00'
         weekdays: ['monday:friday']
+        location: 'Asia/Kolkata'
   
   - name: 'maintenance-window'
     time_intervals:
@@ -155,3 +225,9 @@ time_intervals:
           - start_time: '02:00'
             end_time: '04:00'
         weekdays: ['sunday']
+        location: 'Asia/Kolkata'
+  
+  - name: 'weekends'
+    time_intervals:
+      - weekdays: ['saturday', 'sunday']
+        location: 'Asia/Kolkata'
