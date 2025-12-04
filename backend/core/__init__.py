@@ -10,7 +10,8 @@ Structure:
 - constants.py: Application-wide constants
 - security.py: Security utilities
 - storage.py: Redis/Memory storage backends
-- model_manager.py: Lazy model loading with memory management
+- policy.py: Content policy engine
+- model_config.py: Hot-reloadable model configuration
 - correlation.py: Request correlation ID logging
 - circuit_breaker.py: Circuit breaker pattern for resilience
 - tracing.py: OpenTelemetry distributed tracing

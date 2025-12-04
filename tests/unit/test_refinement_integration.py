@@ -82,17 +82,17 @@ class TestSimplifierRefinementIntegration:
         mock_refinement_task.SIMPLIFICATION = "simplification"
 
         with (
-            patch("backend.services.simplify_simplifier.REFINEMENT_AVAILABLE", True),
+            patch("backend.services.simplifier.REFINEMENT_AVAILABLE", True),
             patch(
-                "backend.services.simplify_simplifier.RefinementTask",
+                "backend.services.simplifier.RefinementTask",
                 mock_refinement_task,
             ),
             patch(
-                "backend.services.simplify_simplifier.TextSimplifier._get_refinement_pipeline",
+                "backend.services.simplifier.TextSimplifier._get_refinement_pipeline",
                 return_value=mock_pipeline,
             ),
         ):
-            from backend.services.simplify_simplifier import TextSimplifier
+            from backend.services.simplifier import TextSimplifier
 
             simplifier = TextSimplifier(
                 client=mock_llm_client,
@@ -114,8 +114,8 @@ class TestSimplifierRefinementIntegration:
     @pytest.mark.asyncio
     async def test_simplifier_without_refinement(self, mock_llm_client):
         """Test simplification without refinement (single-pass)."""
-        with patch("backend.services.simplify_simplifier.REFINEMENT_AVAILABLE", False):
-            from backend.services.simplify_simplifier import TextSimplifier
+        with patch("backend.services.simplifier.REFINEMENT_AVAILABLE", False):
+            from backend.services.simplifier import TextSimplifier
 
             simplifier = TextSimplifier(client=mock_llm_client, enable_refinement=False)
 
@@ -140,17 +140,17 @@ class TestSimplifierRefinementIntegration:
         mock_refinement_task.SIMPLIFICATION = "simplification"
 
         with (
-            patch("backend.services.simplify_simplifier.REFINEMENT_AVAILABLE", True),
+            patch("backend.services.simplifier.REFINEMENT_AVAILABLE", True),
             patch(
-                "backend.services.simplify_simplifier.RefinementTask",
+                "backend.services.simplifier.RefinementTask",
                 mock_refinement_task,
             ),
             patch(
-                "backend.services.simplify_simplifier.TextSimplifier._get_refinement_pipeline",
+                "backend.services.simplifier.TextSimplifier._get_refinement_pipeline",
                 return_value=mock_pipeline,
             ),
         ):
-            from backend.services.simplify_simplifier import TextSimplifier
+            from backend.services.simplifier import TextSimplifier
 
             simplifier = TextSimplifier(client=mock_llm_client, enable_refinement=True)
 
@@ -164,8 +164,8 @@ class TestSimplifierRefinementIntegration:
 
     def test_simplifier_init_without_refinement_module(self):
         """Test that simplifier works when refinement module is not available."""
-        with patch("backend.services.simplify_simplifier.REFINEMENT_AVAILABLE", False):
-            from backend.services.simplify_simplifier import TextSimplifier
+        with patch("backend.services.simplifier.REFINEMENT_AVAILABLE", False):
+            from backend.services.simplifier import TextSimplifier
 
             # Should initialize without error
             simplifier = TextSimplifier(enable_refinement=True)
@@ -325,7 +325,7 @@ class TestEndToEndRefinement:
         # 2. BGE-M3 embeddings loaded
         # 3. Gemma-2-2B-IT for validation
 
-        from backend.services.simplify_simplifier import TextSimplifier
+        from backend.services.simplifier import TextSimplifier
 
         simplifier = TextSimplifier(enable_refinement=True, target_semantic_score=8.2)
 

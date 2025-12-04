@@ -125,3 +125,4 @@ alembic/versions/*.pyc
 
 # Supabase
 .supabase/
+.projectx/

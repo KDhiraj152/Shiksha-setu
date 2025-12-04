@@ -206,7 +206,10 @@ class OptimizedPipelineTests:
         """Test cultural context service."""
         start = time.perf_counter()
         try:
-            from backend.services.cultural import Region, UnifiedCulturalContextService
+            from backend.services.cultural_context import (
+                Region,
+                UnifiedCulturalContextService,
+            )
 
             service = UnifiedCulturalContextService()
 

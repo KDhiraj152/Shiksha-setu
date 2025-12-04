@@ -19,7 +19,7 @@ def get_simplifier():
     """Get or initialize simplifier (lazy loading)."""
     global _simplifier
     if _simplifier is None:
-        from backend.services.simplify_simplifier import TextSimplifier
+        from backend.services.simplifier import TextSimplifier
 
         _simplifier = TextSimplifier()
     return _simplifier

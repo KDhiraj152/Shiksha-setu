@@ -8,16 +8,14 @@ Active Services:
 - inference/: LLM and embedding generation (MLX, CoreML, Unified)
 - pipeline/: Content processing pipeline (unified, optimized)
 - evaluation/: Semantic accuracy evaluation
-- cultural/: Cultural context adaptation for Indian regions
-- health/: System health monitoring
+- cultural_context.py: Cultural context adaptation for Indian regions
 - ocr.py: Document text extraction (GOT-OCR2)
 - rag.py: Retrieval augmented generation (BGE-M3)
-- speech/: Speech processing
+- speech_generator.py, speech_processor.py: Speech processing
 - translate/: Translation services (IndicTrans2)
 - tts/: Text-to-speech (MMS-TTS, Edge-TTS)
-- stt/: Speech-to-text (Whisper V3 Turbo)
 - validate/: Curriculum validation
-- simplify/: Content simplification
+- simplifier.py: Content simplification
 - ai_core/: AI service core
 - review_queue.py: Teacher review queue
 - student_profile.py: Student personalization
@@ -60,16 +58,16 @@ def get_semantic_evaluator():
 
 def get_cultural_context():
     """Get the cultural context service."""
-    from .cultural import get_cultural_context as _get
+    from .cultural_context import UnifiedCulturalContextService
 
-    return _get()
+    return UnifiedCulturalContextService()
 
 
-def get_health_checker():
-    """Get the health checker service."""
-    from .health import get_health_checker as _get
+def get_simplifier():
+    """Get the text simplifier service."""
+    from .simplifier import TextSimplifier
 
-    return _get()
+    return TextSimplifier()
 
 
 def get_review_queue():
@@ -102,10 +100,11 @@ __all__ = [
     # Review Queue
     "ReviewQueue",
     "get_cultural_context",
-    "get_health_checker",
     # Factory functions
     "get_inference_engine",
+    "get_ocr_service",
     "get_pipeline_service",
     "get_review_queue",
     "get_semantic_evaluator",
+    "get_simplifier",
 ]

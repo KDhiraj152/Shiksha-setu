@@ -17,7 +17,7 @@ import time
 
 sys.path.insert(0, ".")
 
-from backend.services.simplify import REFINEMENT_AVAILABLE, TextSimplifier
+from backend.services.simplifier import REFINEMENT_AVAILABLE, TextSimplifier
 
 SAMPLE_CONTENT = """
 Photosynthesis is a sophisticated biochemical process by which photoautotrophic
