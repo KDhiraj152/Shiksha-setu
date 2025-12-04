@@ -111,7 +111,7 @@ test_questions = [
 
 for i, question in enumerate(test_questions, 1):
     print(f"\n   Question {i}: {question}")
-    
+
     # Retrieve context
     start_time = time.time()
     context_data = rag_service.retrieve_context(
@@ -120,17 +120,17 @@ for i, question in enumerate(test_questions, 1):
         top_k=3
     )
     retrieval_time = time.time() - start_time
-    
+
     if context_data['has_context']:
         print(f"   ✓ Found {len(context_data['chunk_ids'])} relevant chunks")
         print(f"   ✓ Average similarity: {context_data['avg_score']:.3f}")
         print(f"   ✓ Retrieval time: {retrieval_time*1000:.1f}ms")
-        
+
         # Generate answer (simple extractive)
         context_text = context_data['context_text']
         sentences = [s.strip() + '.' for s in context_text.split('.') if s.strip()]
         answer = ' '.join(sentences[:2])  # First 2 sentences
-        
+
         print(f"   Answer: {answer}")
     else:
         print("   ✗ No relevant context found")
@@ -139,15 +139,15 @@ for i, question in enumerate(test_questions, 1):
 print("\n5. Verifying database state...")
 with get_db_session() as db:
     from backend.models import DocumentChunk, Embedding
-    
+
     chunks = db.query(DocumentChunk).filter(
         DocumentChunk.content_id == content_id
     ).count()
-    
+
     embeddings = db.query(Embedding).filter(
         Embedding.content_id == content_id
     ).count()
-    
+
     print(f"   ✓ Chunks in database: {chunks}")
     print(f"   ✓ Embeddings in database: {embeddings}")
 

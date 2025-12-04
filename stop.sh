@@ -91,7 +91,7 @@ kill_port() {
     local port=$1
     local pids=$(lsof -ti ":$port" 2>/dev/null || true)
     [[ -z "$pids" ]] && return 1
-    
+
     if $FORCE_KILL; then
         echo "$pids" | xargs kill -9 2>/dev/null || true
     else
@@ -107,7 +107,7 @@ kill_pattern() {
     local pattern="$1"
     local pids=$(pgrep -f "$pattern" 2>/dev/null || true)
     [[ -z "$pids" ]] && return 1
-    
+
     if $FORCE_KILL; then
         echo "$pids" | xargs kill -9 2>/dev/null || true
     else
@@ -155,7 +155,7 @@ if $SHOW_STATUS && ! $QUIET; then
         STATUS=$(echo "$HEALTH" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status', 'unknown'))" 2>/dev/null || echo "unknown")
         echo -e "     API Status  │ $STATUS"
         echo -e "     Version     │ 2.0.0 (V2 API)"
-        
+
         # Try to get review queue stats
         REVIEW_STATS=$(curl -sf "http://localhost:$BACKEND_PORT/api/v2/review/stats" 2>/dev/null || echo "")
         if [[ -n "$REVIEW_STATS" ]]; then
@@ -182,14 +182,14 @@ show_shutdown_progress() {
     local pid=$2
     local max_wait=10
     local i=0
-    
+
     printf "     %-12s│ " "$service"
     while kill -0 $pid 2>/dev/null && [[ $i -lt $max_wait ]]; do
         printf "${YELLOW}▪${NC}"
         sleep 0.2
         ((i++))
     done
-    
+
     if ! kill -0 $pid 2>/dev/null; then
         printf " ${RED}●${NC} Stopped\n"
         return 0
@@ -236,7 +236,7 @@ wait $BACKEND_JOB 2>/dev/null
 if $STOP_DOCKER && command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
     echo ""
     echo -e "  ${WHITE}Stopping Infrastructure:${NC}"
-    
+
     # Stop containers with progress
     for name in $POSTGRES_CONTAINERS; do
         if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${name}$"; then
@@ -251,7 +251,7 @@ if $STOP_DOCKER && command -v docker &>/dev/null && docker info &>/dev/null 2>&1
             break
         fi
     done
-    
+
     for name in $REDIS_CONTAINERS; do
         if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${name}$"; then
             printf "     %-12s│ " "Redis"
@@ -272,7 +272,7 @@ fi
 if $STOP_MONITORING && command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
     echo ""
     echo -e "  ${WHITE}Stopping Monitoring:${NC}"
-    
+
     # Stop Prometheus with progress
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^prometheus$"; then
         printf "     %-12s│ " "Prometheus"
@@ -285,7 +285,7 @@ if $STOP_MONITORING && command -v docker &>/dev/null && docker info &>/dev/null 
         printf " ${RED}●${NC} Stopped\n"
         wait $STOP_PID 2>/dev/null
     fi
-    
+
     # Stop Grafana with progress
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^grafana$"; then
         printf "     %-12s│ " "Grafana"

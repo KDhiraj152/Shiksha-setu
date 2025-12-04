@@ -452,6 +452,7 @@ class DeviceRouter:
             self._capabilities_validated = True
             try:
                 import torch
+
                 caps.has_cuda = torch.cuda.is_available()
                 caps.has_mps = (
                     hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
@@ -460,35 +461,38 @@ class DeviceRouter:
                 logger.warning("PyTorch not available")
 
         return caps
-    
+
     def _validate_capabilities_if_needed(self):
         """Validate capabilities on first actual use (lazy validation)."""
-        if getattr(self, '_capabilities_validated', True):
+        if getattr(self, "_capabilities_validated", True):
             return
-        
+
         self._capabilities_validated = True
         caps = self.capabilities
-        
+
         # Validate MLX
         try:
             import mlx.core
+
             caps.mlx_available = True
         except ImportError:
             caps.mlx_available = False
             logger.warning("MLX not available")
-        
+
         # Validate MPS (torch)
         try:
             import torch
+
             caps.has_mps = (
                 hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
             )
         except ImportError:
             caps.has_mps = False
-        
+
         # Validate CoreML
         try:
             import coremltools
+
             caps.coreml_available = True
         except ImportError:
             caps.coreml_available = False
@@ -652,7 +656,7 @@ class DeviceRouter:
         """
         # Validate capabilities on first actual routing (lazy)
         self._validate_capabilities_if_needed()
-        
+
         preferences = self.TASK_PREFERENCES.get(task_type, [ComputeBackend.CPU])
 
         for backend in preferences:

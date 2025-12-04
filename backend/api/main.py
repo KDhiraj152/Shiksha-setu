@@ -162,13 +162,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Start memory coordinator background monitor
     if hasattr(app.state, "memory_coordinator"):
         app.state.memory_monitor_task = asyncio.create_task(
-            app.state.memory_coordinator.start_monitor(interval=30.0)  # Reduced frequency
+            app.state.memory_coordinator.start_monitor(
+                interval=30.0
+            )  # Reduced frequency
         )
         logger.info("Memory coordinator monitor started (30s interval)")
 
     # Background model warm-up - runs in background thread to avoid blocking
     # This pre-initializes the AIEngine and loads the LLM model
     if settings.ENVIRONMENT != "test":
+
         async def _background_warmup():
             """Warmup in background - doesn't block server startup."""
             await asyncio.sleep(2)  # Let server fully start first
@@ -176,16 +179,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 logger.info("Starting background model warmup...")
                 # Initialize AIEngine (loads all optimized components)
                 from ..services.ai_core.engine import get_ai_engine
+
                 engine = get_ai_engine()
                 engine._ensure_initialized()
-                
+
                 # Pre-load LLM model
                 llm = engine._get_llm_client()
                 if llm:
                     logger.info("✓ AIEngine and LLM pre-warmed in background")
             except Exception as e:
                 logger.warning(f"Background warmup failed (will lazy-load): {e}")
-        
+
         app.state.warmup_task = asyncio.create_task(_background_warmup())
         logger.info("Background warmup scheduled (non-blocking)")
 

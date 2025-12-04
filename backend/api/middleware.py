@@ -207,7 +207,7 @@ class AgeConsentMiddleware(BaseHTTPMiddleware):
     - Does NOT block general queries
 
     This is the ONLY content restriction in Universal Mode.
-    
+
     OPTIMIZATION: Uses cached settings and fast header lookup.
     """
 
@@ -237,7 +237,7 @@ class AgeConsentMiddleware(BaseHTTPMiddleware):
 
 def exception_handler(request: Request, exc: ShikshaSetuException) -> JSONResponse:
     """Handle custom ShikshaSetu exceptions.
-    
+
     OPTIMIZATION: Uses lazy % formatting to avoid string creation if not logging.
     """
     logger.error(
@@ -254,7 +254,7 @@ def exception_handler(request: Request, exc: ShikshaSetuException) -> JSONRespon
 
 def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions.
-    
+
     OPTIMIZATION: Uses module-level production check.
     """
     logger.exception(
@@ -263,7 +263,7 @@ def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
 
     # OPTIMIZATION: Use pre-computed production check
     detail = "An unexpected error occurred" if _IS_PRODUCTION else str(exc)
-    
+
     return JSONResponse(
         status_code=500,
         content={

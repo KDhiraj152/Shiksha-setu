@@ -25,7 +25,7 @@ const PageLoader = memo(function PageLoader() {
 // OPTIMIZATION: Prefetch components based on current route
 const RoutePrefetcher = memo(function RoutePrefetcher() {
   const location = useLocation();
-  
+
   useEffect(() => {
     // Prefetch likely next routes based on current location
     // Use requestIdleCallback for non-blocking prefetch
@@ -49,7 +49,7 @@ const RoutePrefetcher = memo(function RoutePrefetcher() {
       setTimeout(prefetch, 100);
     }
   }, [location.pathname]);
-  
+
   return null;
 });
 
@@ -63,7 +63,7 @@ const App = memo(function App() {
         <SystemStatusProvider>
           {/* Skip link for keyboard users */}
           <SkipLink href="#main-content" />
-          
+
           <Router>
             {/* Prefetch routes based on navigation patterns */}
             <RoutePrefetcher />
@@ -71,10 +71,10 @@ const App = memo(function App() {
               <Routes>
                 {/* Public Landing Page */}
                 <Route path="/" element={<LandingPage />} />
-                
+
                 {/* Auth Route */}
                 <Route path="/auth" element={<Auth />} />
-                
+
                 {/* Protected Application Routes */}
                 <Route element={<AppLayout />}>
                   <Route

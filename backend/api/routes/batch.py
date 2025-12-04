@@ -35,6 +35,7 @@ def _get_pipeline():
     global _pipeline_service
     if _pipeline_service is None:
         from ...services.pipeline import get_pipeline_service
+
         _pipeline_service = get_pipeline_service()
     return _pipeline_service
 
@@ -265,7 +266,7 @@ async def batch_process(request: BatchProcessRequest):
 
     try:
         from ...services.pipeline import ProcessingRequest
-        
+
         # OPTIMIZATION: Use cached pipeline singleton
         pipeline = _get_pipeline()
 
@@ -477,7 +478,7 @@ async def multimodel_process(request: MultiModelRequest):
 
     try:
         from ...services.pipeline.model_collaboration import CollaborationPattern
-        
+
         # OPTIMIZATION: Use cached pipeline singleton
         pipeline = _get_pipeline()
         collaborator = pipeline._get_collaborator()

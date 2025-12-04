@@ -31,7 +31,7 @@ add_result() {
     local status="$2"
     local duration="$3"
     local details="$4"
-    
+
     # Use Python to update JSON (more reliable than jq on macOS)
     python3 << EOF
 import json
@@ -123,7 +123,7 @@ else
         -H "Content-Type: application/json" \
         -d "{\"email\":\"test@example.com\",\"password\":\"TestPassword123!\"}" 2>/dev/null)
     ACCESS_TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || echo "")
-    
+
     if [ -n "$ACCESS_TOKEN" ]; then
         print_success "Authentication passed via login (${DURATION}ms)"
         add_result "authentication" "pass" "$DURATION" "Login successful"

@@ -30,7 +30,7 @@ function getFileExtension(filename: string): string {
 // Memoized file icon component
 const FileIcon = memo(function FileIcon({ file }: { file: File }) {
   const ext = getFileExtension(file.name);
-  
+
   if (file.type.startsWith('image/')) {
     return <Image className="w-4 h-4 text-blue-500" />;
   }
@@ -87,7 +87,7 @@ const ChatInput = memo(function ChatInput({
         setShowLanguageMenu(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -106,7 +106,7 @@ const ChatInput = memo(function ChatInput({
         textareaRef.current?.focus();
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyboard);
     return () => document.removeEventListener('keydown', handleKeyboard);
   }, []);
@@ -150,7 +150,7 @@ const ChatInput = memo(function ChatInput({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const droppedFiles = Array.from(e.dataTransfer.files);
     if (droppedFiles.length > 0) {
       setFiles(prev => [...prev, ...droppedFiles]);
@@ -186,7 +186,7 @@ const ChatInput = memo(function ChatInput({
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -200,11 +200,11 @@ const ChatInput = memo(function ChatInput({
         for (const track of stream.getTracks()) {
           track.stop();
         }
-        
+
         if (audioChunksRef.current.length === 0) return;
 
-        const audioBlob = new Blob(audioChunksRef.current, { 
-          type: mediaRecorder.mimeType 
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mediaRecorder.mimeType
         });
 
         // Transcribe audio using V2 STT API (Whisper V3 Turbo)
@@ -212,10 +212,10 @@ const ChatInput = memo(function ChatInput({
         setIsTranscribing(true);
         try {
           const langCode = selectedLanguage === 'auto' ? 'auto' : selectedLanguage;
-          const result = isAuthenticated 
+          const result = isAuthenticated
             ? await audioApi.speechToText(audioBlob, langCode)
             : await audioApi.speechToTextGuest(audioBlob, langCode);
-          
+
           if (result.text) {
             setMessage(prev => prev + (prev ? ' ' : '') + result.text);
             textareaRef.current?.focus();
@@ -247,11 +247,11 @@ const ChatInput = memo(function ChatInput({
     <div className="w-full relative">
       {/* Language Menu - Floating above */}
       {showLanguageMenu && (
-        <div 
+        <div
           ref={languageMenuRef}
           className={`absolute bottom-full mb-4 left-4 sm:left-auto z-50 w-64 max-h-80 overflow-y-auto rounded-3xl shadow-2xl border backdrop-blur-xl
-            ${isDark 
-              ? 'bg-[#1a1a1a]/90 border-white/10 text-white' 
+            ${isDark
+              ? 'bg-[#1a1a1a]/90 border-white/10 text-white'
               : 'bg-white/90 border-gray-200 text-gray-900'}`}
         >
           <div className="p-2 grid gap-1">
@@ -263,8 +263,8 @@ const ChatInput = memo(function ChatInput({
                   setShowLanguageMenu(false);
                 }}
                 className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl text-sm transition-all duration-200
-                  ${selectedLanguage === lang.code 
-                    ? (isDark ? 'bg-white/10 text-white' : 'bg-black/5 text-black font-medium') 
+                  ${selectedLanguage === lang.code
+                    ? (isDark ? 'bg-white/10 text-white' : 'bg-black/5 text-black font-medium')
                     : (isDark ? 'hover:bg-white/5 text-white/70 hover:text-white' : 'hover:bg-black/5 text-gray-600 hover:text-black')}`}
               >
                 <div className="flex flex-col items-start">
@@ -279,7 +279,7 @@ const ChatInput = memo(function ChatInput({
       )}
 
       {/* Main Input Container */}
-      <div 
+      <div
         className={`relative group transition-all duration-300 ease-out-expo
           ${isDragOver ? 'scale-[1.02]' : ''}`}
         onDragOver={handleDragOver}
@@ -299,20 +299,20 @@ const ChatInput = memo(function ChatInput({
 
         {/* Input Capsule */}
         <div className={`relative flex flex-col rounded-[26px] shadow-2xl transition-colors duration-300
-          ${isDark 
-            ? 'bg-[#1a1a1a]/60 border border-white/[0.08] shadow-black/20' 
-            : 'bg-white/60 border border-black/[0.08] shadow-xl shadow-black/5'} 
+          ${isDark
+            ? 'bg-[#1a1a1a]/60 border border-white/[0.08] shadow-black/20'
+            : 'bg-white/60 border border-black/[0.08] shadow-xl shadow-black/5'}
           backdrop-blur-xl`}
         >
           {/* File Previews */}
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2 px-3 pt-3 pb-1">
               {files.map((file, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={`group relative flex items-center gap-2 pl-3 pr-8 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 border
-                    ${isDark 
-                      ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' 
+                    ${isDark
+                      ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
                       : 'bg-gray-50 border-gray-200 text-gray-900 hover:bg-gray-100'}`}
                 >
                   <FileIcon file={file} />
@@ -343,19 +343,19 @@ const ChatInput = memo(function ChatInput({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className={`p-2.5 rounded-full transition-all duration-200
-                  ${isDark 
-                    ? 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]' 
+                  ${isDark
+                    ? 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]'
                     : 'text-black/30 hover:text-black/60 hover:bg-black/[0.04]'}`}
                 title="Attach files"
               >
                 <Paperclip className="w-5 h-5" />
               </button>
-              
+
               <button
                 onClick={() => setShowLanguageMenu(!showLanguageMenu)}
                 className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium transition-all duration-200
-                  ${isDark 
-                    ? 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]' 
+                  ${isDark
+                    ? 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]'
                     : 'text-black/30 hover:text-black/60 hover:bg-black/[0.04]'}`}
                 title="Change language"
               >
@@ -376,8 +376,8 @@ const ChatInput = memo(function ChatInput({
               spellCheck={false}
               className={`flex-1 max-h-[200px] py-2.5 px-3 bg-transparent border-0 focus:ring-0 focus:outline-none resize-none text-[15px] font-medium leading-relaxed scrollbar-hide
                 placeholder:font-normal placeholder:transition-opacity duration-200
-                ${isDark 
-                  ? 'text-white placeholder:text-white/30 caret-white' 
+                ${isDark
+                  ? 'text-white placeholder:text-white/30 caret-white'
                   : 'text-gray-900 placeholder:text-gray-400 caret-black'}
                 ${isRecording ? 'placeholder:animate-pulse' : ''}`}
               style={{ minHeight: '44px' }}
@@ -390,10 +390,10 @@ const ChatInput = memo(function ChatInput({
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={disabled || isTranscribing}
                 className={`p-2.5 rounded-full transition-all duration-300 relative
-                  ${isRecording 
-                    ? 'bg-red-500/90 text-white' 
-                    : (isDark 
-                        ? 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]' 
+                  ${isRecording
+                    ? 'bg-red-500/90 text-white'
+                    : (isDark
+                        ? 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]'
                         : 'text-black/30 hover:text-black/60 hover:bg-black/[0.04]')}`}
                 title={isRecording ? "Stop recording" : "Start voice input"}
               >
@@ -411,8 +411,8 @@ const ChatInput = memo(function ChatInput({
                 className={`p-2.5 rounded-full transition-all duration-200 flex items-center justify-center
                   ${(!message.trim() && files.length === 0) || disabled
                     ? (isDark ? 'bg-white/[0.06] text-white/20' : 'bg-black/[0.04] text-black/20')
-                    : (isDark 
-                        ? 'bg-white text-black hover:bg-white/90' 
+                    : (isDark
+                        ? 'bg-white text-black hover:bg-white/90'
                         : 'bg-black text-white hover:bg-black/90')}`}
               >
                 <ArrowUp className="w-5 h-5" />

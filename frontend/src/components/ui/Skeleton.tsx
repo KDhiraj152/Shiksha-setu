@@ -19,12 +19,12 @@ export const Skeleton = memo(function Skeleton({
   animation = 'pulse',
 }: SkeletonProps) {
   const baseClasses = 'bg-[var(--bg-tertiary)]';
-  const animationClasses = animation === 'pulse' 
-    ? 'animate-pulse' 
-    : animation === 'wave' 
-      ? 'animate-shimmer' 
+  const animationClasses = animation === 'pulse'
+    ? 'animate-pulse'
+    : animation === 'wave'
+      ? 'animate-shimmer'
       : '';
-  
+
   const variantClasses = {
     text: 'rounded-md',
     circular: 'rounded-full',
@@ -57,7 +57,7 @@ export const MessageSkeleton = memo(function MessageSkeleton({
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} p-4`}>
       {/* Avatar */}
       <Skeleton variant="circular" width={32} height={32} />
-      
+
       {/* Message content */}
       <div className={`flex-1 max-w-[80%] ${isUser ? 'items-end' : ''}`}>
         <div className="space-y-2">
@@ -191,7 +191,7 @@ export const PageSkeleton = memo(function PageSkeleton() {
         </div>
         <Skeleton variant="circular" width={36} height={36} />
       </div>
-      
+
       {/* Content skeleton */}
       <div className="flex-1 p-6">
         <div className="max-w-4xl mx-auto space-y-6">

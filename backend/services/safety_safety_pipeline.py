@@ -305,6 +305,7 @@ class SafetyPipeline:
                 emb_q, emb_r = embeddings[0], embeddings[1]
                 try:
                     from backend.core.optimized.simd_ops import cosine_similarity_single
+
                     similarity = cosine_similarity_single(emb_q, emb_r)
                 except ImportError:
                     norm_q = np.linalg.norm(emb_q)

@@ -19,16 +19,20 @@ print()
 # Test 1: Import all AI/ML components
 print("✅ Test 1: Importing AI/ML Components...")
 try:
-    from backend.pipeline.orchestrator import ContentPipelineOrchestrator, PipelineStage
     from backend.pipeline.model_clients import (
-        QwenSimplificationClient, IndicTrans2Client, BERTClient, MMSTTSClient
+        BERTClient,
+        IndicTrans2Client,
+        MMSTTSClient,
+        QwenSimplificationClient,
     )
+    from backend.pipeline.orchestrator import ContentPipelineOrchestrator, PipelineStage
+    from backend.services.curriculum_validation import CurriculumValidationService
+    from backend.services.grade_adaptation import GradeAdaptationService
+    from backend.services.question_generator import QuestionGeneratorService
+    from backend.services.rag import RAGService
     from backend.validate.ncert import NCERTValidator
     from backend.validate.standards import NCERTStandardsLoader
-    from backend.services.curriculum_validation import CurriculumValidationService
-    from backend.services.rag import RAGService
-    from backend.services.question_generator import QuestionGeneratorService
-    from backend.services.grade_adaptation import GradeAdaptationService
+
     print("   ✓ All AI/ML modules imported successfully!")
     print()
 except Exception as e:
@@ -55,11 +59,9 @@ try:
     target_lang = "Hindi"
     grade = 8
     subject = "Science"
-    
+
     # Validate parameters
-    orchestrator.validate_parameters(
-        test_input, target_lang, grade, subject, 'text'
-    )
+    orchestrator.validate_parameters(test_input, target_lang, grade, subject, "text")
     print("   ✓ Pipeline parameters validated successfully")
     print(f"   ✓ Test input: '{test_input[:50]}...'")
     print(f"   ✓ Target: Grade {grade} {subject} in {target_lang}")
@@ -75,7 +77,7 @@ try:
     indictrans2 = IndicTrans2Client()
     bert = BERTClient()
     mms_tts = MMSTTSClient()
-    
+
     print(f"   ✓ Qwen2.5 Client: {qwen.model_id}")
     print(f"   ✓ IndicTrans2 Client: {indictrans2.model_id}")
     print(f"   ✓ BERT Client: {bert.model_id}")
@@ -100,7 +102,8 @@ except Exception as e:
 # Test 6: Check Device Configuration
 print("✅ Test 6: Checking Device Configuration...")
 try:
-    from backend.core.optimized import get_device_router, M4_BATCH_SIZES
+    from backend.core.optimized import M4_BATCH_SIZES, get_device_router
+
     device_router = get_device_router()
     print("   ✓ Device Router initialized")
     print(f"   ✓ Batch sizes: {M4_BATCH_SIZES}")
@@ -113,24 +116,25 @@ except Exception as e:
 # Test 7: API Endpoints Check
 print("✅ Test 7: Verifying API Endpoints...")
 try:
-    from backend.api.main import app
     from fastapi.openapi.utils import get_openapi
-    
-    routes = [route for route in app.routes if hasattr(route, 'methods')]
-    api_routes = [r for r in routes if r.path.startswith('/api/v2')]
-    
+
+    from backend.api.main import app
+
+    routes = [route for route in app.routes if hasattr(route, "methods")]
+    api_routes = [r for r in routes if r.path.startswith("/api/v2")]
+
     print("   ✓ FastAPI app loaded")
     print(f"   ✓ Total API routes: {len(api_routes)}")
-    
+
     # Key AI/ML endpoints (V2 API)
     ml_endpoints = [
-        '/api/v2/content/process',
-        '/api/v2/content/simplify',
-        '/api/v2/content/translate',
-        '/api/v2/chat/guest',
-        '/api/v2/ai/explain'
+        "/api/v2/content/process",
+        "/api/v2/content/simplify",
+        "/api/v2/content/translate",
+        "/api/v2/chat/guest",
+        "/api/v2/ai/explain",
     ]
-    
+
     existing = [ep for ep in ml_endpoints if any(r.path == ep for r in api_routes)]
     print(f"   ✓ ML endpoints available: {len(existing)}/{len(ml_endpoints)}")
     print()
@@ -144,7 +148,11 @@ services_status = []
 
 services_to_check = [
     ("RAG Service", "backend.services.rag", "RAGService"),
-    ("Question Generator", "backend.services.question_generator", "QuestionGeneratorService"),
+    (
+        "Question Generator",
+        "backend.services.question_generator",
+        "QuestionGeneratorService",
+    ),
     ("Grade Adaptation", "backend.services.grade_adaptation", "GradeAdaptationService"),
     ("Cultural Context", "backend.services.cultural_context", "CulturalContextService"),
     ("A/B Testing", "backend.services.ab_testing", "ABTestingService"),

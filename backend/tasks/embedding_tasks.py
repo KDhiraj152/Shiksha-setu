@@ -177,9 +177,12 @@ def compute_similarity(
         e1, e2 = embeddings[0], embeddings[1]
         try:
             from backend.core.optimized.simd_ops import cosine_similarity_single
+
             similarity = cosine_similarity_single(e1, e2)
         except ImportError:
-            similarity = float(np.dot(e1, e2) / (np.linalg.norm(e1) * np.linalg.norm(e2)))
+            similarity = float(
+                np.dot(e1, e2) / (np.linalg.norm(e1) * np.linalg.norm(e2))
+            )
 
         return {
             "success": True,

@@ -57,18 +57,18 @@ const AppLayout = memo(function AppLayout() {
       <div className="flex-1 flex flex-col min-w-0 relative transition-all duration-300 ease-out-expo">
         {/* Header - Hidden on Settings page to avoid duplication */}
         {!isSettings && (
-          <Header 
-            onMenuClick={toggleSidebar} 
-            onNewChat={handleNewChat} 
-            sidebarOpen={sidebarOpen} 
+          <Header
+            onMenuClick={toggleSidebar}
+            onNewChat={handleNewChat}
+            sidebarOpen={sidebarOpen}
           />
         )}
 
         {/* Page Content */}
         <main className="flex-1 overflow-hidden relative">
           {/* Animate page transitions */}
-          <div 
-            key={location.pathname} 
+          <div
+            key={location.pathname}
             className="h-full w-full animate-enter overflow-y-auto scroll-smooth"
           >
             <Outlet />

@@ -212,12 +212,12 @@ fi
 
 # Enhanced progress bar for setup
 setup_progress() {
-    local pid=$1 
+    local pid=$1
     local msg=$2
     local max_dots=40
     local i=0
     local chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
-    
+
     while kill -0 $pid 2>/dev/null; do
         local spin_char="${chars:i%10:1}"
         local dots=$((i % (max_dots + 1)))
@@ -294,7 +294,7 @@ fi
 # ============================================================================
 if ! $SKIP_DOCKER; then
     step "Setting up Docker containers..."
-    
+
     # Start both containers in parallel via docker-compose
     if [[ -f docker-compose.yml ]]; then
         docker compose up -d postgres redis >/dev/null 2>&1 &
@@ -324,12 +324,12 @@ if ! $SKIP_DOCKER; then
         ) &
         wait
     fi
-    
+
     # Wait for containers to be ready with progress
     echo -e "  ${WHITE}Database Services:${NC}"
     PG_NAME=$(docker ps --format '{{.Names}}' | grep -E 'shikshasetu_postgres|shiksha_postgres' | head -1 || echo "")
     REDIS_NAME=$(docker ps --format '{{.Names}}' | grep -E 'shikshasetu_redis|shiksha_redis' | head -1 || echo "")
-    
+
     if [[ -n "$PG_NAME" ]]; then
         printf "     PostgreSQL  │ "
         PG_READY=false
@@ -347,7 +347,7 @@ if ! $SKIP_DOCKER; then
             printf " ${YELLOW}●${NC} Timeout\n"
         fi
     fi
-    
+
     if [[ -n "$REDIS_NAME" ]]; then
         printf "     Redis       │ "
         REDIS_READY=false
@@ -382,7 +382,7 @@ step "Configuring environment..."
 if [[ ! -f .env ]] || $FORCE_REINSTALL; then
     JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || python3 -c "import secrets; print(secrets.token_hex(32))")
     SECRET_KEY=$(openssl rand -hex 32 2>/dev/null || python3 -c "import secrets; print(secrets.token_hex(32))")
-    
+
     cat > .env << EOF
 # ShikshaSetu Configuration - Generated $(date +%Y-%m-%d)
 ENVIRONMENT=development

@@ -200,15 +200,15 @@ class RedisStore:
         local refill_rate = tonumber(ARGV[2])
         local window = tonumber(ARGV[3])
         local now = tonumber(ARGV[4])
-        
+
         local data = redis.call('HMGET', key, 'tokens', 'last_update')
         local tokens = tonumber(data[1]) or max_tokens
         local last_update = tonumber(data[2]) or now
-        
+
         -- Refill tokens
         local elapsed = now - last_update
         tokens = math.min(max_tokens, tokens + elapsed * refill_rate)
-        
+
         -- Try to consume
         if tokens >= 1 then
             tokens = tokens - 1

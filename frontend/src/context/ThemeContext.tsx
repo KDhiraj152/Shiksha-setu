@@ -32,10 +32,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     setStoreTheme(newTheme);
   }, [setStoreTheme]);
 
-  const contextValue = useMemo(() => ({ 
-    theme: resolvedTheme, 
-    toggleTheme, 
-    setTheme 
+  const contextValue = useMemo(() => ({
+    theme: resolvedTheme,
+    toggleTheme,
+    setTheme
   }), [resolvedTheme, toggleTheme, setTheme]);
 
   return (

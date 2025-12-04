@@ -50,7 +50,7 @@ log_success() {
 check_api_health() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking API health endpoint..."
-    
+
     if curl -sf "${API_URL}/health" > /dev/null 2>&1; then
         local response=$(curl -s "${API_URL}/health")
         if echo "$response" | grep -q "healthy"; then
@@ -69,7 +69,7 @@ check_api_health() {
 check_api_status() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking API status endpoint..."
-    
+
     if curl -sf "${API_URL}/health" > /dev/null 2>&1; then
         local response=$(curl -s "${API_URL}/health")
         log_success "API status endpoint responding"
@@ -84,7 +84,7 @@ check_api_status() {
 check_api_docs() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking API documentation..."
-    
+
     if curl -sf "${API_URL}/docs" > /dev/null 2>&1; then
         log_success "API documentation accessible at ${API_URL}/docs"
         return 0
@@ -97,11 +97,11 @@ check_api_docs() {
 check_database() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking PostgreSQL database..."
-    
+
     if command -v psql > /dev/null 2>&1; then
         if PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "SELECT 1" > /dev/null 2>&1; then
             log_success "PostgreSQL database accessible and responding"
-            
+
             # Check table count
             local table_count=$(PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'")
             echo "   Tables: $table_count"
@@ -119,11 +119,11 @@ check_database() {
 check_redis() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking Redis cache..."
-    
+
     if command -v redis-cli > /dev/null 2>&1; then
         if redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" ping > /dev/null 2>&1; then
             log_success "Redis cache accessible and responding"
-            
+
             # Check key count
             local key_count=$(redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" DBSIZE | awk '{print $2}')
             echo "   Keys: $key_count"
@@ -141,7 +141,7 @@ check_redis() {
 check_celery_workers() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking Celery workers..."
-    
+
     if command -v celery > /dev/null 2>&1; then
         if celery -A backend.tasks inspect active > /dev/null 2>&1; then
             local worker_count=$(celery -A backend.tasks inspect active 2>/dev/null | grep -c "@" || echo "0")
@@ -165,10 +165,10 @@ check_celery_workers() {
 check_prometheus() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking Prometheus..."
-    
+
     if curl -sf "${PROMETHEUS_URL}/-/healthy" > /dev/null 2>&1; then
         log_success "Prometheus is healthy"
-        
+
         # Check targets
         local targets_up=$(curl -s "${PROMETHEUS_URL}/api/v1/targets" | grep -o '"health":"up"' | wc -l | tr -d ' ')
         echo "   Targets up: $targets_up"
@@ -182,7 +182,7 @@ check_prometheus() {
 check_grafana() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking Grafana..."
-    
+
     if curl -sf "${GRAFANA_URL}/api/health" > /dev/null 2>&1; then
         log_success "Grafana is healthy"
         return 0
@@ -195,7 +195,7 @@ check_grafana() {
 check_ml_services() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking ML services (vLLM)..."
-    
+
     if curl -sf "${VLLM_URL}/health" > /dev/null 2>&1; then
         log_success "vLLM service is healthy"
         return 0
@@ -207,14 +207,14 @@ check_ml_services() {
 
 check_api_endpoints() {
     log_info "Checking critical API endpoints..."
-    
+
     local endpoints=(
         "/api/v2/auth/login"
         "/api/v2/content/simplify"
         "/api/v2/content/translate"
         "/api/v2/chat/guest"
     )
-    
+
     for endpoint in "${endpoints[@]}"; do
         TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
         if curl -sf "${API_URL}${endpoint}" -X POST -H "Content-Type: application/json" -d '{}' > /dev/null 2>&1; then
@@ -234,7 +234,7 @@ check_api_endpoints() {
 check_metrics_endpoint() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking Prometheus metrics endpoint..."
-    
+
     if curl -sf "${API_URL}/metrics" > /dev/null 2>&1; then
         local metrics=$(curl -s "${API_URL}/metrics" | head -20)
         log_success "Metrics endpoint responding"
@@ -250,7 +250,7 @@ check_metrics_endpoint() {
 check_disk_space() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking disk space..."
-    
+
     local disk_usage=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
     if [ "$disk_usage" -lt 80 ]; then
         log_success "Disk usage: ${disk_usage}%"
@@ -267,7 +267,7 @@ check_disk_space() {
 check_memory() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     log_info "Checking memory..."
-    
+
     if command -v free > /dev/null 2>&1; then
         local mem_usage=$(free | awk 'NR==2 {printf "%.0f", $3/$2 * 100}')
         if [ "$mem_usage" -lt 80 ]; then
@@ -292,13 +292,13 @@ main() {
     echo "║     ShikshaSetu Deployment Verification                   ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo ""
-    
+
     # Load environment variables if .env exists
     if [ -f .env ]; then
         log_info "Loading environment variables from .env"
         export $(cat .env | grep -v '^#' | xargs)
     fi
-    
+
     echo "Configuration:"
     echo "  API URL: ${API_URL}"
     echo "  Database: ${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
@@ -306,7 +306,7 @@ main() {
     echo "  Prometheus: ${PROMETHEUS_URL}"
     echo "  Grafana: ${GRAFANA_URL}"
     echo ""
-    
+
     # Run all checks
     check_api_health
     check_api_status
@@ -321,7 +321,7 @@ main() {
     check_metrics_endpoint
     check_disk_space
     check_memory
-    
+
     # Summary
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
@@ -333,7 +333,7 @@ main() {
     echo -e "${YELLOW}Warnings:      ${WARNING_CHECKS}${NC}"
     echo -e "${RED}Failed:        ${FAILED_CHECKS}${NC}"
     echo ""
-    
+
     if [ "$FAILED_CHECKS" -eq 0 ]; then
         if [ "$WARNING_CHECKS" -eq 0 ]; then
             log_success "All checks passed! ✨"

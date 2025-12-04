@@ -15,7 +15,7 @@ groups:
       - alert: HighErrorRate
         expr: |
           (
-            rate(http_requests_failed_total[5m]) / 
+            rate(http_requests_failed_total[5m]) /
             rate(http_requests_total[5m])
           ) > 0.05
         for: 5m
@@ -26,7 +26,7 @@ groups:
           summary: "High error rate detected on {{ $labels.instance }}"
           description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
           runbook_url: "https://runbooks.shikshasetu.in/api/high-error-rate"
-          
+
       # High response time alert
       - alert: HighResponseTime
         expr: |
@@ -39,7 +39,7 @@ groups:
           summary: "High API response time on {{ $labels.instance }}"
           description: "P95 response time is {{ $value | humanize }}s (threshold: 3s)"
           runbook_url: "https://runbooks.shikshasetu.in/api/high-latency"
-          
+
       # Database connection pool exhaustion
       - alert: DatabasePoolExhausted
         expr: |
@@ -52,7 +52,7 @@ groups:
           summary: "Database connection pool near exhaustion"
           description: "{{ $value | humanizePercentage }} of connections in use"
           runbook_url: "https://runbooks.shikshasetu.in/database/pool-exhaustion"
-          
+
       # Slow database queries
       - alert: SlowDatabaseQueries
         expr: |
@@ -65,7 +65,7 @@ groups:
           summary: "Slow database queries detected"
           description: "Average query duration is {{ $value | humanize }}s (threshold: 1s)"
           runbook_url: "https://runbooks.shikshasetu.in/database/slow-queries"
-          
+
       # Low cache hit rate
       - alert: LowCacheHitRate
         expr: |
@@ -78,7 +78,7 @@ groups:
           summary: "Low cache hit rate"
           description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 70%)"
           runbook_url: "https://runbooks.shikshasetu.in/cache/low-hit-rate"
-          
+
       # Redis down
       - alert: RedisDown
         expr: |
@@ -91,7 +91,7 @@ groups:
           summary: "Redis is down"
           description: "Redis instance {{ $labels.instance }} is not responding"
           runbook_url: "https://runbooks.shikshasetu.in/redis/down"
-          
+
       # Celery worker down
       - alert: CeleryWorkerDown
         expr: |
@@ -104,7 +104,7 @@ groups:
           summary: "Celery worker is down"
           description: "Celery worker {{ $labels.worker }} is not responding"
           runbook_url: "https://runbooks.shikshasetu.in/celery/worker-down"
-          
+
       # High task queue depth
       - alert: HighTaskQueueDepth
         expr: |
@@ -117,7 +117,7 @@ groups:
           summary: "High Celery task queue depth"
           description: "{{ $value }} tasks in queue (threshold: 1000)"
           runbook_url: "https://runbooks.shikshasetu.in/celery/queue-backlog"
-          
+
       # API instance down
       - alert: APIInstanceDown
         expr: |
@@ -130,7 +130,7 @@ groups:
           summary: "API instance is down"
           description: "API instance {{ $labels.instance }} is not responding"
           runbook_url: "https://runbooks.shikshasetu.in/api/instance-down"
-          
+
       # High memory usage
       - alert: HighMemoryUsage
         expr: |
@@ -143,7 +143,7 @@ groups:
           summary: "High memory usage"
           description: "Process memory is {{ $value }}GB (threshold: 4GB)"
           runbook_url: "https://runbooks.shikshasetu.in/api/high-memory"
-          
+
       # Disk space low
       - alert: DiskSpaceLow
         expr: |
@@ -156,7 +156,7 @@ groups:
           summary: "Low disk space"
           description: "Only {{ $value | humanizePercentage }} disk space available"
           runbook_url: "https://runbooks.shikshasetu.in/infrastructure/disk-space"
-          
+
       # SSL certificate expiry
       - alert: SSLCertificateExpiringSoon
         expr: |
@@ -169,7 +169,7 @@ groups:
           summary: "SSL certificate expiring soon"
           description: "Certificate expires in {{ $value }} days"
           runbook_url: "https://runbooks.shikshasetu.in/infrastructure/ssl-cert-renewal"
-          
+
       # Rate limit triggered frequently
       - alert: FrequentRateLimiting
         expr: |
@@ -182,7 +182,7 @@ groups:
           summary: "Frequent rate limiting"
           description: "{{ $value }} requests per second are being rate limited"
           runbook_url: "https://runbooks.shikshasetu.in/api/rate-limiting"
-          
+
       # Database backup failure
       - alert: DatabaseBackupFailed
         expr: |
@@ -195,7 +195,7 @@ groups:
           summary: "Database backup has not succeeded in 24h"
           description: "Last successful backup was {{ $value | humanizeDuration }} ago"
           runbook_url: "https://runbooks.shikshasetu.in/database/backup-failure"
-          
+
       # Sentry error spike
       - alert: SentryErrorSpike
         expr: |
@@ -224,7 +224,7 @@ groups:
           summary: "Slow ML model inference"
           description: "Average inference time is {{ $value }}s (threshold: 10s)"
           runbook_url: "https://runbooks.shikshasetu.in/ml/slow-inference"
-          
+
       # Translation API errors
       - alert: TranslationAPIErrors
         expr: |
@@ -237,7 +237,7 @@ groups:
           summary: "Translation API errors"
           description: "{{ $value }} translation errors per second"
           runbook_url: "https://runbooks.shikshasetu.in/ml/translation-errors"
-          
+
       # GPU memory high
       - alert: GPUMemoryHigh
         expr: |
@@ -250,7 +250,7 @@ groups:
           summary: "High GPU memory usage"
           description: "GPU memory is {{ $value | humanizePercentage }} utilized"
           runbook_url: "https://runbooks.shikshasetu.in/ml/gpu-memory"
-          
+
       # TTS generation failures
       - alert: TTSGenerationFailures
         expr: |

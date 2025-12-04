@@ -22,7 +22,7 @@ export function ThinkingIndicator({ isDark }: ThinkingIndicatorProps) {
     <output className="py-6 block" aria-label="AI is thinking">
       <div className="w-full max-w-3xl mx-auto px-4">
         <div className="flex gap-4">
-          <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center 
+          <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center
             ${isDark ? 'bg-white/[0.06]' : 'bg-gray-100'}`}>
             <OmLogo variant="minimal" size={16} color={isDark ? 'dark' : 'light'} animated={true} />
           </div>

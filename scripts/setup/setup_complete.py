@@ -1,32 +1,29 @@
 #!/usr/bin/env python3
 """Complete setup script for ShikshaSetu production environment."""
-import os
-import sys
-import subprocess
+
 import logging
+import os
+import subprocess
+import sys
 from pathlib import Path
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
 class SetupManager:
     """Manage complete system setup."""
-    
+
     def __init__(self):
         self.root_dir = Path(__file__).parent.absolute()
         self.errors = []
-    
+
     def run_command(self, cmd: list, description: str, critical: bool = True) -> bool:
         """Run shell command with error handling."""
         logger.info(f"⏳ {description}...")
         try:
             result = subprocess.run(
-                cmd,
-                cwd=self.root_dir,
-                check=True,
-                capture_output=True,
-                text=True
+                cmd, cwd=self.root_dir, check=True, capture_output=True, text=True
             )
             if result.returncode == 0:
                 logger.info(f"✅ {description} completed")
@@ -39,35 +36,44 @@ class SetupManager:
             else:
                 logger.warning(error_msg)
             return False
-    
+
     def check_python_version(self) -> bool:
         """Check Python version - 3.11 required for ML stack."""
         logger.info("🔍 Checking Python version...")
         version = sys.version_info
         if version.major == 3 and version.minor == 11:
-            logger.info(f"✅ Python {version.major}.{version.minor}.{version.micro} (optimal for ML stack)")
+            logger.info(
+                f"✅ Python {version.major}.{version.minor}.{version.micro} (optimal for ML stack)"
+            )
             return True
         elif version.major >= 3 and version.minor >= 11 and version.minor <= 13:
-            logger.warning(f"⚠️ Python {version.major}.{version.minor}.{version.micro} (3.11 recommended for best compatibility)")
+            logger.warning(
+                f"⚠️ Python {version.major}.{version.minor}.{version.micro} (3.11 recommended for best compatibility)"
+            )
             return True
         else:
             error = f"❌ Python 3.11 required, found {version.major}.{version.minor}"
             self.errors.append(error)
             logger.error(error)
             return False
-    
+
     def install_system_dependencies(self) -> bool:
         """Install system-level dependencies."""
         logger.info("📦 Installing system dependencies...")
-        
+
         # Detect OS
         import platform
+
         system = platform.system()
-        
+
         if system == "Darwin":  # macOS
             commands = [
                 (["brew", "install", "tesseract"], "Tesseract OCR", False),
-                (["brew", "install", "tesseract-lang"], "Tesseract language packs", False),
+                (
+                    ["brew", "install", "tesseract-lang"],
+                    "Tesseract language packs",
+                    False,
+                ),
                 (["brew", "install", "ffmpeg"], "FFmpeg", False),
                 (["brew", "install", "redis"], "Redis", False),
                 (["brew", "install", "postgresql@15"], "PostgreSQL 15", False),
@@ -75,27 +81,44 @@ class SetupManager:
         elif system == "Linux":
             commands = [
                 (["sudo", "apt-get", "update"], "Update package list", False),
-                (["sudo", "apt-get", "install", "-y", "tesseract-ocr", "tesseract-ocr-hin", 
-                  "tesseract-ocr-eng"], "Tesseract OCR", False),
+                (
+                    [
+                        "sudo",
+                        "apt-get",
+                        "install",
+                        "-y",
+                        "tesseract-ocr",
+                        "tesseract-ocr-hin",
+                        "tesseract-ocr-eng",
+                    ],
+                    "Tesseract OCR",
+                    False,
+                ),
                 (["sudo", "apt-get", "install", "-y", "ffmpeg"], "FFmpeg", False),
                 (["sudo", "apt-get", "install", "-y", "redis-server"], "Redis", False),
-                (["sudo", "apt-get", "install", "-y", "postgresql-15"], "PostgreSQL", False),
+                (
+                    ["sudo", "apt-get", "install", "-y", "postgresql-15"],
+                    "PostgreSQL",
+                    False,
+                ),
             ]
         else:
-            logger.warning(f"⚠️  Unsupported OS: {system}. Please install dependencies manually.")
+            logger.warning(
+                f"⚠️  Unsupported OS: {system}. Please install dependencies manually."
+            )
             return True
-        
+
         success = True
         for cmd, desc, critical in commands:
             if not self.run_command(cmd, desc, critical):
                 success = False
-        
+
         return success
-    
+
     def create_directories(self) -> bool:
         """Create required directories."""
         logger.info("📁 Creating directories...")
-        
+
         directories = [
             "data/uploads",
             "data/audio",
@@ -103,70 +126,68 @@ class SetupManager:
             "data/captions",
             "data/models",
             "data/test_samples",
-            "logs"
+            "logs",
         ]
-        
+
         for dir_path in directories:
             full_path = self.root_dir / dir_path
             full_path.mkdir(parents=True, exist_ok=True)
-        
+
         logger.info("✅ Directories created")
         return True
-    
+
     def install_python_dependencies(self) -> bool:
         """Install Python packages."""
         logger.info("🐍 Installing Python dependencies...")
-        
+
         # Install production dependencies
         if not self.run_command(
             [sys.executable, "-m", "pip", "install", "--upgrade", "pip"],
             "Upgrade pip",
-            critical=True
+            critical=True,
         ):
             return False
-        
+
         if not self.run_command(
             [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
             "Install production dependencies",
-            critical=True
+            critical=True,
         ):
             return False
-        
+
         # Install development dependencies
         self.run_command(
             [sys.executable, "-m", "pip", "install", "-r", "requirements-dev.txt"],
             "Install development dependencies",
-            critical=False
+            critical=False,
         )
-        
+
         return True
-    
+
     def setup_database(self) -> bool:
         """Setup PostgreSQL database."""
         logger.info("🗄️  Setting up database...")
-        
+
         # Create database
         self.run_command(
             ["createdb", "-h", "localhost", "-U", "postgres", "education_content"],
             "Create database",
-            critical=False
+            critical=False,
         )
-        
+
         # Run migrations
         if not self.run_command(
-            ["alembic", "upgrade", "head"],
-            "Run database migrations",
-            critical=True
+            ["alembic", "upgrade", "head"], "Run database migrations", critical=True
         ):
             return False
-        
+
         logger.info("✅ Database setup complete")
         return True
-    
+
     def download_ml_models(self) -> bool:
         """Download required ML models."""
         logger.info("🤖 Downloading ML models (this may take a while)...")
-        
+
         # Create model download script
         download_script = """
 import logging
@@ -181,45 +202,43 @@ manager = get_model_manager()
 try:
     logger.info("Downloading Qwen2.5-3B-Instruct (LLM)...")
     manager.load_text_model("Qwen/Qwen2.5-3B-Instruct")
-    
+
     logger.info("Downloading BGE-M3 (Embeddings)...")
     manager.load_embedding_model("BAAI/bge-m3")
-    
+
     logger.info("Downloading Whisper Large V3 Turbo (STT)...")
     manager.load_whisper("large-v3-turbo")
-    
+
     logger.info("Downloading MMS-TTS Hindi (TTS)...")
     manager.load_tts_model("facebook/mms-tts-hin")
-    
+
     logger.info("All models downloaded successfully!")
 except Exception as e:
     logger.error(f"Model download failed: {e}")
     exit(1)
 """
-        
+
         script_path = self.root_dir / "scripts" / "download_models_temp.py"
         script_path.parent.mkdir(exist_ok=True)
         script_path.write_text(download_script)
-        
+
         result = self.run_command(
-            [sys.executable, str(script_path)],
-            "Download ML models",
-            critical=False
+            [sys.executable, str(script_path)], "Download ML models", critical=False
         )
-        
+
         script_path.unlink()
         return result
-    
+
     def setup_env_file(self) -> bool:
         """Create .env file if not exists."""
         logger.info("🔐 Setting up environment file...")
-        
+
         env_file = self.root_dir / ".env"
-        
+
         if env_file.exists():
             logger.info("⚠️  .env file already exists, skipping")
             return False
-        
+
         env_template = """# ShikshaSetu Environment Configuration
 
 # Database
@@ -259,32 +278,32 @@ AUDIO_STORAGE_DIR=data/audio
 UPLOAD_DIR=data/uploads
 CACHE_DIR=data/cache
 """
-        
+
         env_file.write_text(env_template)
         logger.info("✅ .env file created - PLEASE UPDATE WITH YOUR CREDENTIALS")
         return True
-    
+
     def run_tests(self) -> bool:
         """Run test suite to verify installation."""
         logger.info("🧪 Running tests...")
-        
+
         return self.run_command(
             [sys.executable, "-m", "pytest", "tests/", "-v", "-m", "not slow"],
             "Run fast tests",
-            critical=False
+            critical=False,
         )
-    
+
     def display_next_steps(self):
         """Display next steps for user."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🎉 Setup Complete!")
-        print("="*60)
-        
+        print("=" * 60)
+
         if self.errors:
             print("\n⚠️  Some non-critical errors occurred:")
             for error in self.errors:
                 print(f"  - {error}")
-        
+
         print("\n📋 Next Steps:")
         print("1. Update .env file with your database credentials")
         print("2. Start Redis: redis-server")
@@ -302,13 +321,13 @@ CACHE_DIR=data/cache
         print("  API:               http://localhost:8000")
         print("  API Docs:          http://localhost:8000/docs")
         print("  Celery Flower:     http://localhost:5555 (after 'make celery-flower')")
-        print("\n" + "="*60)
-    
+        print("\n" + "=" * 60)
+
     def run_full_setup(self):
         """Run complete setup process."""
         print("🚀 ShikshaSetu Production Setup")
-        print("="*60)
-        
+        print("=" * 60)
+
         steps = [
             (self.check_python_version, "Python version check", True),
             (self.create_directories, "Directory creation", True),
@@ -319,13 +338,13 @@ CACHE_DIR=data/cache
             (self.download_ml_models, "ML models download", False),
             (self.run_tests, "Test suite", False),
         ]
-        
+
         for step_func, description, critical in steps:
             success = step_func()
             if not success and critical:
                 logger.error(f"❌ Critical step '{description}' failed. Aborting.")
                 sys.exit(1)
-        
+
         self.display_next_steps()
 
 

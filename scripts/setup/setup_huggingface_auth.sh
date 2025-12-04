@@ -35,7 +35,7 @@ case $choice in
         echo "   3. Paste it when prompted below"
         echo ""
         huggingface-cli login
-        
+
         if [ $? -eq 0 ]; then
             echo "✅ Successfully authenticated with HuggingFace!"
             echo ""
@@ -54,7 +54,7 @@ case $choice in
             echo "❌ No token provided"
             exit 1
         fi
-        
+
         # Add to .env file
         ENV_FILE=".env"
         if [ -f "$ENV_FILE" ]; then
@@ -76,7 +76,7 @@ case $choice in
             echo "HUGGINGFACE_API_KEY=$token" >> "$ENV_FILE"
             echo "✅ Created $ENV_FILE with HUGGINGFACE_API_KEY"
         fi
-        
+
         echo ""
         echo "🔓 Don't forget to request access to gated models:"
         echo "   Visit: https://huggingface.co/ai4bharat/indic-bert"

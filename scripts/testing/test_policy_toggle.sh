@@ -2,7 +2,7 @@
 # =============================================================================
 # test_policy_toggle.sh - Policy Toggle Unit Tests
 # =============================================================================
-# 
+#
 # Tests that the PolicyEngine correctly toggles behavior between
 # RESTRICTED (default) and UNRESTRICTED modes.
 #
@@ -48,15 +48,15 @@ run_test() {
     local test_name="$1"
     local test_cmd="$2"
     local expected_exit="$3"
-    
+
     echo -e "${YELLOW}Running: $test_name${NC}"
-    
+
     if eval "$test_cmd" > /tmp/test_output.txt 2>&1; then
         actual_exit=0
     else
         actual_exit=$?
     fi
-    
+
     if [ "$actual_exit" == "$expected_exit" ]; then
         echo -e "${GREEN}✓ PASSED: $test_name${NC}"
         ((PASSED++))

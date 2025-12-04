@@ -1,14 +1,14 @@
 /**
  * API Index - Modular API client for Shiksha Setu
- * 
+ *
  * This file re-exports all API modules for backward compatibility.
  * Individual modules can be imported directly for tree-shaking benefits.
- * 
+ *
  * @example
  * // Import everything (legacy)
  * import api from './api';
  * api.auth.login(email, password);
- * 
+ *
  * // Import specific modules (recommended)
  * import { auth } from './api/auth';
  * import { chat } from './api/chat';
@@ -53,14 +53,14 @@ export { profile, review } from './profileReview';
 
 // Re-export system API
 export { system } from './system';
-export type { 
-  HardwareStatus, 
-  ModelsStatus, 
+export type {
+  HardwareStatus,
+  ModelsStatus,
   DeviceCapabilities,
   ModelInfo,
   CacheStatus,
   SystemHealth,
-  BatchMetrics 
+  BatchMetrics
 } from './system';
 
 // Import all modules for default export

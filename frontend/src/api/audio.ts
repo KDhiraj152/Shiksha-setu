@@ -26,8 +26,8 @@ export const audio = {
    * Returns base64 encoded audio data
    */
   async textToSpeechGuest(
-    text: string, 
-    language = 'hi', 
+    text: string,
+    language = 'hi',
     gender: 'male' | 'female' = 'female',
     voice?: string,
     rate = '+0%',
@@ -66,7 +66,7 @@ export const audio = {
    * Speech-to-Text using Whisper Large V3 Turbo
    * Supports 99 languages including all Indian languages
    */
-  async speechToText(audioFile: File | Blob, language = 'auto'): Promise<{ 
+  async speechToText(audioFile: File | Blob, language = 'auto'): Promise<{
     text: string;
     language?: string;
     confidence?: number;
@@ -99,7 +99,7 @@ export const audio = {
       method: 'POST',
       body: formData,
     });
-    
+
     if (!response.ok) {
       throw new Error('Speech recognition failed');
     }

@@ -85,11 +85,11 @@ os.environ["ALLOW_EXTERNAL_CALLS"] = "false"
 try:
     from backend.policy import get_policy_engine, PolicyMode
     from backend.policy.policy_module import reset_policy_engine
-    
+
     # Reset and get fresh engine with env vars
     reset_policy_engine()
     engine = get_policy_engine()
-    
+
     print("=" * 60)
     print("POLICY ENGINE STATUS")
     print("=" * 60)
@@ -99,10 +99,10 @@ try:
     print(f"Curriculum Enforcement: {engine.config.curriculum_enforcement}")
     print(f"External Calls: {engine.config.allow_external_calls}")
     print("")
-    
+
     # Test input
     test_input = """$TEST_INPUT"""
-    
+
     print("=" * 60)
     print("INPUT POLICY CHECK")
     print("=" * 60)
@@ -113,7 +113,7 @@ try:
     print(f"Issues: {result.issues}")
     print(f"Policies Applied: {result.policy_applied}")
     print("")
-    
+
     # Test curriculum check
     print("=" * 60)
     print("CURRICULUM ALIGNMENT CHECK")
@@ -123,7 +123,7 @@ try:
     print(f"Blocked: {curr_result.blocked}")
     print(f"Policies Applied: {curr_result.policy_applied}")
     print("")
-    
+
     # Test output policy
     test_output = "Nuclear fission releases energy through E=mc². Use subprocess.run() to simulate."
     print("=" * 60)
@@ -134,12 +134,12 @@ try:
     print(f"Filtered: {filtered}")
     print(f"Changed: {filtered != test_output}")
     print("")
-    
+
     print("=" * 60)
     print("SMOKE TEST COMPLETE")
     print("=" * 60)
     print("Status: SUCCESS")
-    
+
 except Exception as e:
     print(f"ERROR: {e}")
     import traceback
@@ -164,7 +164,7 @@ try:
     from backend.policy.policy_module import reset_policy_engine
     reset_policy_engine()
     engine = get_policy_engine()
-    
+
     manifest = {
         "timestamp": "$TIMESTAMP",
         "iso_timestamp": datetime.now(timezone.utc).isoformat(),

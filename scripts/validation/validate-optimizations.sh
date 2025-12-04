@@ -61,9 +61,9 @@ check_warn() {
 # Validate Phase 1: Async-First Architecture
 validate_phase1_async() {
     print_phase "Phase 1: Async-First Architecture (19.4x speedup)"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     while read -r line; do
         if [[ "$line" == PASS:* ]]; then
             check_pass "${line#PASS:}"
@@ -92,9 +92,9 @@ for name, stmt in checks:
 # Validate Phase 2: Cache & Serialization
 validate_phase2_cache() {
     print_phase "Phase 2: Cache & Serialization"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     while read -r line; do
         if [[ "$line" == PASS:* ]]; then
             check_pass "${line#PASS:}"
@@ -123,9 +123,9 @@ for name, stmt in checks:
 # Validate Phase 3: GPU Pipeline
 validate_phase3_gpu() {
     print_phase "Phase 3: GPU Pipeline (0.3μs/task scheduling)"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     while read -r line; do
         if [[ "$line" == PASS:* ]]; then
             check_pass "${line#PASS:}"
@@ -154,9 +154,9 @@ for name, stmt in checks:
 # Validate Phase 4: Core Affinity
 validate_phase4_affinity() {
     print_phase "Phase 4: Core Affinity (P/E core routing)"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     while read -r line; do
         if [[ "$line" == PASS:* ]]; then
             check_pass "${line#PASS:}"
@@ -185,9 +185,9 @@ for name, stmt in checks:
 # Validate Phase 5: Memory Pool
 validate_phase5_memory() {
     print_phase "Phase 5: Memory Pool (62%+ buffer reuse)"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     while read -r line; do
         if [[ "$line" == PASS:* ]]; then
             check_pass "${line#PASS:}"
@@ -216,9 +216,9 @@ for name, stmt in checks:
 # Validate Inference Engines
 validate_inference() {
     print_phase "Inference Engines"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     while read -r line; do
         if [[ "$line" == PASS:* ]]; then
             check_pass "${line#PASS:}"
@@ -247,9 +247,9 @@ for name, stmt in checks:
 # Validate Core Components
 validate_core() {
     print_phase "Core Components"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     while read -r line; do
         if [[ "$line" == PASS:* ]]; then
             check_pass "${line#PASS:}"
@@ -278,9 +278,9 @@ for name, stmt in checks:
 # Validate Pipeline Integration
 validate_pipeline() {
     print_phase "Pipeline Integration"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     while read -r line; do
         if [[ "$line" == PASS:* ]]; then
             check_pass "${line#PASS:}"
@@ -309,30 +309,30 @@ for name, stmt in checks:
 # Validate API Routes
 validate_api() {
     print_phase "API Routes Validation"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     python3 << 'EOF'
 import sys
 try:
     from backend.api.main import app
-    
+
     routes = [r.path for r in app.routes if hasattr(r, 'path')]
     v2_routes = [r for r in routes if '/api/v2/' in r]
-    
+
     print(f"Total routes: {len(routes)}")
     print(f"V2 optimized routes: {len(v2_routes)}")
-    
+
     if len(routes) >= 50:
         print("PASS:Total routes >= 50")
     else:
         print("FAIL:Total routes < 50")
-        
+
     if len(v2_routes) >= 10:
         print("PASS:V2 routes >= 10")
     else:
         print("FAIL:V2 routes < 10")
-        
+
 except Exception as e:
     print(f"FAIL:App import:{str(e)[:50]}")
     sys.exit(1)
@@ -342,16 +342,16 @@ EOF
 # Summary
 print_summary() {
     print_header "📊 VALIDATION SUMMARY"
-    
+
     total=$((PASSED + FAILED))
-    
+
     echo -e "   Results:"
     echo -e "   ${GREEN}✓ Passed:${NC}   $PASSED"
     echo -e "   ${RED}✗ Failed:${NC}   $FAILED"
     echo -e "   ${YELLOW}! Warnings:${NC} $WARNINGS"
     echo -e "   Total:     $total"
     echo
-    
+
     echo -e "   5-Phase M4 Optimization Status:"
     echo -e "   Phase 1: Async-First     - 19.4x speedup"
     echo -e "   Phase 2: Cache/Serialize - 3.2x improvement"
@@ -359,7 +359,7 @@ print_summary() {
     echo -e "   Phase 4: Core Affinity   - P/E routing"
     echo -e "   Phase 5: Memory Pool     - 62%+ buffer reuse"
     echo
-    
+
     if [ $FAILED -eq 0 ]; then
         echo -e "   ${GREEN}✅ ALL VALIDATIONS PASSED!${NC}"
         echo
@@ -376,12 +376,12 @@ print_summary() {
 # Main
 main() {
     print_header "🔍 5-PHASE M4 OPTIMIZATION VALIDATION"
-    
+
     echo -e "   Hardware: Apple M4 (16GB Unified Memory)"
     echo -e "   CPU: 10-core (4 Performance + 6 Efficiency)"
     echo -e "   GPU: 10-core Metal"
     echo -e "   ANE: 16-core Neural Engine (38 TOPS)"
-    
+
     validate_phase1_async
     validate_phase2_cache
     validate_phase3_gpu
@@ -399,9 +399,9 @@ main() {
             echo "   $line"
         fi
     done
-    
+
     print_summary
-    
+
     exit $FAILED
 }
 

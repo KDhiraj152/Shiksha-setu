@@ -25,7 +25,7 @@ export const ocr = {
   }> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await fetch(`${API_BASE}/ocr/extract?ocr_type=${ocrType}`, {
       method: 'POST',
       headers: { ...getAuthHeader() },
@@ -111,7 +111,7 @@ export const stt = {
   }> {
     const formData = new FormData();
     formData.append('file', audioFile, 'recording.webm');
-    
+
     const response = await fetch(`${API_BASE}/stt/transcribe?language=${language}`, {
       method: 'POST',
       headers: { ...getAuthHeader() },

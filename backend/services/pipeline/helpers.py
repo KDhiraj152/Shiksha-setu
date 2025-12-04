@@ -66,7 +66,7 @@ class CollaborationHelpersMixin:
 
     def _cosine_similarity(self, a: list[float], b: list[float]) -> float:
         """Calculate cosine similarity between two vectors.
-        
+
         Hardware optimized: Uses SIMD operations when available.
         """
         import numpy as np
@@ -76,6 +76,7 @@ class CollaborationHelpersMixin:
 
         try:
             from backend.core.optimized.simd_ops import cosine_similarity_single
+
             return cosine_similarity_single(a_arr, b_arr)
         except ImportError:
             pass

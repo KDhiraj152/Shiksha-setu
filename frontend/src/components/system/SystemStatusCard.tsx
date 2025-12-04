@@ -1,12 +1,12 @@
 import { memo } from 'react';
-import { 
-  Cpu, 
-  HardDrive, 
-  Zap, 
-  Database, 
-  Server, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Cpu,
+  HardDrive,
+  Zap,
+  Database,
+  Server,
+  CheckCircle,
+  AlertCircle,
   XCircle,
   RefreshCw,
   Wifi,

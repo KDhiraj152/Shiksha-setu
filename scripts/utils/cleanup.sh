@@ -53,7 +53,7 @@ CLEANED=0
 clean_item() {
     local pattern="$1"
     local description="$2"
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         local count=$(find . -name "$pattern" -type d 2>/dev/null | wc -l | tr -d ' ')
         if [[ "$count" -gt 0 ]]; then
@@ -73,7 +73,7 @@ clean_item() {
 clean_files() {
     local pattern="$1"
     local description="$2"
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         local count=$(find . -name "$pattern" -type f 2>/dev/null | wc -l | tr -d ' ')
         if [[ "$count" -gt 0 ]]; then
@@ -138,7 +138,7 @@ clean_files "coverage.xml" "Coverage XML files"
 if [[ "$CLEAN_ALL" == "true" ]]; then
     echo ""
     echo -e "${RED}Full Clean (--all):${NC}"
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         if [[ -d "venv" ]]; then
             echo -e "${YELLOW}Would remove${NC}: Virtual environment (venv/)"

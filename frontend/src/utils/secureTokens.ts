@@ -1,20 +1,20 @@
 /**
  * Secure Token Manager
  * ====================
- * 
+ *
  * Provides secure token storage with XSS mitigation.
- * 
+ *
  * Security Features:
  * 1. Memory-first storage (tokens not persisted during session)
  * 2. Encrypted localStorage fallback for refresh tokens only
  * 3. Short-lived access tokens in memory only
  * 4. Automatic token rotation
  * 5. Secure cleanup on logout
- * 
+ *
  * SECURITY NOTE:
  * The ideal solution is httpOnly cookies set by the backend.
  * This implementation provides defense-in-depth for the frontend.
- * 
+ *
  * @see https://owasp.org/www-community/HttpOnly
  */
 
@@ -66,7 +66,7 @@ function deobfuscate(value: string): string {
 export function setAccessToken(token: string, expiresInSeconds = 3600): void {
   _accessToken = token;
   _tokenExpiry = Date.now() + (expiresInSeconds * 1000);
-  
+
   // Access tokens are kept in memory only for security
   // No localStorage storage to prevent XSS token theft
 }
@@ -80,7 +80,7 @@ export function getAccessToken(): string | null {
     _accessToken = null;
     _tokenExpiry = null;
   }
-  
+
   return _accessToken;
 }
 
@@ -120,7 +120,7 @@ export function getRefreshToken(): string | null {
 export function clearTokens(): void {
   _accessToken = null;
   _tokenExpiry = null;
-  
+
   try {
     // Clear obfuscated refresh token
     localStorage.removeItem('_rt');
@@ -167,7 +167,7 @@ export async function handleTokenRefresh(
 ): Promise<boolean> {
   const refresh = getRefreshToken();
   if (!refresh) return false;
-  
+
   try {
     const result = await refreshFn(refresh);
     if (result) {
@@ -178,7 +178,7 @@ export async function handleTokenRefresh(
   } catch {
     // Refresh failed
   }
-  
+
   clearTokens();
   return false;
 }

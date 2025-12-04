@@ -1,6 +1,6 @@
 /**
  * System API - Hardware status, model status, and system health
- * 
+ *
  * Connects to the optimized backend V2 API for real-time
  * hardware monitoring and AI model status.
  */
@@ -271,7 +271,7 @@ export const system = {
       throw new Error('Failed to get hardware status');
     }
     const data = await response.json();
-    
+
     // Normalize the response to add convenience fields
     return {
       ...data,
@@ -294,11 +294,11 @@ export const system = {
       throw new Error('Failed to get models status');
     }
     const data = await response.json();
-    
+
     // Normalize the response
     const loadedCount = data.summary?.loaded_models || 0;
     const totalCount = data.summary?.total_models || 0;
-    
+
     return {
       ...data,
       status: loadedCount > 0 ? 'healthy' : 'degraded',
@@ -414,9 +414,9 @@ export const system = {
   async switchPolicyMode(mode: 'OPEN' | 'EDUCATION' | 'RESEARCH' | 'RESTRICTED'): Promise<PolicySwitchResult> {
     const response = await fetch(`${API_BASE}/policy/mode`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader() 
+        ...getAuthHeader()
       },
       body: JSON.stringify({ mode }),
     });

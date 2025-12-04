@@ -505,7 +505,7 @@ MIT License — see [LICENSE](LICENSE)
 
 ⸻
 
-Created by: **K Dhiraj**  
-Email: kdhiraj152@gmail.com  
-GitHub: [github.com/KDhiraj152](https://github.com/KDhiraj152)  
+Created by: **K Dhiraj**
+Email: kdhiraj152@gmail.com
+GitHub: [github.com/KDhiraj152](https://github.com/KDhiraj152)
 LinkedIn: [linkedin.com/in/kdhiraj152](https://linkedin.com/in/kdhiraj152)

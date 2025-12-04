@@ -8,22 +8,22 @@ interface EmptyStateProps {
 
 // Static capability cards - defined outside component for stability
 const capabilities = [
-  { 
+  {
     label: 'Explain anything',
     description: 'Explain how machine learning works in sim...',
     prompt: 'Explain how machine learning works in simple terms with examples',
   },
-  { 
+  {
     label: 'Help me write',
     description: 'Help me write a professional email to reque...',
     prompt: 'Help me write a professional email to request a meeting',
   },
-  { 
+  {
     label: 'Code with me',
     description: 'Write a Python function that finds all prime ...',
     prompt: 'Write a Python function that finds all prime numbers up to n',
   },
-  { 
+  {
     label: 'Translate',
     description: 'Translate to Hindi: The future belongs to th...',
     prompt: 'Translate to Hindi: The future belongs to those who believe in the beauty of their dreams.',
@@ -47,12 +47,12 @@ const CapabilityButton = memo(function CapabilityButton({
       onClick={onClick}
       className={`group p-5 rounded-2xl text-left transition-all duration-200
         focus-visible:outline-none focus-visible:ring-2
-        ${isDark 
-          ? 'bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.06] hover:border-white/[0.10] focus-visible:ring-white/20' 
+        ${isDark
+          ? 'bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.06] hover:border-white/[0.10] focus-visible:ring-white/20'
           : 'bg-white hover:bg-gray-50 border border-gray-200/80 hover:border-gray-300 focus-visible:ring-black/10'
         }`}
     >
-      <span className={`block text-[15px] font-medium mb-1 
+      <span className={`block text-[15px] font-medium mb-1
         ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
         {label}
       </span>

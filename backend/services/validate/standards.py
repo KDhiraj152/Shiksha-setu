@@ -225,16 +225,17 @@ class NCERTStandardsLoader:
 
     def _cosine_similarity(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
         """Calculate cosine similarity between two vectors.
-        
+
         Hardware optimized: Uses SIMD operations when available.
         """
         # SIMD-optimized path
         try:
             from backend.core.optimized.simd_ops import cosine_similarity_single
+
             return float(cosine_similarity_single(vec1, vec2))
         except ImportError:
             pass
-        
+
         # Fallback to numpy
         dot_product = np.dot(vec1, vec2)
         norm1 = np.linalg.norm(vec1)

@@ -225,6 +225,7 @@ class SemanticResponseCache:
         # SIMD-optimized similarity
         try:
             from backend.core.optimized.simd_ops import cosine_similarity_single
+
             use_simd = True
         except ImportError:
             use_simd = False

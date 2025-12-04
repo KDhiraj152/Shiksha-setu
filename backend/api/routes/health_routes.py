@@ -38,6 +38,7 @@ def _get_ai_engine():
     global _ai_engine
     if _ai_engine is None:
         from ...services.ai_core.engine import get_ai_engine
+
         _ai_engine = get_ai_engine()
     return _ai_engine
 
@@ -106,6 +107,7 @@ def _get_policy_modes_response():
             "safety_notice": "All modes maintain essential safety: blocking violence, weapons, malware, and exploitation content.",
         }
     return _POLICY_MODES_RESPONSE
+
 
 # Model name constants to avoid duplication
 MODEL_QWEN = "qwen2.5-3b"
@@ -270,53 +272,6 @@ async def list_policy_modes():
     """List all available policy modes with descriptions."""
     # OPTIMIZATION: Return pre-computed cached response
     return _get_policy_modes_response()
-                    "unrestricted_mode": True,
-                    "policy_filters": False,
-                    "curriculum_enforcement": False,
-                    "harmful_content_blocking": True,
-                },
-            },
-            {
-                "id": "education",
-                "name": "EDUCATION",
-                "description": "Education mode with NCERT curriculum alignment",
-                "default": False,
-                "settings": {
-                    "unrestricted_mode": False,
-                    "policy_filters": True,
-                    "curriculum_enforcement": True,
-                    "harmful_content_blocking": True,
-                },
-            },
-            {
-                "id": "research",
-                "name": "RESEARCH",
-                "description": "Maximum freedom for academic work",
-                "default": False,
-                "settings": {
-                    "unrestricted_mode": True,
-                    "policy_filters": False,
-                    "curriculum_enforcement": False,
-                    "harmful_content_blocking": True,
-                    "external_calls": True,
-                },
-            },
-            {
-                "id": "restricted",
-                "name": "RESTRICTED",
-                "description": "Full policy enforcement with all filters",
-                "default": False,
-                "settings": {
-                    "unrestricted_mode": False,
-                    "policy_filters": True,
-                    "curriculum_enforcement": True,
-                    "harmful_content_blocking": True,
-                    "jailbreak_detection": True,
-                },
-            },
-        ],
-        "safety_notice": "All modes maintain essential safety: blocking violence, weapons, malware, and exploitation content.",
-    }
 
 
 @router.get("/health/detailed", tags=["health"])
@@ -407,14 +362,14 @@ async def generate_quiz(request: QuizGenerateRequest):
     """Generate a quiz on a topic."""
     try:
         from ...services.ai_core.engine import GenerationConfig
-        
+
         # OPTIMIZATION: Use cached engine singleton
         engine = _get_ai_engine()
 
         prompt = f"""Generate exactly {request.num_questions} {request.difficulty} difficulty multiple choice questions about {request.topic}.
 
 IMPORTANT: Generate questions based on actual {request.subject} curriculum. Each question must be factually accurate.
-        
+
 Format each question as:
 Q1: [question text]
 A) [option]
@@ -835,17 +790,17 @@ async def get_cache_status():
                     "hits": stats.l1_hits,
                     "misses": stats.l1_misses,
                     "hit_rate": f"{stats.l1_hit_rate:.2%}",
-                    "max_size": getattr(cache.l1, 'max_size', 1000),
+                    "max_size": getattr(cache.l1, "max_size", 1000),
                 },
                 "l2_redis": {
                     "hits": stats.l2_hits,
                     "misses": stats.l2_misses,
-                    "connected": getattr(cache.l2, '_connected', False),
+                    "connected": getattr(cache.l2, "_connected", False),
                 },
                 "l3_disk": {
                     "hits": stats.l3_hits,
                     "misses": stats.l3_misses,
-                    "enabled": hasattr(cache, 'l3') and cache.l3 is not None,
+                    "enabled": hasattr(cache, "l3") and cache.l3 is not None,
                 },
             },
             "summary": {

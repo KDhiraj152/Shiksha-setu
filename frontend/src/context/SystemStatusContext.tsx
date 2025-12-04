@@ -55,7 +55,7 @@ export function SystemStatusProvider({ children }: { children: ReactNode }) {
 
     try {
       setError(null);
-      
+
       // Fetch all statuses in parallel
       const [hwStatus, modelsStatus, healthStatus, policyStatus] = await Promise.allSettled([
         system.getHardwareStatus(),

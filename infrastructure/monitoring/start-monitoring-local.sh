@@ -38,23 +38,23 @@ elapsed=0
 while [ $elapsed -lt $max_wait ]; do
     prometheus_ready=false
     grafana_ready=false
-    
+
     # Check Prometheus
     if curl -sf http://localhost:9090/-/healthy > /dev/null 2>&1; then
         prometheus_ready=true
     fi
-    
+
     # Check Grafana
     if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
         grafana_ready=true
     fi
-    
+
     if [ "$prometheus_ready" = true ] && [ "$grafana_ready" = true ]; then
         echo ""
         echo "✅ All services are healthy!"
         break
     fi
-    
+
     echo -n "."
     sleep 3
     elapsed=$((elapsed + 3))

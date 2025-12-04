@@ -2,7 +2,7 @@
 # =============================================================================
 # Apple Silicon 5-Phase Performance Benchmark
 # =============================================================================
-# Benchmarks the optimized pipeline on Apple Silicon hardware with 5-phase 
+# Benchmarks the optimized pipeline on Apple Silicon hardware with 5-phase
 # M4 optimization metrics
 #
 # Usage: ./bin/benchmark-apple-silicon
@@ -35,14 +35,14 @@ print_section() {
 # Check if running on Apple Silicon
 check_hardware() {
     print_section "Hardware Detection"
-    
+
     if [[ "$(uname -m)" == "arm64" ]]; then
         echo -e "   ${GREEN}✓${NC} Apple Silicon detected"
-        
+
         chip_name=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "Unknown")
         memory_gb=$(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
         cpu_cores=$(sysctl -n hw.ncpu 2>/dev/null || echo "Unknown")
-        
+
         echo -e "   Chip: ${CYAN}$chip_name${NC}"
         echo -e "   Memory: ${CYAN}${memory_gb}GB${NC} Unified"
         echo -e "   CPU Cores: ${CYAN}$cpu_cores${NC}"
@@ -56,9 +56,9 @@ check_hardware() {
 # Run benchmarks
 run_benchmarks() {
     print_section "5-Phase Optimization Benchmarks"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     python3 << 'EOF'
 import time
 from typing import Dict, Any
@@ -73,7 +73,7 @@ def benchmark(name: str, target: str):
                 start = time.perf_counter()
                 func(*args, **kwargs)
                 times.append((time.perf_counter() - start) * 1_000_000)
-            
+
             avg = sum(times) / len(times)
             results[name] = {'avg_us': avg, 'target': target}
             return avg
@@ -138,7 +138,7 @@ for name, data in results.items():
     target_val = float(target.replace("<", "").replace("μs", "").replace("ms", ""))
     if "ms" in target: target_val *= 1000
     status = "pass" if avg < target_val else "warn"
-    
+
     if status == "pass":
         print(f"   \033[32m✓\033[0m {name}: \033[32m{avg:.2f}μs\033[0m (target: {target})")
     else:
@@ -150,9 +150,9 @@ EOF
 # Check components
 check_components() {
     print_section "5-Phase Components"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     python3 << 'EOF'
 optimizations = [
     ("Phase 1: AsyncTaskRunner", "backend.core.optimized", "AsyncTaskRunner"),
@@ -186,9 +186,9 @@ EOF
 # Memory check
 check_memory() {
     print_section "Memory Analysis"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     python3 << 'EOF'
 import tracemalloc
 tracemalloc.start()
@@ -212,14 +212,14 @@ EOF
 # Main
 main() {
     print_header "🍎 APPLE SILICON 5-PHASE BENCHMARK"
-    
+
     check_hardware
     check_components
     run_benchmarks
     check_memory
-    
+
     print_header "📊 PERFORMANCE TARGETS"
-    
+
     echo -e "   ${CYAN}5-Phase Optimization:${NC}"
     echo -e "   • Phase 1: Async-First    - 19.4x speedup"
     echo -e "   • Phase 2: Cache/Serialize - 3.2x improvement"

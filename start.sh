@@ -127,7 +127,7 @@ die() { fail "$1"; echo -e "\n${RED}💀 STARTUP FAILED${NC}\n"; exit 1; }
 cleanup() {
     local exit_code=$?
     echo -e "\n${YELLOW}⚠ Caught signal, cleaning up...${NC}"
-    
+
     # Kill backend if running
     if [[ -f "$PROJECT_ROOT/logs/backend.pid" ]]; then
         local backend_pid=$(cat "$PROJECT_ROOT/logs/backend.pid" 2>/dev/null)
@@ -136,7 +136,7 @@ cleanup() {
             kill -TERM "$backend_pid" 2>/dev/null || true
         fi
     fi
-    
+
     # Kill frontend if running
     if [[ -f "$PROJECT_ROOT/logs/frontend.pid" ]]; then
         local frontend_pid=$(cat "$PROJECT_ROOT/logs/frontend.pid" 2>/dev/null)
@@ -145,7 +145,7 @@ cleanup() {
             kill -TERM "$frontend_pid" 2>/dev/null || true
         fi
     fi
-    
+
     echo -e "${GREEN}✓ Cleanup complete${NC}"
     exit $exit_code
 }
@@ -166,7 +166,7 @@ spin() {
 }
 
 # ============================================================================
-# PORT & DOCKER UTILITIES  
+# PORT & DOCKER UTILITIES
 # ============================================================================
 kill_port() {
     local port=$1
@@ -252,7 +252,7 @@ fi
 # ============================================================================
 if ! $SKIP_DOCKER; then
     step "Starting Docker services..."
-    
+
     # Ensure Docker is running with robust retry
     DOCKER_RETRIES=0
     MAX_DOCKER_RETRIES=3
@@ -271,7 +271,7 @@ if ! $SKIP_DOCKER; then
             sleep 1
         done
     done
-    
+
     if ! $SKIP_DOCKER && is_docker_running; then
         ok "Docker daemon ready"
     fi
@@ -282,7 +282,7 @@ if ! $SKIP_DOCKER && is_docker_running; then
     # Start containers in parallel
     POSTGRES_NAME=$(get_running_container "$POSTGRES_CONTAINERS" || echo "")
     REDIS_NAME=$(get_running_container "$REDIS_CONTAINERS" || echo "")
-    
+
     if [[ -z "$POSTGRES_NAME" ]]; then
         POSTGRES_NAME=$(start_container "$POSTGRES_CONTAINERS" || echo "")
         if [[ -z "$POSTGRES_NAME" ]] && [[ -f "$PROJECT_ROOT/docker-compose.yml" ]]; then
@@ -294,14 +294,14 @@ if ! $SKIP_DOCKER && is_docker_running; then
             REDIS_NAME=$(get_running_container "$REDIS_CONTAINERS" || echo "shikshasetu_redis")
         fi
     fi
-    
+
     if [[ -z "$REDIS_NAME" ]]; then
         REDIS_NAME=$(start_container "$REDIS_CONTAINERS" || echo "shikshasetu_redis")
     fi
-    
+
     # Database health checks - use Docker healthcheck status (fast!)
     echo -e "  ${WHITE}Database Services:${NC}"
-    
+
     # PostgreSQL check - try port first (fastest), then Docker healthcheck
     PG_READY=false
     printf "     PostgreSQL  │ "
@@ -325,7 +325,7 @@ if ! $SKIP_DOCKER && is_docker_running; then
     else
         printf " ${RED}●${NC} Failed\n"
     fi
-    
+
     # Redis check - try port first, then Docker healthcheck
     REDIS_READY=false
     printf "     Redis       │ "
@@ -364,15 +364,15 @@ fi
 # ============================================================================
 if $START_MONITORING; then
     step "Starting monitoring stack..."
-    
+
     MONITORING_COMPOSE="$PROJECT_ROOT/infrastructure/monitoring/docker-compose.monitoring.local.yml"
-    
+
     if [[ -f "$MONITORING_COMPOSE" ]]; then
         # Use docker-compose for proper monitoring stack with health checks
         cd "$PROJECT_ROOT/infrastructure/monitoring"
         docker compose -f docker-compose.monitoring.local.yml up -d >/dev/null 2>&1
         cd "$PROJECT_ROOT"
-        
+
         # Wait for Prometheus health (uses Docker healthcheck)
         echo -e "  ${WHITE}Prometheus${NC}:"
         for i in {1..15}; do
@@ -382,7 +382,7 @@ if $START_MONITORING; then
             fi
             sleep 0.5
         done
-        
+
         # Wait for Grafana health (uses Docker healthcheck)
         echo -e "  ${WHITE}Grafana${NC}:"
         for i in {1..15}; do
@@ -392,12 +392,12 @@ if $START_MONITORING; then
             fi
             sleep 0.5
         done
-        
+
         info "Monitoring: http://localhost:$PROMETHEUS_PORT (Prometheus) | http://localhost:$GRAFANA_PORT (Grafana admin/admin)"
     else
         warn "Monitoring compose file not found: $MONITORING_COMPOSE"
         warn "Falling back to basic containers..."
-        
+
         # Fallback to basic containers if compose file missing
         PROMETHEUS_CONFIG="$PROJECT_ROOT/infrastructure/monitoring/prometheus-local.yml"
         if [[ -f "$PROMETHEUS_CONFIG" ]]; then
@@ -408,7 +408,7 @@ if $START_MONITORING; then
                 --add-host=host.docker.internal:host-gateway \
                 prom/prometheus:v2.47.0 >/dev/null 2>&1 && ok "Prometheus started (port $PROMETHEUS_PORT)" || warn "Prometheus failed"
         fi
-        
+
         docker rm -f grafana 2>/dev/null || true
         docker run -d --name grafana \
             -p $GRAFANA_PORT:3000 \
@@ -533,7 +533,7 @@ fi
 # ============================================================================
 if ! $QUICK_MODE; then
     step "Validating optimizations..."
-    
+
     # Validate V2 API router
     if "$VENV_PATH/bin/python" -c "
 from backend.api.routes.v2 import router
@@ -543,7 +543,7 @@ print(f'V2 API: {len(router.routes)} routes')
     else
         warn "V2 API router will load on first request"
     fi
-    
+
     # Validate UNIVERSAL_MODE
     if "$VENV_PATH/bin/python" -c "
 from backend.core.config import settings
@@ -553,7 +553,7 @@ print(f'UNIVERSAL_MODE={settings.UNIVERSAL_MODE}')
     else
         warn "UNIVERSAL_MODE not enabled - check settings"
     fi
-    
+
     # Validate Self-Optimizer
     if "$VENV_PATH/bin/python" -c "
 from backend.core.optimized.self_optimizer import SelfOptimizer, QueryClassifier
@@ -563,7 +563,7 @@ print('SelfOptimizer OK')
     else
         warn "Self-Optimizer will load on first request"
     fi
-    
+
     # Validate Safety Pipeline
     if "$VENV_PATH/bin/python" -c "
 from backend.services.safety.safety_pipeline import SafetyPipeline
@@ -573,7 +573,7 @@ print('SafetyPipeline OK')
     else
         warn "Safety Pipeline will load on first request"
     fi
-    
+
     # Validate Adaptive Context Allocator
     if "$VENV_PATH/bin/python" -c "
 from backend.services.ai_core.context import AdaptiveContextAllocator

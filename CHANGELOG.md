@@ -391,7 +391,7 @@ async def process_content(text: str):
 #### Device Router Enhancements
 
 - Added `unified_memory_gb` alias property
-- Added `has_mlx` alias property  
+- Added `has_mlx` alias property
 - Added `get_optimal_backends()` method
 
 #### Unit Tests

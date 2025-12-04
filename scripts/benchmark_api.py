@@ -30,6 +30,7 @@ except ImportError:
 @dataclass
 class APIBenchmarkResult:
     """API benchmark result."""
+
     endpoint: str
     method: str
     requests: int
@@ -46,14 +47,14 @@ async def benchmark_endpoint(
     client: httpx.AsyncClient,
     method: str,
     url: str,
-    data: Optional[dict] = None,
+    data: dict | None = None,
     iterations: int = 100,
     warmup: int = 10,
 ) -> APIBenchmarkResult:
     """Benchmark a single endpoint."""
-    latencies: List[float] = []
+    latencies: list[float] = []
     successes = 0
-    
+
     # Warmup
     for _ in range(warmup):
         try:
@@ -63,7 +64,7 @@ async def benchmark_endpoint(
                 await client.post(url, json=data)
         except Exception:
             pass
-    
+
     # Actual benchmark
     for _ in range(iterations):
         start = time.perf_counter()
@@ -72,22 +73,22 @@ async def benchmark_endpoint(
                 resp = await client.get(url)
             else:
                 resp = await client.post(url, json=data)
-            
+
             elapsed = (time.perf_counter() - start) * 1000
             latencies.append(elapsed)
-            
+
             if resp.status_code < 500:
                 successes += 1
-        except Exception as e:
+        except Exception:
             latencies.append((time.perf_counter() - start) * 1000)
-    
+
     if not latencies:
         latencies = [0]
-    
+
     latencies.sort()
     total_time = sum(latencies)
     p95_idx = int(len(latencies) * 0.95)
-    
+
     return APIBenchmarkResult(
         endpoint=url,
         method=method,
@@ -116,120 +117,120 @@ def print_result(result: APIBenchmarkResult):
 
 async def run_api_benchmarks():
     """Run all API benchmarks."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("API ENDPOINT PERFORMANCE BENCHMARKS")
-    print("="*60)
-    
+    print("=" * 60)
+
     # Start the test client
     from httpx import ASGITransport
+
     from backend.api.main import app
-    
+
     transport = ASGITransport(app=app)
-    
+
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        
         # 1. Health check (should be fast)
         print("\n--- Health Endpoints ---")
         result = await benchmark_endpoint(
-            client, "GET", "/api/v2/health",
-            iterations=200, warmup=20
+            client, "GET", "/api/v2/health", iterations=200, warmup=20
         )
         print_result(result)
-        
+
         # 2. Policy modes (cached response)
         result = await benchmark_endpoint(
-            client, "GET", "/api/v2/policy/modes",
-            iterations=200, warmup=20
+            client, "GET", "/api/v2/policy/modes", iterations=200, warmup=20
         )
         print_result(result)
-        
+
         # 3. Hardware status
         result = await benchmark_endpoint(
-            client, "GET", "/api/v2/hardware/status",
-            iterations=100, warmup=10
+            client, "GET", "/api/v2/hardware/status", iterations=100, warmup=10
         )
         print_result(result)
-        
+
         # 4. OCR capabilities (static response)
         print("\n--- Content Endpoints ---")
         result = await benchmark_endpoint(
-            client, "GET", "/api/v2/ocr/capabilities",
-            iterations=200, warmup=20
+            client, "GET", "/api/v2/ocr/capabilities", iterations=200, warmup=20
         )
         print_result(result)
-        
+
         # 5. TTS voices (static response)
         result = await benchmark_endpoint(
-            client, "GET", "/api/v2/content/tts/voices",
-            iterations=200, warmup=20
+            client, "GET", "/api/v2/content/tts/voices", iterations=200, warmup=20
         )
         print_result(result)
-        
+
         # 6. STT languages (static response)
         result = await benchmark_endpoint(
-            client, "GET", "/api/v2/stt/languages",
-            iterations=200, warmup=20
+            client, "GET", "/api/v2/stt/languages", iterations=200, warmup=20
         )
         print_result(result)
-        
+
         # 7. AI prompts (static response)
         print("\n--- AI Endpoints ---")
         result = await benchmark_endpoint(
-            client, "GET", "/api/v2/ai/prompts",
-            iterations=200, warmup=20
+            client, "GET", "/api/v2/ai/prompts", iterations=200, warmup=20
         )
         print_result(result)
-        
+
         # 8. Safety check (lightweight)
         result = await benchmark_endpoint(
-            client, "POST", "/api/v2/ai/safety/check",
+            client,
+            "POST",
+            "/api/v2/ai/safety/check",
             data={"text": "This is a safe educational message about science."},
-            iterations=100, warmup=10
+            iterations=100,
+            warmup=10,
         )
         print_result(result)
 
 
 async def run_concurrent_benchmarks():
     """Test concurrent request handling."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("CONCURRENT REQUEST BENCHMARKS")
-    print("="*60)
-    
+    print("=" * 60)
+
     from httpx import ASGITransport
+
     from backend.api.main import app
-    
+
     transport = ASGITransport(app=app)
-    
+
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        
         # Test concurrent health checks
         concurrency_levels = [1, 10, 50, 100]
-        
+
         for level in concurrency_levels:
             start = time.perf_counter()
-            
-            tasks = [
-                client.get("/api/v2/health")
-                for _ in range(level)
-            ]
-            
+
+            tasks = [client.get("/api/v2/health") for _ in range(level)]
+
             responses = await asyncio.gather(*tasks, return_exceptions=True)
             elapsed = (time.perf_counter() - start) * 1000
-            
-            successes = sum(1 for r in responses if isinstance(r, httpx.Response) and r.status_code == 200)
-            
-            print(f"  {level} concurrent requests: {elapsed:.1f}ms total, {level/(elapsed/1000):.0f} req/sec, {successes}/{level} success")
+
+            successes = sum(
+                1
+                for r in responses
+                if isinstance(r, httpx.Response) and r.status_code == 200
+            )
+
+            print(
+                f"  {level} concurrent requests: {elapsed:.1f}ms total, {level/(elapsed/1000):.0f} req/sec, {successes}/{level} success"
+            )
 
 
 async def main():
     """Run all benchmarks."""
-    print("\n" + "#"*60)
+    print("\n" + "#" * 60)
     print("# SHIKSHA SETU API PERFORMANCE BENCHMARKS")
-    print("#"*60)
-    
+    print("#" * 60)
+
     # Device info
     try:
         from backend.core.optimized.device_router import get_device_router
+
         router = get_device_router()
         caps = router.capabilities
         print(f"\nDevice: {caps.chip_name}")
@@ -237,17 +238,17 @@ async def main():
         print(f"Memory: {caps.memory_gb}GB unified")
     except Exception as e:
         print(f"Device info unavailable: {e}")
-    
+
     await run_api_benchmarks()
     await run_concurrent_benchmarks()
-    
-    print("\n" + "="*60)
+
+    print("\n" + "=" * 60)
     print("SUMMARY")
-    print("="*60)
+    print("=" * 60)
     print("""
 API Performance with Optimizations:
 - Health endpoints: < 5ms average
-- Static responses: < 10ms average  
+- Static responses: < 10ms average
 - Concurrent handling: Scales linearly
 - Async database: Non-blocking I/O
 - orjson: 5-10x faster JSON serialization

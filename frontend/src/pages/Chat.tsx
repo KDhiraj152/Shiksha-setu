@@ -24,11 +24,11 @@ import {
 } from '../lib/chatUtils';
 
 // Memoized scroll button component
-const ScrollToBottomButton = memo(function ScrollToBottomButton({ 
-  onClick, 
-  isDark 
-}: { 
-  onClick: () => void; 
+const ScrollToBottomButton = memo(function ScrollToBottomButton({
+  onClick,
+  isDark
+}: {
+  onClick: () => void;
   isDark: boolean;
 }) {
   return (
@@ -57,14 +57,14 @@ export default function Chat() {
   }>({});
 
   // Store hooks with shallow comparison for better performance
-  const { 
-    activeConversationId, 
-    messages, 
-    streamingMessage, 
-    addMessage, 
+  const {
+    activeConversationId,
+    messages,
+    streamingMessage,
+    addMessage,
     replaceLastAssistantMessage,
-    setStreamingMessage, 
-    createConversation 
+    setStreamingMessage,
+    createConversation
   } = useChatStore(
     (state) => ({
       activeConversationId: state.activeConversationId,
@@ -77,7 +77,7 @@ export default function Chat() {
     }),
     shallow
   );
-  
+
   const { accessToken, isAuthenticated } = useAuthStore(
     (state) => ({ accessToken: state.accessToken, isAuthenticated: state.isAuthenticated }),
     shallow
@@ -99,14 +99,14 @@ export default function Chat() {
   }, []);
 
   // Custom hooks
-  const { playingAudioMessageId, handleAudio, stopAudio } = useAudioPlayback({ 
-    selectedLanguage, 
-    showToast 
+  const { playingAudioMessageId, handleAudio, stopAudio } = useAudioPlayback({
+    selectedLanguage,
+    showToast
   });
-  
-  const { messagesEndRef, messagesContainerRef, showScrollButton, scrollToBottom } = useChatScroll({ 
-    messagesLength: messages.length, 
-    streamingMessage 
+
+  const { messagesEndRef, messagesContainerRef, showScrollButton, scrollToBottom } = useChatScroll({
+    messagesLength: messages.length,
+    streamingMessage
   });
 
   // Load user profile on mount
@@ -159,10 +159,10 @@ export default function Chat() {
     // Add user message to store
     const userMessage = createUserMessage(convId, message, files);
     addMessage(userMessage);
-    
+
     try {
       abortControllerRef.current = new AbortController();
-      
+
       const endpoint = getChatEndpoint(isAuthenticated);
       const headers = buildChatHeaders(accessToken ?? undefined);
       const body = buildChatRequestBody({
@@ -182,11 +182,11 @@ export default function Chat() {
 
       let fullResponse = '';
       let responseMeta: typeof lastResponseMeta = {};
-      
+
       const handleStream = async (reader: ReadableStreamDefaultReader<Uint8Array>) => {
         setIsThinking(false);
         fullResponse = await parseSSEStream(
-          reader, 
+          reader,
           setStreamingMessage,
           (meta) => {
             responseMeta = meta;
@@ -238,7 +238,7 @@ export default function Chat() {
       }
 
       setStreamingMessage('');
-      
+
       const assistantMessage = createAssistantMessage(
         convId,
         fullResponse || 'I apologize, but I was unable to generate a response. Please try again.',
@@ -270,9 +270,9 @@ export default function Chat() {
 
   const handleRetry = async (messageId?: string) => {
     const currentMessages = useChatStore.getState().messages;
-    
+
     let userMessageToRetry: Message | undefined;
-    
+
     if (messageId) {
       const assistantIdx = currentMessages.findIndex(m => m.id === messageId);
       if (assistantIdx > 0) {
@@ -282,17 +282,17 @@ export default function Chat() {
         }
       }
     }
-    
+
     if (!userMessageToRetry) {
       const userMessages = currentMessages.filter(m => m.role === 'user');
       userMessageToRetry = userMessages[userMessages.length - 1];
     }
-    
+
     if (!userMessageToRetry) return;
-    
+
     setIsRegenerating(true);
     setRegeneratingMessageId(messageId || null);
-    
+
     try {
       await handleRegenerateResponse(userMessageToRetry.content, messageId);
     } finally {
@@ -303,19 +303,19 @@ export default function Chat() {
 
   const handleRegenerateResponse = async (userMessage: string, replaceMessageId?: string) => {
     const convId = activeConversationId || useChatStore.getState().createConversation().id;
-    
+
     const currentMessages = useChatStore.getState().messages;
     const history = currentMessages
       .filter(m => m.id !== replaceMessageId)
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
-    
+
     const langToSend = selectedLanguage === 'auto' ? undefined : selectedLanguage;
     setStreamingMessage('');
-    
+
     try {
       abortControllerRef.current = new AbortController();
-      
+
       const endpoint = getChatEndpoint(isAuthenticated);
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -327,21 +327,21 @@ export default function Chat() {
         }),
         signal: abortControllerRef.current.signal,
       });
-      
+
       if (!response.ok) throw new Error('Failed to get response');
       if (!response.body) throw new Error('No response body');
-      
+
       const reader = response.body.getReader();
       let fullResponse = '';
-      
+
       if (isAuthenticated) {
         fullResponse = await parseSSEStream(reader, setStreamingMessage);
       } else {
         fullResponse = await parseJSONResponse(reader, setStreamingMessage);
       }
-      
+
       setStreamingMessage('');
-      
+
       const newAssistantMessage: Message = {
         id: replaceMessageId || (Date.now() + 1).toString(),
         conversationId: convId,
@@ -350,13 +350,13 @@ export default function Chat() {
         timestamp: new Date().toISOString(),
         isError: !fullResponse,
       };
-      
+
       if (replaceMessageId) {
         replaceLastAssistantMessage(newAssistantMessage);
       } else {
         addMessage(newAssistantMessage);
       }
-      
+
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       console.error('Regenerate error:', error);
@@ -380,11 +380,11 @@ export default function Chat() {
     <div className={`flex h-full overflow-hidden ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-[#fafafa] text-gray-900'}`}>
       {/* Toast Notification */}
       {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
-      
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 w-full relative overflow-hidden">
         {/* Messages Area */}
-        <div 
+        <div
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth"
         >
@@ -445,8 +445,8 @@ export default function Chat() {
         <div className={`flex-shrink-0 py-4 px-4
           ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#fafafa]'}`}>
           <div className="w-full max-w-3xl mx-auto">
-            <ChatInput 
-              onSend={handleSend} 
+            <ChatInput
+              onSend={handleSend}
               selectedLanguage={selectedLanguage}
               onLanguageChange={setSelectedLanguage}
               disabled={isThinking}

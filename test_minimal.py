@@ -2,7 +2,9 @@
 """
 Minimal server to isolate blocking in ShikshaSetu.
 """
+
 import logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -25,10 +27,11 @@ logger.info("Adding ShikshaSetu middleware...")
 try:
     from backend.api.middleware import (
         RequestIDMiddleware,
-        SecurityHeadersMiddleware,
-        RequestTimingMiddleware,
         RequestLoggingMiddleware,
+        RequestTimingMiddleware,
+        SecurityHeadersMiddleware,
     )
+
     app.add_middleware(RequestIDMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestTimingMiddleware)
@@ -37,14 +40,17 @@ try:
 except Exception as e:
     logger.error(f"Middleware import failed: {e}")
 
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
 
 # Test import each component incrementally
 logger.info("Testing V2 router import...")
 try:
     from backend.api.routes.v2 import router as v2_router
+
     app.include_router(v2_router, prefix="/api/v2")
     logger.info("V2 router imported and mounted successfully")
 except Exception as e:
@@ -52,4 +58,5 @@ except Exception as e:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="127.0.0.1", port=8000, log_level="debug")

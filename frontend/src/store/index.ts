@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
       syncAuthState: () => {
         const hasValidToken = checkAuth();
         const currentAuth = get().isAuthenticated;
-        
+
         if (currentAuth && !hasValidToken) {
           // Token expired/cleared but store thinks we're authenticated
           clearTokens();

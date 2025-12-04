@@ -21,17 +21,17 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from ...core.config import settings
+from backend.core.config import settings
 
 # M4 Hardware optimization imports
 try:
-    from ...core.optimized import get_affinity_manager, get_memory_pool
-    from ...core.optimized.device_router import (
+    from backend.core.optimized import get_affinity_manager, get_memory_pool
+    from backend.core.optimized.device_router import (
         TaskType,
         get_device_router,
         get_resource_manager,
     )
-    from ...core.optimized.quantization import QuantizationStrategy
+    from backend.core.optimized.quantization import QuantizationStrategy
 
     HARDWARE_OPT_AVAILABLE = True
 except ImportError:
@@ -39,7 +39,7 @@ except ImportError:
 
 # Refinement pipeline for semantic accuracy
 try:
-    from ..evaluation.refinement_pipeline import (
+    from backend.services.evaluation.refinement_pipeline import (
         RefinementConfig,
         RefinementTask,
         SemanticRefinementPipeline,
@@ -48,6 +48,10 @@ try:
     REFINEMENT_AVAILABLE = True
 except ImportError:
     REFINEMENT_AVAILABLE = False
+    # Placeholder classes for test patching
+    RefinementConfig = None
+    RefinementTask = None
+    SemanticRefinementPipeline = None
     logger_temp = logging.getLogger(__name__)
     logger_temp.warning(
         "Refinement pipeline not available, using single-pass generation"

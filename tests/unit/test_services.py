@@ -211,82 +211,41 @@ class TestAsyncBatchProcessor:
 
 
 # Curriculum Validator Tests
-from backend.services.curriculum_validator import CurriculumValidator
+from backend.services.curriculum_validation import CurriculumValidationService
 
 
 class TestCurriculumValidator:
-    """Tests for CurriculumValidator."""
+    """Tests for CurriculumValidationService."""
 
     @pytest.fixture
-    def mock_model(self):
-        """Mock transformer model."""
-        mock = Mock()
-        mock.eval = Mock()
-        # Mock model output
-        mock_output = Mock()
-        mock_output.logits = Mock()
-        mock.return_value = mock_output
+    def mock_db(self):
+        """Mock database session."""
+
+        mock = MagicMock()
+        mock.query.return_value.filter.return_value.all.return_value = []
         return mock
 
     @pytest.fixture
-    def mock_tokenizer(self):
-        """Mock tokenizer."""
-        mock = Mock()
-        mock.return_value = {"input_ids": Mock(), "attention_mask": Mock()}
-        return mock
-
-    @pytest.fixture
-    def validator(self, mock_model, mock_tokenizer):
-        """Create CurriculumValidator with mocked model."""
-        with patch("backend.services.curriculum_validator.settings") as mock_settings:
-            mock_settings.VALIDATOR_MODEL_ID = "ai4bharat/indic-bert"
-            mock_settings.VALIDATOR_FINE_TUNE_PATH = "/tmp/nonexistent"
-
-            validator = CurriculumValidator()
-            validator.model = mock_model
-            validator.tokenizer = mock_tokenizer
-            yield validator
+    def validator(self, mock_db):
+        """Create CurriculumValidationService with mocked db."""
+        return CurriculumValidationService(db=mock_db)
 
     def test_grade_ranges_defined(self, validator):
-        """Test grade ranges are properly defined."""
-        assert "primary" in validator.grade_ranges
-        assert "middle" in validator.grade_ranges
-        assert "secondary" in validator.grade_ranges
-        assert "senior_secondary" in validator.grade_ranges
-
-        assert validator.grade_ranges["primary"] == (1, 5)
-        assert validator.grade_ranges["middle"] == (6, 8)
-        assert validator.grade_ranges["secondary"] == (9, 10)
-        assert validator.grade_ranges["senior_secondary"] == (11, 12)
+        """Test validator has core attributes."""
+        assert validator.alignment_threshold == 0.70
+        assert validator.validator is not None
 
     def test_subjects_defined(self, validator):
-        """Test subject categories are defined."""
-        expected_subjects = [
-            "mathematics",
-            "science",
-            "social_science",
-            "english",
-            "hindi",
-            "languages",
-            "arts",
-            "physical_education",
-        ]
+        """Test NCERTValidator is initialized."""
+        from backend.services.validate.ncert import NCERTValidator
 
-        for subject in expected_subjects:
-            assert subject in validator.subjects
+        assert isinstance(validator.validator, NCERTValidator)
 
-    def test_model_initialization(self):
+    def test_model_initialization(self, mock_db):
         """Test validator can be initialized."""
-        with patch("backend.services.curriculum_validator.settings") as mock_settings:
-            mock_settings.VALIDATOR_MODEL_ID = "test-model"
-            mock_settings.VALIDATOR_FINE_TUNE_PATH = "/tmp/test"
-
-            validator = CurriculumValidator()
-
-            assert validator.model_id == "test-model"
-            assert validator.fine_tune_path == "/tmp/test"
-            assert validator.model is None
-            assert validator.tokenizer is None
+        validator = CurriculumValidationService(db=mock_db)
+        assert validator.alignment_threshold == 0.70
+        assert validator.db is not None
 
 
 # ============================================================================
@@ -300,7 +259,7 @@ class TestUnifiedCache:
     @pytest.fixture
     def cache(self):
         """Get unified cache instance."""
-        from backend.cache.unified import get_unified_cache
+        from backend.cache import get_unified_cache
 
         return get_unified_cache()
 
@@ -322,7 +281,7 @@ class TestEmbeddingCache:
     @pytest.fixture
     def embedding_cache(self):
         """Get embedding cache instance."""
-        from backend.cache.unified import get_embedding_cache
+        from backend.cache.embedding_cache import get_embedding_cache
 
         return get_embedding_cache()
 

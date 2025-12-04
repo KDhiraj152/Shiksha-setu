@@ -159,7 +159,7 @@ Simplified version (keep key facts, use simple words):"""
             if i == 0:
                 # Initial generation
                 prompt = f"""You are an expert educational content creator.
-                
+
 Task: {task}
 Grade Level: {grade_level}
 Subject: {subject}

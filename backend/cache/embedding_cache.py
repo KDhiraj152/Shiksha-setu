@@ -222,7 +222,7 @@ class EmbeddingCache:
             # Update access stats
             conn.execute(
                 """
-                UPDATE embeddings 
+                UPDATE embeddings
                 SET accessed_at = ?, access_count = access_count + 1
                 WHERE text_hash = ?
             """,
@@ -261,7 +261,7 @@ class EmbeddingCache:
 
             conn.execute(
                 """
-                INSERT OR REPLACE INTO embeddings 
+                INSERT OR REPLACE INTO embeddings
                 (text_hash, text, embedding, model_id, dimension, created_at, accessed_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
@@ -429,7 +429,7 @@ class EmbeddingCache:
             conn = sqlite3.connect(str(self.db_path))
             conn.executemany(
                 """
-                INSERT OR REPLACE INTO embeddings 
+                INSERT OR REPLACE INTO embeddings
                 (text_hash, text, embedding, model_id, dimension, created_at, accessed_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
@@ -463,6 +463,7 @@ class EmbeddingCache:
             # SIMD-optimized similarity
             try:
                 from backend.core.optimized.simd_ops import cosine_similarity_single
+
                 use_simd = True
             except ImportError:
                 use_simd = False

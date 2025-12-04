@@ -66,7 +66,7 @@ export const review = {
    * Submit a review for a flagged response
    */
   async submitReview(
-    responseId: string, 
+    responseId: string,
     status: 'approved' | 'rejected' | 'improved',
     notes?: string,
     correctedResponse?: string

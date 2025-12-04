@@ -50,7 +50,7 @@ const CodeBlock = memo(function CodeBlock({ language, children }: CodeBlockProps
   const [copied, setCopied] = useState(false);
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
-  
+
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(children);
     setCopied(true);
@@ -91,10 +91,10 @@ const CodeBlock = memo(function CodeBlock({ language, children }: CodeBlockProps
         <button
           onClick={handleCopy}
           className={`flex items-center gap-1.5 text-xs font-medium transition-all duration-200 px-2 py-1 rounded-md
-            ${copied 
-              ? 'text-emerald-500 bg-emerald-500/10' 
-              : isDark 
-                ? 'text-gray-400 hover:text-white hover:bg-white/10' 
+            ${copied
+              ? 'text-emerald-500 bg-emerald-500/10'
+              : isDark
+                ? 'text-gray-400 hover:text-white hover:bg-white/10'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
             }`}
         >
@@ -122,7 +122,7 @@ function createMarkdownComponents(isDark: boolean): Components {
         {children}
       </p>
     ),
-    
+
     // Lists - clean spacing like ChatGPT
     ul: ({ children }) => (
       <ul className={`list-disc pl-6 my-4 space-y-2 font-sans ${isDark ? 'marker:text-white/50' : 'marker:text-gray-400'}`}>
@@ -139,7 +139,7 @@ function createMarkdownComponents(isDark: boolean): Components {
         {children}
       </li>
     ),
-    
+
     // Text formatting
     strong: ({ children }) => (
       <strong className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -156,7 +156,7 @@ function createMarkdownComponents(isDark: boolean): Components {
         {children}
       </del>
     ),
-    
+
     // Headings with clear hierarchy
     h1: ({ children }) => (
       <h1 className={`text-2xl font-bold mt-8 mb-4 pb-2 border-b font-sans tracking-tight
@@ -179,13 +179,13 @@ function createMarkdownComponents(isDark: boolean): Components {
         {children}
       </h4>
     ),
-    
+
     // Code - inline and block
     code: ({ className, children, ...props }) => {
       const match = /language-(\w+)/.exec(className || '');
       const content = childrenToString(children);
       const isCodeBlock = className?.includes('language-') || content.includes('\n');
-      
+
       if (isCodeBlock) {
         return (
           <CodeBlock language={match?.[1]}>
@@ -195,11 +195,11 @@ function createMarkdownComponents(isDark: boolean): Components {
       }
       // Inline code - like ChatGPT
       return (
-        <code 
+        <code
           className={`px-1.5 py-0.5 rounded-md text-[13px] font-mono border
-            ${isDark 
-              ? 'bg-white/10 text-orange-200 border-white/10' 
-              : 'bg-gray-100 text-pink-600 border-gray-200'}`} 
+            ${isDark
+              ? 'bg-white/10 text-orange-200 border-white/10'
+              : 'bg-gray-100 text-pink-600 border-gray-200'}`}
           {...props}
         >
           {children}
@@ -207,36 +207,36 @@ function createMarkdownComponents(isDark: boolean): Components {
       );
     },
     pre: ({ children }) => <>{children}</>,
-    
+
     // Blockquote - like Perplexity citations
     blockquote: ({ children }) => (
       <blockquote className={`border-l-4 pl-4 py-2 my-4 rounded-r-lg italic
-        ${isDark 
-          ? 'border-orange-500/50 bg-orange-500/5 text-white/70' 
+        ${isDark
+          ? 'border-orange-500/50 bg-orange-500/5 text-white/70'
           : 'border-orange-400 bg-orange-50 text-gray-600'}`}>
         {children}
       </blockquote>
     ),
-    
+
     // Links with icon
     a: ({ href, children }) => (
-      <a 
-        href={href} 
+      <a
+        href={href}
         className={`inline-flex items-center gap-1 underline underline-offset-2 transition-colors font-medium
           ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
-        target="_blank" 
+        target="_blank"
         rel="noopener noreferrer"
       >
         {children}
         <ExternalLink className="w-3 h-3 opacity-50" />
       </a>
     ),
-    
+
     // Horizontal rule
     hr: () => (
       <hr className={`my-8 border-0 h-px ${isDark ? 'bg-white/10' : 'bg-gray-200'}`} />
     ),
-    
+
     // Tables - clean like Notion/ChatGPT
     table: ({ children }) => (
       <div className={`overflow-x-auto my-6 rounded-xl border shadow-sm
@@ -270,13 +270,13 @@ function createMarkdownComponents(isDark: boolean): Components {
         {children}
       </td>
     ),
-    
+
     // Images - responsive with rounded corners
     img: ({ src, alt }) => (
       <figure className="my-6">
-        <img 
-          src={src} 
-          alt={alt || ''} 
+        <img
+          src={src}
+          alt={alt || ''}
           className={`max-w-full h-auto rounded-xl border
             ${isDark ? 'border-white/10' : 'border-gray-200'}`}
           loading="lazy"
@@ -289,14 +289,14 @@ function createMarkdownComponents(isDark: boolean): Components {
         )}
       </figure>
     ),
-    
+
     // Task lists / checkboxes
     input: ({ type, checked, ...props }) => {
       if (type === 'checkbox') {
         return (
-          <input 
-            type="checkbox" 
-            checked={checked} 
+          <input
+            type="checkbox"
+            checked={checked}
             readOnly
             className={`mr-2 rounded ${isDark ? 'accent-white' : 'accent-black'}`}
             {...props}
@@ -356,17 +356,17 @@ const ChatMessage = memo(function ChatMessage({
   const handleAudio = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // If currently playing or loading, clicking will stop
     if (isPlayingAudio || isLoadingAudio) {
       setIsLoadingAudio(false);
       onAudio?.(); // This will trigger stop in parent
       return;
     }
-    
+
     // Start loading
     setIsLoadingAudio(true);
-    
+
     try {
       // Call the audio handler and wait for it to complete
       const result = onAudio?.();
@@ -383,7 +383,7 @@ const ChatMessage = memo(function ChatMessage({
   // Error message display - Same layout as regular messages
   if (isError) {
     return (
-      <div 
+      <div
         className="w-full animate-message-in py-4"
         style={{ animationDelay: '0.05s' }}
       >
@@ -391,8 +391,8 @@ const ChatMessage = memo(function ChatMessage({
           <div className="flex gap-4">
             {/* Error Icon - Circular like other avatars */}
             <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center
-              ${isDark 
-                ? 'bg-red-500/20' 
+              ${isDark
+                ? 'bg-red-500/20'
                 : 'bg-red-100'
               }`}
             >
@@ -404,14 +404,14 @@ const ChatMessage = memo(function ChatMessage({
               <div className={`text-[15px] leading-relaxed break-words ${isDark ? 'text-red-300' : 'text-red-600'}`}>
                 {message.content}
               </div>
-              
+
               {onRetry && (
                 <button
                   onClick={handleRetry}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium 
-                    transition-all duration-200 
-                    ${isDark 
-                      ? 'bg-white/[0.08] hover:bg-white/[0.12] text-white/80' 
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+                    transition-all duration-200
+                    ${isDark
+                      ? 'bg-white/[0.08] hover:bg-white/[0.12] text-white/80'
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                     }`}
                 >
@@ -428,30 +428,30 @@ const ChatMessage = memo(function ChatMessage({
 
   // Compute class names - minimal design
   const bgClass = ''; // No background differentiation like ChatGPT
-  
+
   // Animation class for streaming messages
   const animationClass = isStreaming ? 'animate-message-in' : '';
 
   return (
-    <div 
+    <div
       className={`group w-full py-4 ${bgClass} ${animationClass} border-b border-transparent hover:bg-white/[0.02]`}
     >
       <div className="w-full max-w-3xl mx-auto px-4">
         <div className="flex gap-4">
           {/* Avatar - Circular design */}
-          <div 
+          <div
             className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-200
-              ${isUser 
-                ? isDark 
-                  ? 'bg-white/[0.08]' 
-                  : 'bg-gray-100' 
-                : isDark 
-                  ? 'bg-white/[0.06]' 
+              ${isUser
+                ? isDark
+                  ? 'bg-white/[0.08]'
+                  : 'bg-gray-100'
+                : isDark
+                  ? 'bg-white/[0.06]'
                   : 'bg-gray-100'
               } ${isStreaming ? 'animate-avatar-pop' : ''}`}
           >
-            {isUser 
-              ? <User className={`w-4 h-4 ${isDark ? 'text-white/60' : 'text-gray-500'}`} /> 
+            {isUser
+              ? <User className={`w-4 h-4 ${isDark ? 'text-white/60' : 'text-gray-500'}`} />
               : <OmLogo variant="minimal" size={16} color={isDark ? 'dark' : 'light'} animated={isStreaming} />
             }
           </div>
@@ -466,9 +466,9 @@ const ChatMessage = memo(function ChatMessage({
             {/* Message Content */}
             <div className={`prose prose-sm max-w-none
               ${isDark ? 'prose-invert' : ''}
-              prose-p:leading-7 prose-p:mb-4 
-              prose-headings:font-semibold 
-              prose-strong:font-semibold 
+              prose-p:leading-7 prose-p:mb-4
+              prose-headings:font-semibold
+              prose-strong:font-semibold
               prose-ul:my-3 prose-li:my-1`}
             >
               {isUser ? (
@@ -484,10 +484,10 @@ const ChatMessage = memo(function ChatMessage({
                   >
                     {message.content}
                   </ReactMarkdown>
-                  
+
                   {/* Streaming cursor - simple blinking line */}
                   {isStreaming && (
-                    <span 
+                    <span
                       className={`inline-block w-[2px] h-4 ml-0.5 rounded-sm animate-pulse ${isDark ? 'bg-white/70' : 'bg-gray-600'}`}
                     />
                   )}
@@ -502,8 +502,8 @@ const ChatMessage = memo(function ChatMessage({
                   <div
                     key={`${attachment.name}-${attachment.url || attachment.type}`}
                     className={`px-3 py-2 rounded-xl text-sm backdrop-blur-md border transition-all duration-200 hover:scale-[1.02]
-                      ${isDark 
-                        ? 'bg-white/[0.04] border-white/[0.08] text-white/70 hover:bg-white/[0.08]' 
+                      ${isDark
+                        ? 'bg-white/[0.04] border-white/[0.08] text-white/70 hover:bg-white/[0.08]'
                         : 'bg-gray-50/80 border-gray-200/60 text-gray-600 hover:bg-gray-100/80'
                       }`}
                   >
@@ -515,7 +515,7 @@ const ChatMessage = memo(function ChatMessage({
 
             {/* Action buttons - Glassmorphic minimal style */}
             {!isUser && !isStreaming && (
-              <div 
+              <div
                 className={`flex items-center gap-1 pt-3 opacity-0 group-hover:opacity-100 transition-all duration-200`}
                 role="toolbar"
                 aria-label="Message actions"
@@ -526,8 +526,8 @@ const ChatMessage = memo(function ChatMessage({
                     className={`p-2 rounded-full transition-all duration-200 backdrop-blur-sm
                       ${copied
                         ? 'text-emerald-500 bg-emerald-500/10'
-                        : isDark 
-                          ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]' 
+                        : isDark
+                          ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]'
                           : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                       }`}
                     aria-label={copied ? 'Copied' : 'Copy'}
@@ -540,8 +540,8 @@ const ChatMessage = memo(function ChatMessage({
                   <button
                     onClick={handleRetry}
                     className={`p-2 rounded-full transition-all duration-200 backdrop-blur-sm
-                      ${isDark 
-                        ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]' 
+                      ${isDark
+                        ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]'
                         : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                       }`}
                     aria-label="Regenerate"
@@ -555,11 +555,11 @@ const ChatMessage = memo(function ChatMessage({
                     onClick={handleAudio}
                     className={`p-2 rounded-full transition-all duration-200 backdrop-blur-sm
                       ${isPlayingAudio || isLoadingAudio
-                        ? isDark 
-                          ? 'text-orange-400 bg-orange-500/15' 
+                        ? isDark
+                          ? 'text-orange-400 bg-orange-500/15'
                           : 'text-orange-500 bg-orange-50'
-                        : isDark 
-                          ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]' 
+                        : isDark
+                          ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]'
                           : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                       }`}
                     aria-label={getAudioAriaLabel(isPlayingAudio ?? false, isLoadingAudio)}
@@ -572,8 +572,8 @@ const ChatMessage = memo(function ChatMessage({
                 )}
                 <button
                   className={`p-2 rounded-full transition-all duration-200 backdrop-blur-sm
-                    ${isDark 
-                      ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]' 
+                    ${isDark
+                      ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]'
                       : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                     }`}
                   aria-label="Good response"
@@ -583,8 +583,8 @@ const ChatMessage = memo(function ChatMessage({
                 </button>
                 <button
                   className={`p-2 rounded-full transition-all duration-200 backdrop-blur-sm
-                    ${isDark 
-                      ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]' 
+                    ${isDark
+                      ? 'text-white/30 hover:text-white/70 hover:bg-white/[0.08]'
                       : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                     }`}
                   aria-label="Bad response"
@@ -602,11 +602,11 @@ const ChatMessage = memo(function ChatMessage({
                   onClick={() => setShowCitations(!showCitations)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 backdrop-blur-sm
                     ${showCitations
-                      ? isDark 
-                        ? 'bg-white/[0.08] text-white/70' 
+                      ? isDark
+                        ? 'bg-white/[0.08] text-white/70'
                         : 'bg-gray-100 text-gray-700'
-                      : isDark 
-                        ? 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]' 
+                      : isDark
+                        ? 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]'
                         : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                     }`}
                 >
@@ -614,22 +614,22 @@ const ChatMessage = memo(function ChatMessage({
                   <span>{message.citations!.length} source{message.citations!.length > 1 ? 's' : ''}</span>
                   {showCitations ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
-                
+
                 {showCitations && (
                   <div className={`mt-3 space-y-2 animate-fadeIn`}>
                     {message.citations!.map((citation, idx) => (
                       <div
                         key={citation.id}
                         className={`p-5 rounded-3xl border backdrop-blur-md transition-all duration-200 hover:scale-[1.01]
-                          ${isDark 
-                            ? 'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.05]' 
+                          ${isDark
+                            ? 'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.05]'
                             : 'bg-gray-50/80 border-gray-100 hover:bg-gray-100/80'
                           }`}
                       >
                         <div className="flex items-start gap-3">
                           <span className={`flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-semibold
-                            ${isDark 
-                              ? 'bg-white/[0.08] text-white/60' 
+                            ${isDark
+                              ? 'bg-white/[0.08] text-white/60'
                               : 'bg-gray-200 text-gray-600'
                             }`}>
                             {idx + 1}
@@ -648,9 +648,9 @@ const ChatMessage = memo(function ChatMessage({
                                 {Math.round(citation.score * 100)}% match
                               </span>
                               {citation.url && (
-                                <a 
-                                  href={citation.url} 
-                                  target="_blank" 
+                                <a
+                                  href={citation.url}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className={`flex items-center gap-1 hover:underline
                                     ${isDark ? 'text-white/50 hover:text-white/70' : 'text-gray-500 hover:text-gray-700'}`}
@@ -673,8 +673,8 @@ const ChatMessage = memo(function ChatMessage({
             {!isUser && !isStreaming && (message.modelUsed || message.latencyMs) && (
               <div className={`pt-3 flex items-center gap-2`}>
                 <div className={`flex items-center gap-3 px-3 py-1.5 rounded-full text-[10px] backdrop-blur-sm
-                  ${isDark 
-                    ? 'bg-white/[0.03] text-white/25' 
+                  ${isDark
+                    ? 'bg-white/[0.03] text-white/25'
                     : 'bg-gray-50 text-gray-400'
                   }`}>
                   {message.modelUsed && <span>{message.modelUsed}</span>}

@@ -1,7 +1,7 @@
 # ShikshaSetu Python Project Configuration
 # ==========================================
 # Unified configuration for all Python tooling
-# 
+#
 # This file configures:
 # - Ruff (linting & formatting)
 # - Bandit (security)

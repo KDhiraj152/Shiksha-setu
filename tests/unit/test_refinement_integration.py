@@ -73,18 +73,26 @@ class TestSimplifierRefinementIntegration:
         self, mock_llm_client, mock_refinement_result
     ):
         """Test simplification with refinement pipeline enabled."""
-        with (
-            patch("backend.services.simplify.simplifier.REFINEMENT_AVAILABLE", True),
-            patch(
-                "backend.services.simplify.simplifier.SemanticRefinementPipeline"
-            ) as MockPipeline,
-        ):
-            # Setup mock pipeline
-            mock_pipeline = AsyncMock()
-            mock_pipeline.refine = AsyncMock(return_value=mock_refinement_result)
-            MockPipeline.return_value = mock_pipeline
+        # Setup mock pipeline
+        mock_pipeline = AsyncMock()
+        mock_pipeline.refine = AsyncMock(return_value=mock_refinement_result)
 
-            from backend.services.simplify.simplifier import TextSimplifier
+        # Create mock RefinementTask enum
+        mock_refinement_task = MagicMock()
+        mock_refinement_task.SIMPLIFICATION = "simplification"
+
+        with (
+            patch("backend.services.simplify_simplifier.REFINEMENT_AVAILABLE", True),
+            patch(
+                "backend.services.simplify_simplifier.RefinementTask",
+                mock_refinement_task,
+            ),
+            patch(
+                "backend.services.simplify_simplifier.TextSimplifier._get_refinement_pipeline",
+                return_value=mock_pipeline,
+            ),
+        ):
+            from backend.services.simplify_simplifier import TextSimplifier
 
             simplifier = TextSimplifier(
                 client=mock_llm_client,
@@ -106,8 +114,8 @@ class TestSimplifierRefinementIntegration:
     @pytest.mark.asyncio
     async def test_simplifier_without_refinement(self, mock_llm_client):
         """Test simplification without refinement (single-pass)."""
-        with patch("backend.services.simplify.simplifier.REFINEMENT_AVAILABLE", False):
-            from backend.services.simplify.simplifier import TextSimplifier
+        with patch("backend.services.simplify_simplifier.REFINEMENT_AVAILABLE", False):
+            from backend.services.simplify_simplifier import TextSimplifier
 
             simplifier = TextSimplifier(client=mock_llm_client, enable_refinement=False)
 
@@ -123,18 +131,26 @@ class TestSimplifierRefinementIntegration:
     @pytest.mark.asyncio
     async def test_simplifier_refinement_fallback_on_error(self, mock_llm_client):
         """Test that simplifier falls back to single-pass on refinement error."""
-        with (
-            patch("backend.services.simplify.simplifier.REFINEMENT_AVAILABLE", True),
-            patch(
-                "backend.services.simplify.simplifier.SemanticRefinementPipeline"
-            ) as MockPipeline,
-        ):
-            # Setup mock pipeline to raise error
-            mock_pipeline = AsyncMock()
-            mock_pipeline.refine = AsyncMock(side_effect=Exception("Pipeline error"))
-            MockPipeline.return_value = mock_pipeline
+        # Setup mock pipeline to raise error
+        mock_pipeline = AsyncMock()
+        mock_pipeline.refine = AsyncMock(side_effect=Exception("Pipeline error"))
 
-            from backend.services.simplify.simplifier import TextSimplifier
+        # Create mock RefinementTask enum
+        mock_refinement_task = MagicMock()
+        mock_refinement_task.SIMPLIFICATION = "simplification"
+
+        with (
+            patch("backend.services.simplify_simplifier.REFINEMENT_AVAILABLE", True),
+            patch(
+                "backend.services.simplify_simplifier.RefinementTask",
+                mock_refinement_task,
+            ),
+            patch(
+                "backend.services.simplify_simplifier.TextSimplifier._get_refinement_pipeline",
+                return_value=mock_pipeline,
+            ),
+        ):
+            from backend.services.simplify_simplifier import TextSimplifier
 
             simplifier = TextSimplifier(client=mock_llm_client, enable_refinement=True)
 
@@ -148,8 +164,8 @@ class TestSimplifierRefinementIntegration:
 
     def test_simplifier_init_without_refinement_module(self):
         """Test that simplifier works when refinement module is not available."""
-        with patch("backend.services.simplify.simplifier.REFINEMENT_AVAILABLE", False):
-            from backend.services.simplify.simplifier import TextSimplifier
+        with patch("backend.services.simplify_simplifier.REFINEMENT_AVAILABLE", False):
+            from backend.services.simplify_simplifier import TextSimplifier
 
             # Should initialize without error
             simplifier = TextSimplifier(enable_refinement=True)
@@ -309,16 +325,16 @@ class TestEndToEndRefinement:
         # 2. BGE-M3 embeddings loaded
         # 3. Gemma-2-2B-IT for validation
 
-        from backend.services.simplify.simplifier import TextSimplifier
+        from backend.services.simplify_simplifier import TextSimplifier
 
         simplifier = TextSimplifier(enable_refinement=True, target_semantic_score=8.2)
 
         result = await simplifier.simplify_text(
             content="""
-            Photosynthesis is a complex biochemical process by which 
-            photoautotrophic organisms convert light energy into chemical 
-            energy stored in glucose molecules. This process occurs primarily 
-            in chloroplasts and involves two main stages: the light-dependent 
+            Photosynthesis is a complex biochemical process by which
+            photoautotrophic organisms convert light energy into chemical
+            energy stored in glucose molecules. This process occurs primarily
+            in chloroplasts and involves two main stages: the light-dependent
             reactions and the Calvin cycle.
             """,
             subject="Science",

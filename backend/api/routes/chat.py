@@ -51,6 +51,7 @@ def _get_ai_engine():
     global _ai_engine
     if _ai_engine is None:
         from ...services.ai_core.engine import get_ai_engine
+
         _ai_engine = get_ai_engine()
     return _ai_engine
 
@@ -147,7 +148,7 @@ async def chat(
 
     try:
         from ...services.ai_core.engine import GenerationConfig
-        
+
         # OPTIMIZATION: Use cached engine singleton
         engine = _get_ai_engine()
 
@@ -247,7 +248,7 @@ async def chat_stream(request: ChatMessage):
     async def generate():
         try:
             from ...services.ai_core.engine import GenerationConfig
-            
+
             # OPTIMIZATION: Use cached engine singleton
             engine = _get_ai_engine()
 
@@ -312,7 +313,7 @@ async def chat_stream(request: ChatMessage):
 async def chat_guest(request: ChatMessage):
     """
     Guest chat endpoint - Uses FULL OPTIMIZED PIPELINE.
-    
+
     Pipeline components used:
     - PolicyEngine: Content filtering based on mode
     - RAG Service: Document retrieval (if applicable)
@@ -321,15 +322,16 @@ async def chat_guest(request: ChatMessage):
     - Speculative Decoder: Metal/ANE acceleration
     - Context Allocator: Dynamic context management
     - Safety Pipeline: 3-pass verification
-    
+
     First request initializes pipeline (~4-5s), subsequent requests ~1-2s.
     """
     import asyncio
+
     start_time = time.perf_counter()
 
     try:
         from ...services.ai_core.engine import GenerationConfig
-        
+
         # OPTIMIZATION: Use cached engine singleton
         engine = _get_ai_engine()
 
@@ -350,7 +352,7 @@ async def chat_guest(request: ChatMessage):
 
         # Run in executor to avoid blocking event loop during initialization
         asyncio.get_running_loop()
-        
+
         # The chat method handles all pipeline components
         formatted_response = await engine.chat(
             message=request.message,
@@ -364,9 +366,12 @@ async def chat_guest(request: ChatMessage):
         sources = []
         confidence = 0.85
         if formatted_response.metadata:
-            if hasattr(formatted_response.metadata, 'sources') and formatted_response.metadata.sources:
+            if (
+                hasattr(formatted_response.metadata, "sources")
+                and formatted_response.metadata.sources
+            ):
                 sources = [s.title for s in formatted_response.metadata.sources]
-            if hasattr(formatted_response.metadata, 'confidence'):
+            if hasattr(formatted_response.metadata, "confidence"):
                 confidence = formatted_response.metadata.confidence
 
         return {

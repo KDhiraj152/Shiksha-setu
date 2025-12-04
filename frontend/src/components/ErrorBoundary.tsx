@@ -14,10 +14,10 @@ interface State {
 
 /**
  * Error Boundary Component
- * 
+ *
  * Catches JavaScript errors anywhere in the child component tree,
  * logs those errors, and displays a fallback UI.
- * 
+ *
  * Usage:
  * <ErrorBoundary>
  *   <YourComponent />
@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log to console in development
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+
     this.setState({ errorInfo });
 
     // In production, you could send to error reporting service
@@ -99,7 +99,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full 
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full
                   bg-[var(--text-primary)] text-[var(--bg-primary)] font-medium
                   hover:opacity-90 transition-opacity"
               >
@@ -108,7 +108,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={this.handleGoHome}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full 
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full
                   border border-[var(--border-color)] font-medium
                   hover:bg-[var(--bg-secondary)] transition-colors"
               >

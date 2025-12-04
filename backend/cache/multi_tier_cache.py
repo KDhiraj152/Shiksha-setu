@@ -934,9 +934,7 @@ class L2Cache:
             return None
 
         try:
-            data = await asyncio.wait_for(
-                client.get(self._make_key(key)), timeout=1.0
-            )
+            data = await asyncio.wait_for(client.get(self._make_key(key)), timeout=1.0)
             if data is None:
                 self._misses += 1
                 return None
@@ -1186,20 +1184,24 @@ class L3Cache:
                     compressed INTEGER DEFAULT 0
                 )
             """)
-            
+
             # Migration: Add access_count column if missing (for older databases)
             try:
                 cursor = conn.execute("PRAGMA table_info(cache)")
                 columns = {row[1] for row in cursor.fetchall()}
                 if "access_count" not in columns:
-                    conn.execute("ALTER TABLE cache ADD COLUMN access_count INTEGER DEFAULT 1")
+                    conn.execute(
+                        "ALTER TABLE cache ADD COLUMN access_count INTEGER DEFAULT 1"
+                    )
                     logger.info("SQLite cache: added access_count column")
                 if "compressed" not in columns:
-                    conn.execute("ALTER TABLE cache ADD COLUMN compressed INTEGER DEFAULT 0")
+                    conn.execute(
+                        "ALTER TABLE cache ADD COLUMN compressed INTEGER DEFAULT 0"
+                    )
                     logger.info("SQLite cache: added compressed column")
             except Exception as e:
                 logger.debug(f"SQLite migration check: {e}")
-            
+
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_accessed ON cache(accessed_at)"
             )
@@ -1291,7 +1293,7 @@ class L3Cache:
                 try:
                     conn.execute(
                         """
-                        INSERT OR REPLACE INTO cache 
+                        INSERT OR REPLACE INTO cache
                         (key, value, created_at, accessed_at, access_count, size_bytes, compressed)
                         VALUES (?, ?, ?, ?, 1, ?, ?)
                     """,
@@ -1301,7 +1303,7 @@ class L3Cache:
                     # Fallback: older schema without access_count
                     conn.execute(
                         """
-                        INSERT OR REPLACE INTO cache 
+                        INSERT OR REPLACE INTO cache
                         (key, value, created_at, accessed_at, size_bytes, compressed)
                         VALUES (?, ?, ?, ?, ?, ?)
                     """,
@@ -1338,7 +1340,7 @@ class L3Cache:
                     try:
                         conn.execute(
                             """
-                            INSERT OR REPLACE INTO cache 
+                            INSERT OR REPLACE INTO cache
                             (key, value, created_at, accessed_at, access_count, size_bytes, compressed)
                             VALUES (?, ?, ?, ?, 1, ?, ?)
                         """,
@@ -1348,7 +1350,7 @@ class L3Cache:
                         # Fallback: older schema without access_count
                         conn.execute(
                             """
-                            INSERT OR REPLACE INTO cache 
+                            INSERT OR REPLACE INTO cache
                             (key, value, created_at, accessed_at, size_bytes, compressed)
                             VALUES (?, ?, ?, ?, ?, ?)
                         """,
@@ -1446,7 +1448,7 @@ class L3Cache:
 
                     conn.execute(
                         """
-                        INSERT OR REPLACE INTO cache 
+                        INSERT OR REPLACE INTO cache
                         (key, value, created_at, accessed_at, access_count, size_bytes, compressed)
                         VALUES (?, ?, ?, ?, 1, ?, ?)
                     """,

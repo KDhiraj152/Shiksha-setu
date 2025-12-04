@@ -28,7 +28,7 @@ DB_HOST="localhost"
 if ! command -v psql &> /dev/null; then
     echo -e "${RED}✗ PostgreSQL not found${NC}"
     echo -e "${YELLOW}Installing PostgreSQL...${NC}"
-    
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         brew install postgresql@17
         brew services start postgresql@17
@@ -80,13 +80,13 @@ echo -e "${GREEN}✓ Database '$DB_NAME' created${NC}"
 echo -e "${YELLOW}→ Installing pgvector extension...${NC}"
 if ! psql -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS vector;" 2>/dev/null; then
     echo -e "${YELLOW}  Installing pgvector...${NC}"
-    
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         brew install pgvector
     else
         sudo apt-get install -y postgresql-17-pgvector
     fi
-    
+
     psql -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS vector;"
 fi
 
@@ -172,7 +172,7 @@ if [ -f .env ]; then
     else
         echo "DATABASE_URL=${DATABASE_URL}" >> .env
     fi
-    
+
     # Add connection pool settings if missing
     grep -q "^DB_POOL_SIZE=" .env || echo "DB_POOL_SIZE=20" >> .env
     grep -q "^DB_MAX_OVERFLOW=" .env || echo "DB_MAX_OVERFLOW=40" >> .env
@@ -202,38 +202,38 @@ echo -e "${YELLOW}→ Creating optimized indexes...${NC}"
 
 psql -U $DB_USER -d $DB_NAME <<EOF
 -- Performance indexes for common queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_processed_content_user_created 
-    ON processed_content(user_id, created_at DESC) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_processed_content_user_created
+    ON processed_content(user_id, created_at DESC)
     WHERE user_id IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_processed_content_grade_subject_lang 
-    ON processed_content(grade_level, subject, language) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_processed_content_grade_subject_lang
+    ON processed_content(grade_level, subject, language)
     WHERE grade_level IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_document_chunks_content_idx 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_document_chunks_content_idx
     ON document_chunks(content_id, chunk_index);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_content_chunk 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_embeddings_content_chunk
     ON embeddings(content_id, chunk_id);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_chat_history_user_content 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_chat_history_user_content
     ON chat_history(user_id, content_id, created_at DESC);
 
 -- Full-text search indexes
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_processed_content_text_search 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_processed_content_text_search
     ON processed_content USING gin(to_tsvector('english', original_text));
 
 -- GIN index for JSONB columns
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_processed_content_metadata 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_processed_content_metadata
     ON processed_content USING gin(metadata);
 
 -- BRIN indexes for time-series data (efficient for large tables)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pipeline_logs_timestamp_brin 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pipeline_logs_timestamp_brin
     ON pipeline_logs USING brin(timestamp);
 
 -- Partial indexes for common filters
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_active 
-    ON users(id, email) 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_active
+    ON users(id, email)
     WHERE is_active = true;
 
 ANALYZE;
@@ -255,7 +255,7 @@ python -c "
 import sqlalchemy
 from sqlalchemy import create_engine, text
 
-engine = create_engine('${DATABASE_URL}', 
+engine = create_engine('${DATABASE_URL}',
                       pool_pre_ping=True,
                       pool_size=20,
                       max_overflow=40,
@@ -265,11 +265,11 @@ with engine.connect() as conn:
     result = conn.execute(text('SELECT version();'))
     version = result.fetchone()[0]
     print(f'✓ Connected to: {version}')
-    
+
     result = conn.execute(text('SELECT count(*) FROM information_schema.tables WHERE table_schema = \\'public\\';'))
     table_count = result.fetchone()[0]
     print(f'✓ Tables in database: {table_count}')
-    
+
     result = conn.execute(text('SELECT extname, extversion FROM pg_extension WHERE extname = \\'vector\\';'))
     pgvector = result.fetchone()
     if pgvector:

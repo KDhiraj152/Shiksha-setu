@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Setup authentication system and create test users."""
+
 import os
-import sys
 import secrets
+import sys
 from pathlib import Path
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+from backend.core.config import settings
 from backend.database import get_db_session
 from backend.models import User
-from backend.utils.auth import get_password_hash, create_tokens
-from backend.core.config import settings
+from backend.utils.auth import create_tokens, get_password_hash
 
 
 def generate_jwt_secret():
@@ -22,16 +23,18 @@ def generate_jwt_secret():
 def setup_jwt_secret():
     """Setup or verify JWT secret key."""
     env_file = Path(".env")
-    
+
     if settings.SECRET_KEY and len(settings.SECRET_KEY) >= 64:
-        print(f"✅ JWT_SECRET_KEY already configured ({len(settings.SECRET_KEY)} chars)")
+        print(
+            f"✅ JWT_SECRET_KEY already configured ({len(settings.SECRET_KEY)} chars)"
+        )
         return settings.SECRET_KEY
-    
+
     # Generate new secret
     new_secret = generate_jwt_secret()
-    
+
     print(f"🔑 Generated new JWT_SECRET_KEY ({len(new_secret)} chars)")
-    
+
     # Update or create .env file
     if env_file.exists():
         content = env_file.read_text()
@@ -52,10 +55,10 @@ def setup_jwt_secret():
     else:
         # Create new
         env_file.write_text(f"JWT_SECRET_KEY={new_secret}\n")
-    
+
     print(f"✅ JWT_SECRET_KEY saved to {env_file}")
     print("⚠️  Please restart the backend server for changes to take effect")
-    
+
     return new_secret
 
 
@@ -70,12 +73,8 @@ def create_test_user(email: str, password: str, full_name: str, role: str = "use
                 user_email = existing.email
                 user_role = existing.role
                 print(f"⚠️  User {email} already exists (ID: {user_id})")
-                return {
-                    "id": user_id,
-                    "email": user_email,
-                    "role": user_role
-                }
-            
+                return {"id": user_id, "email": user_email, "role": user_role}
+
             # Create user
             hashed_password = get_password_hash(password)
             user = User(
@@ -83,24 +82,20 @@ def create_test_user(email: str, password: str, full_name: str, role: str = "use
                 hashed_password=hashed_password,
                 full_name=full_name,
                 role=role,
-                is_active=True
+                is_active=True,
             )
             session.add(user)
             session.flush()
-            
+
             # Extract data before session closes
             user_id = str(user.id)
             user_email = user.email
             user_role = user.role
-            
+
             print(f"✅ Created user: {email} (ID: {user_id}, Role: {role})")
-            
-            return {
-                "id": user_id,
-                "email": user_email,
-                "role": user_role
-            }
-            
+
+            return {"id": user_id, "email": user_email, "role": user_role}
+
     except Exception as e:
         print(f"❌ Failed to create user {email}: {e}")
         return None
@@ -109,11 +104,7 @@ def create_test_user(email: str, password: str, full_name: str, role: str = "use
 def generate_test_token(user_id: str, email: str, role: str):
     """Generate test access token."""
     try:
-        tokens = create_tokens(
-            user_id=user_id,
-            email=email,
-            role=role
-        )
+        tokens = create_tokens(user_id=user_id, email=email, role=role)
         return tokens
     except Exception as e:
         print(f"❌ Failed to generate token: {e}")
@@ -126,38 +117,38 @@ def main():
     print("ShikshaSetu Authentication Setup")
     print("=" * 60)
     print()
-    
+
     # 1. Setup JWT secret
     print("📋 Step 1: JWT Secret Key Configuration")
     print("-" * 60)
     _ = setup_jwt_secret()  # Result logged internally
     print()
-    
+
     # 2. Create test users
     print("📋 Step 2: Creating Test Users")
     print("-" * 60)
-    
+
     test_users = [
         {
             "email": "test@shiksha.com",
             "password": "Test@1234567",
             "full_name": "Test User",
-            "role": "user"
+            "role": "user",
         },
         {
             "email": "teacher@shiksha.com",
             "password": "Teacher@123456",
             "full_name": "Test Teacher",
-            "role": "teacher"
+            "role": "teacher",
         },
         {
             "email": "admin@shiksha.com",
             "password": "Admin@123456",
             "full_name": "Admin User",
-            "role": "admin"
-        }
+            "role": "admin",
+        },
     ]
-    
+
     created_users = []
     for user_data in test_users:
         user_dict = create_test_user(**user_data)
@@ -165,24 +156,22 @@ def main():
             # Add password to dict for display
             user_dict["password"] = user_data["password"]
             created_users.append(user_dict)
-    
+
     print()
-    
+
     # 3. Generate test tokens
     print("📋 Step 3: Test Access Tokens")
     print("-" * 60)
-    
+
     for user_data in created_users:
         tokens = generate_test_token(
-            user_id=user_data["id"],
-            email=user_data["email"],
-            role=user_data["role"]
+            user_id=user_data["id"], email=user_data["email"], role=user_data["role"]
         )
         if tokens:
             print(f"\n✅ Token for {user_data['email']}:")
             print(f"   Access Token: {tokens.access_token[:50]}...")
             print(f"   Token Type: {tokens.token_type}")
-    
+
     print()
     print("=" * 60)
     print("✅ Authentication Setup Complete!")
@@ -195,16 +184,16 @@ def main():
         print(f"   Password: {user_data['password']}")
         print(f"   Role: {user_data['role']}")
         print()
-    
+
     print("🔧 Usage Examples:")
     print("-" * 60)
     print("1. Login to get token:")
-    print('   curl -X POST http://localhost:8000/api/v2/auth/login \\')
+    print("   curl -X POST http://localhost:8000/api/v2/auth/login \\")
     print('     -H "Content-Type: application/json" \\')
     print('     -d \'{"email": "test@shiksha.com", "password": "Test@123456"}\'')
     print()
     print("2. Use token to access protected endpoints:")
-    print('   curl -X POST http://localhost:8000/api/v2/chat/guest \\')
+    print("   curl -X POST http://localhost:8000/api/v2/chat/guest \\")
     print('     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\')
     print('     -H "Content-Type: application/json" \\')
     print('     -d \'{"message": "What is photosynthesis?", "language": "English"}\'')

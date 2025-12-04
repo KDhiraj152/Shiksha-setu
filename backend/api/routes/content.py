@@ -31,6 +31,7 @@ def _get_pipeline():
     global _pipeline_service
     if _pipeline_service is None:
         from ...services.pipeline import get_pipeline_service
+
         _pipeline_service = get_pipeline_service()
     return _pipeline_service
 
@@ -40,8 +41,10 @@ def _get_ai_engine():
     global _ai_engine
     if _ai_engine is None:
         from ...services.ai_core.engine import get_ai_engine
+
         _ai_engine = get_ai_engine()
     return _ai_engine
+
 
 # Use orjson for faster JSON in SSE (falls back to json if not available)
 try:
@@ -199,7 +202,7 @@ async def process_content(request: ContentProcessRequest):
 
     try:
         from ...services.pipeline import ProcessingRequest
-        
+
         # OPTIMIZATION: Use cached pipeline singleton
         pipeline = _get_pipeline()
 
@@ -249,7 +252,7 @@ async def process_content_stream(request: ContentProcessRequest):
     async def generate():
         try:
             from ...services.pipeline import ProcessingRequest
-            
+
             # OPTIMIZATION: Use cached pipeline singleton
             pipeline = _get_pipeline()
 
@@ -291,7 +294,7 @@ async def simplify_content(text: str = Body(..., embed=True)):
     """Simplify text."""
     try:
         from ...services.pipeline import ProcessingRequest
-        
+
         # OPTIMIZATION: Use cached pipeline singleton
         pipeline = _get_pipeline()
 
@@ -324,7 +327,7 @@ async def translate_content(
     """Translate text to target language."""
     try:
         from ...services.pipeline import ProcessingRequest
-        
+
         # OPTIMIZATION: Use cached pipeline singleton
         pipeline = _get_pipeline()
 
@@ -450,7 +453,7 @@ async def ask_question(request: QAQueryRequest):
 
     try:
         from ...services.ai_core.engine import GenerationConfig
-        
+
         cache = get_unified_cache()
         doc_data = await cache.get(f"qa:doc:{request.document_id}")
 
@@ -841,7 +844,7 @@ async def explain_content(
     """Get AI explanation of content."""
     try:
         from ...services.ai_core.engine import GenerationConfig
-        
+
         # OPTIMIZATION: Use cached engine singleton
         engine = _get_ai_engine()
 

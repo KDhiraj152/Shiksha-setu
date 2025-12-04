@@ -265,6 +265,7 @@ class ValidationModule:
 
             try:
                 from backend.core.optimized.simd_ops import cosine_similarity_single
+
                 similarity = cosine_similarity_single(emb1, emb2)
             except ImportError:
                 # Fallback: Normalize vectors
@@ -275,7 +276,7 @@ class ValidationModule:
                     return 0.0
 
                 similarity = np.dot(emb1, emb2) / (norm1 * norm2)
-            
+
             return max(0.0, min(1.0, float(similarity)))  # Ensure 0-1 range
         except Exception as e:
             logger.error(f"Error in semantic validation: {e}")

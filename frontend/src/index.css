@@ -10,7 +10,7 @@
   --warm-white: #FBFBFB;
   --gold: #F4D47A;
   --gold-soft: rgba(244, 212, 122, 0.1);
-  
+
   /* Semantic opacity scale */
   --opacity-subtle: 0.04;
   --opacity-muted: 0.08;
@@ -19,7 +19,7 @@
   --opacity-text-tertiary: 0.40;
   --opacity-text-secondary: 0.60;
   --opacity-text-primary: 0.90;
-  
+
   /* Spacing scale (8px grid) */
   --space-1: 4px;
   --space-2: 8px;
@@ -31,7 +31,7 @@
   --space-10: 40px;
   --space-12: 48px;
   --space-16: 64px;
-  
+
   /* Border radius scale */
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -39,7 +39,7 @@
   --radius-xl: 16px;
   --radius-2xl: 20px;
   --radius-full: 9999px;
-  
+
   /* Transitions */
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -49,7 +49,7 @@
   --duration-normal: 200ms;
   --duration-slow: 300ms;
   --duration-slower: 500ms;
-  
+
   /* Light mode defaults */
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
@@ -269,7 +269,7 @@ body {
 }
 
 /* Ensure minimum touch targets */
-button, 
+button,
 [role="button"],
 a,
 input[type="checkbox"],
@@ -407,25 +407,25 @@ input, textarea {
 
 /* Chat message slide in */
 @keyframes messageSlideIn {
-  0% { 
-    opacity: 0; 
+  0% {
+    opacity: 0;
     transform: translateY(16px) scale(0.98);
   }
-  100% { 
-    opacity: 1; 
+  100% {
+    opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
 
 /* Chat message fade in with blur */
 @keyframes messageFadeBlur {
-  0% { 
-    opacity: 0; 
+  0% {
+    opacity: 0;
     filter: blur(4px);
     transform: translateY(8px);
   }
-  100% { 
-    opacity: 1; 
+  100% {
+    opacity: 1;
     filter: blur(0);
     transform: translateY(0);
   }
@@ -433,11 +433,11 @@ input, textarea {
 
 /* Typing dots */
 @keyframes typingDot {
-  0%, 60%, 100% { 
+  0%, 60%, 100% {
     transform: translateY(0);
     opacity: 0.4;
   }
-  30% { 
+  30% {
     transform: translateY(-4px);
     opacity: 1;
   }
@@ -445,11 +445,11 @@ input, textarea {
 
 /* ChatGPT/Gemini style thinking dots */
 @keyframes thinking-dot {
-  0%, 80%, 100% { 
+  0%, 80%, 100% {
     transform: scale(0.8);
     opacity: 0.4;
   }
-  40% { 
+  40% {
     transform: scale(1.2);
     opacity: 1;
   }
@@ -457,12 +457,12 @@ input, textarea {
 
 /* Smooth message appear */
 @keyframes messageAppear {
-  0% { 
-    opacity: 0; 
+  0% {
+    opacity: 0;
     transform: translateY(10px);
   }
-  100% { 
-    opacity: 1; 
+  100% {
+    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -500,11 +500,11 @@ input, textarea {
 
 /* Pulse subtle for avatars during loading */
 @keyframes pulse-subtle {
-  0%, 100% { 
+  0%, 100% {
     opacity: 1;
     transform: scale(1);
   }
-  50% { 
+  50% {
     opacity: 0.8;
     transform: scale(0.98);
   }
@@ -512,11 +512,11 @@ input, textarea {
 
 /* Streaming text reveal */
 @keyframes textReveal {
-  from { 
+  from {
     opacity: 0;
     transform: translateX(-2px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateX(0);
   }
@@ -561,10 +561,10 @@ input, textarea {
 
 /* Glow pulse */
 @keyframes glow-pulse {
-  0%, 100% { 
+  0%, 100% {
     filter: drop-shadow(0 0 20px rgba(81, 97, 255, 0.3));
   }
-  50% { 
+  50% {
     filter: drop-shadow(0 0 40px rgba(81, 97, 255, 0.5));
   }
 }
@@ -672,7 +672,7 @@ input, textarea {
 
 /* Levitation hover */
 .hover-levitate {
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.4s ease;
 }
 
@@ -688,14 +688,14 @@ input, textarea {
 
 /* Radial gradient backgrounds */
 .bg-radial-top {
-  background: radial-gradient(ellipse 80% 50% at 50% -20%, 
-    rgba(81, 97, 255, 0.08) 0%, 
+  background: radial-gradient(ellipse 80% 50% at 50% -20%,
+    rgba(81, 97, 255, 0.08) 0%,
     transparent 70%);
 }
 
 .bg-radial-center {
-  background: radial-gradient(circle at 50% 50%, 
-    rgba(81, 97, 255, 0.05) 0%, 
+  background: radial-gradient(circle at 50% 50%,
+    rgba(81, 97, 255, 0.05) 0%,
     transparent 50%);
 }
 
@@ -841,7 +841,7 @@ input, textarea {
 @layer components {
   /* Button base styles with proper touch targets */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 
+    @apply inline-flex items-center justify-center gap-2
            min-h-touch px-4 py-2.5
            text-sm font-medium
            rounded-btn
@@ -850,31 +850,31 @@ input, textarea {
            disabled:opacity-50 disabled:cursor-not-allowed
            active:scale-[0.98];
   }
-  
+
   .btn-primary {
     @apply btn bg-white text-black hover:bg-white/90;
   }
-  
+
   .btn-primary-dark {
     @apply btn bg-black text-white hover:bg-black/90;
   }
-  
+
   .btn-secondary {
     @apply btn bg-white/10 text-white hover:bg-white/15 border border-white/10;
   }
-  
+
   .btn-secondary-light {
     @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 border border-gray-200;
   }
-  
+
   .btn-ghost {
     @apply btn bg-transparent hover:bg-white/10;
   }
-  
+
   .btn-ghost-light {
     @apply btn bg-transparent hover:bg-black/5;
   }
-  
+
   .btn-icon {
     @apply inline-flex items-center justify-center
            min-h-touch min-w-touch p-2.5
@@ -884,11 +884,11 @@ input, textarea {
            disabled:opacity-50 disabled:cursor-not-allowed
            active:scale-95;
   }
-  
+
   .btn-icon-sm {
     @apply btn-icon min-h-[36px] min-w-[36px] p-2;
   }
-  
+
   /* Input styles */
   .input {
     @apply w-full min-h-touch px-4 py-3
@@ -899,92 +899,92 @@ input, textarea {
            placeholder:text-white/40
            focus:outline-none focus:border-white/25 focus:ring-1 focus:ring-white/10;
   }
-  
+
   .input-light {
     @apply input border-gray-200 placeholder:text-gray-400
            focus:border-gray-300 focus:ring-gray-200;
   }
-  
+
   /* Card styles */
   .card {
     @apply bg-white/[0.03] border border-white/[0.08] rounded-card
            transition-all duration-normal ease-smooth;
   }
-  
+
   .card-hover {
     @apply card hover:bg-white/[0.05] hover:border-white/[0.12];
   }
-  
+
   .card-light {
     @apply bg-white border border-gray-200 rounded-card shadow-sm
            transition-all duration-normal ease-smooth;
   }
-  
+
   .card-hover-light {
     @apply card-light hover:bg-gray-50 hover:border-gray-300 hover:shadow-md;
   }
-  
+
   /* Badge styles */
   .badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1
            text-xs font-medium
            rounded-full
            transition-colors duration-fast;
   }
-  
+
   .badge-primary {
     @apply badge bg-white/10 text-white;
   }
-  
+
   .badge-success {
     @apply badge bg-emerald-500/15 text-emerald-400;
   }
-  
+
   .badge-warning {
     @apply badge bg-amber-500/15 text-amber-400;
   }
-  
+
   .badge-error {
     @apply badge bg-red-500/15 text-red-400;
   }
-  
+
   /* Toast styles */
   .toast {
-    @apply flex items-center gap-3 px-4 py-3 
+    @apply flex items-center gap-3 px-4 py-3
            rounded-card shadow-float
            animate-slideIn;
   }
-  
+
   /* Skeleton loading */
   .skeleton-pulse {
     @apply animate-pulse bg-white/10 rounded-lg;
   }
-  
+
   .skeleton-shimmer {
     @apply relative overflow-hidden bg-white/5 rounded-lg;
   }
-  
+
   .skeleton-shimmer::after {
     @apply absolute inset-0 -translate-x-full
            bg-gradient-to-r from-transparent via-white/10 to-transparent;
     content: '';
     animation: shimmer 2s infinite;
   }
-  
+
   /* Focus ring utility for dark mode */
   .focus-ring {
-    @apply focus-visible:outline-none 
-           focus-visible:ring-2 focus-visible:ring-gray-400 
+    @apply focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-gray-400
            focus-visible:ring-offset-2 focus-visible:ring-offset-noir;
   }
-  
+
   /* Focus ring utility for light mode */
   .focus-ring-light {
-    @apply focus-visible:outline-none 
-           focus-visible:ring-2 focus-visible:ring-gray-400 
+    @apply focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-gray-400
            focus-visible:ring-offset-2 focus-visible:ring-offset-white;
   }
-  
+
   /* Gradient border effect */
   .gradient-border {
     position: relative;
@@ -992,7 +992,7 @@ input, textarea {
                 linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05)) border-box;
     border: 1px solid transparent;
   }
-  
+
   /* Text truncation */
   .truncate-2 {
     display: -webkit-box;
@@ -1000,7 +1000,7 @@ input, textarea {
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
+
   .truncate-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;

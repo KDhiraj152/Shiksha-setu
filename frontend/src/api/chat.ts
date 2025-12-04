@@ -21,7 +21,7 @@ type StreamCallbacks = Pick<SendMessageOptions, 'onChunk' | 'onStatus' | 'onComp
 /** Process individual SSE stream lines */
 function processStreamLine(line: string, callbacks: StreamCallbacks): void {
   if (!line.startsWith('data: ')) return;
-  
+
   try {
     const data = JSON.parse(line.slice(6));
     switch (data.type) {

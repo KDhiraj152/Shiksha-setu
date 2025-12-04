@@ -9,8 +9,8 @@ function getConversationStyle(isActive: boolean, isDark: boolean): string {
   if (isActive) {
     return isDark ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-900 shadow-sm';
   }
-  return isDark 
-    ? 'text-white/70 hover:text-white hover:bg-white/5' 
+  return isDark
+    ? 'text-white/70 hover:text-white hover:bg-white/5'
     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50';
 }
 
@@ -25,7 +25,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuthStore();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -43,7 +43,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const handleTouchMove = (e: TouchEvent) => {
       const currentX = e.touches[0].clientX;
       const diff = startXRef.current - currentX;
-      
+
       // If swiping left more than 50px, close sidebar
       if (diff > 50) {
         onClose();
@@ -102,7 +102,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   // Filter conversations by search
   const filteredConversations = searchQuery.trim()
-    ? conversations.filter(conv => 
+    ? conversations.filter(conv =>
         conv.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : conversations;
@@ -112,7 +112,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const date = new Date(conv.updated_at);
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     let group = 'Older';
     if (diffDays === 0) group = 'Today';
     else if (diffDays === 1) group = 'Yesterday';
@@ -131,7 +131,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <>
       {/* Overlay - Mobile only */}
-      <div 
+      <div
         className={`fixed inset-0 bg-black/60 z-overlay backdrop-blur-sm transition-opacity duration-300 lg:hidden
           ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
@@ -157,8 +157,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <button
             onClick={onClose}
             className={`p-2 rounded-full transition-all duration-200
-              ${isDark 
-                ? 'hover:bg-white/10 text-white/60 hover:text-white' 
+              ${isDark
+                ? 'hover:bg-white/10 text-white/60 hover:text-white'
                 : 'hover:bg-black/5 text-black/50 hover:text-black'
               }`}
             aria-label="Close sidebar"
@@ -168,7 +168,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           <div className="flex items-center gap-3">
             <OmLogo variant="minimal" size={24} color={isDark ? 'dark' : 'light'} animated={false} />
-            <span className={`text-[15px] font-semibold tracking-tight 
+            <span className={`text-[15px] font-semibold tracking-tight
               ${isDark ? 'text-white' : 'text-gray-900'}`}
             >
               Shiksha Setu
@@ -180,11 +180,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="px-4 py-4">
           <button
             onClick={handleNewChat}
-            className={`w-full flex items-center justify-center gap-2 px-4 py-3 
+            className={`w-full flex items-center justify-center gap-2 px-4 py-3
               rounded-full text-sm font-medium transition-all duration-200 active:scale-[0.98]
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2
-              ${isDark 
-                ? 'bg-white text-black hover:bg-gray-200 shadow-lg shadow-white/5' 
+              ${isDark
+                ? 'bg-white text-black hover:bg-gray-200 shadow-lg shadow-white/5'
                 : 'bg-black text-white hover:bg-gray-800 shadow-lg shadow-black/10'
               }`}
           >
@@ -196,14 +196,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Search */}
         <div className="px-4 pb-2">
           <div className={`relative flex items-center rounded-full transition-all duration-200 border
-            ${isDark 
-              ? 'bg-white/[0.03] border-white/[0.05] focus-within:bg-white/[0.06] focus-within:border-white/10' 
+            ${isDark
+              ? 'bg-white/[0.03] border-white/[0.05] focus-within:bg-white/[0.06] focus-within:border-white/10'
               : 'bg-black/[0.03] border-black/[0.05] focus-within:bg-black/[0.05] focus-within:border-black/10'
             }`}
           >
-            <Search className={`w-3.5 h-3.5 ml-3.5 flex-shrink-0 
-              ${isDark ? 'text-white/40' : 'text-black/40'}`} 
-              aria-hidden="true" 
+            <Search className={`w-3.5 h-3.5 ml-3.5 flex-shrink-0
+              ${isDark ? 'text-white/40' : 'text-black/40'}`}
+              aria-hidden="true"
             />
             <input
               type="text"
@@ -212,8 +212,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full bg-transparent border-0 px-3 py-2.5 text-[13px]
                 placeholder:text-opacity-50 focus:outline-none
-                ${isDark 
-                  ? 'text-white placeholder:text-white/40 caret-white' 
+                ${isDark
+                  ? 'text-white placeholder:text-white/40 caret-white'
                   : 'text-black placeholder:text-black/40 caret-black'
                 }`}
               aria-label="Search conversations"
@@ -249,7 +249,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 const groupId = group.split(/\s+/).join('-');
                 return (
                 <section key={group} className="mb-5" aria-labelledby={`group-${groupId}`}>
-                  <h3 
+                  <h3
                     id={`group-${groupId}`}
                     className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest opacity-50
                     ${isDark ? 'text-white' : 'text-black'}`}
@@ -260,7 +260,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   {groupedConversations[group].map((conv) => {
                     const isActive = activeConversationId === conv.id;
                     const isDeleting = deleteConfirmId === conv.id;
-                    
+
                     return (
                       <li key={conv.id} className="relative">
                         {/* Delete confirmation overlay */}
@@ -284,8 +284,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                               <button
                                 onClick={handleDeleteCancel}
                                 className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-colors
-                                  ${isDark 
-                                    ? 'bg-white/10 text-white hover:bg-white/20' 
+                                  ${isDark
+                                    ? 'bg-white/10 text-white hover:bg-white/20'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                   }`}
                               >
@@ -294,28 +294,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                             </div>
                           </div>
                         )}
-                        
+
                         <button
                           onClick={() => handleSelectConversation(conv.id)}
-                          className={`w-full group flex items-center gap-3 px-3 py-3 rounded-2xl text-sm 
+                          className={`w-full group flex items-center gap-3 px-3 py-3 rounded-2xl text-sm
                             transition-all duration-200 mb-0.5
                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400
                             ${getConversationStyle(isActive, isDark)}
                             ${isDeleting ? 'opacity-0' : ''}`}
                           aria-current={isActive ? 'page' : undefined}
                         >
-                          <MessageSquare 
-                            className={`w-4 h-4 flex-shrink-0 ${isActive ? 'opacity-80' : 'opacity-50'}`} 
-                            aria-hidden="true" 
+                          <MessageSquare
+                            className={`w-4 h-4 flex-shrink-0 ${isActive ? 'opacity-80' : 'opacity-50'}`}
+                            aria-hidden="true"
                           />
                           <span className="flex-1 truncate text-left font-medium">{conv.title}</span>
                           <button
                             onClick={(e) => handleDeleteClick(conv.id, e)}
-                            className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center 
+                            className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center
                               rounded-full opacity-0 group-hover:opacity-100 transition-all duration-150
                               focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400
-                              ${isDark 
-                                ? 'hover:bg-white/10 text-white/50 hover:text-white' 
+                              ${isDark
+                                ? 'hover:bg-white/10 text-white/50 hover:text-white'
                                 : 'hover:bg-gray-200 text-gray-400 hover:text-gray-600'
                               }`}
                             aria-label={`Delete conversation: ${conv.title}`}
@@ -336,7 +336,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Footer */}
         <div className={`p-3 ${isDark ? 'border-t border-white/10' : 'border-t border-gray-200'}`}>
           {/* User Card */}
-          <div className={`flex items-center gap-3 p-3 rounded-2xl mb-3 
+          <div className={`flex items-center gap-3 p-3 rounded-2xl mb-3
             ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
           >
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0
@@ -353,16 +353,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
             </div>
           </div>
-          
+
           {/* Action Buttons */}
           <div className="flex gap-2">
             <button
               onClick={() => navigate('/settings')}
-              className={`flex-1 flex items-center justify-center gap-2 min-h-touch px-3 py-2.5 
+              className={`flex-1 flex items-center justify-center gap-2 min-h-touch px-3 py-2.5
                 rounded-full text-xs font-medium transition-all duration-200
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400
-                ${isDark 
-                  ? 'text-white/60 hover:text-white hover:bg-white/10' 
+                ${isDark
+                  ? 'text-white/60 hover:text-white hover:bg-white/10'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                 }`}
               aria-label="Go to settings"
@@ -372,11 +372,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </button>
             <button
               onClick={handleLogout}
-              className={`flex-1 flex items-center justify-center gap-2 min-h-touch px-3 py-2.5 
+              className={`flex-1 flex items-center justify-center gap-2 min-h-touch px-3 py-2.5
                 rounded-full text-xs font-medium transition-all duration-200
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400
-                ${isDark 
-                  ? 'text-white/60 hover:text-white hover:bg-white/10' 
+                ${isDark
+                  ? 'text-white/60 hover:text-white hover:bg-white/10'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                 }`}
               aria-label="Sign out"

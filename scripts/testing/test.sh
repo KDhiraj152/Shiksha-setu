@@ -112,7 +112,7 @@ fi
 print_header "PHASE 3: CONTENT UPLOAD"
 
 cat > "$TEST_DATA_DIR/test_content.txt" << 'EOF'
-Photosynthesis is the process by which green plants use sunlight to synthesize nutrients 
+Photosynthesis is the process by which green plants use sunlight to synthesize nutrients
 from carbon dioxide and water. This process is essential for life on Earth.
 EOF
 
@@ -275,7 +275,7 @@ if [ -n "$CONTENT_ID" ]; then
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $TOKEN" \
         -d "{\"content_id\":\"$CONTENT_ID\",\"question\":\"What is photosynthesis?\"}")
-    
+
     if echo "$qa_resp" | jq -e '.answer' > /dev/null 2>&1; then
         answer=$(echo "$qa_resp" | jq -r '.answer')
         print_result 0 "Q&A system works"
@@ -303,32 +303,32 @@ upload=$(curl -s -X POST "$API_BASE/upload" \
 
 if echo "$upload" | jq -e '.content_id' > /dev/null 2>&1; then
     print_success "✓ Upload"
-    
+
     # Simplify
     simp=$(curl -s -X POST "$API_BASE/simplify" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $TOKEN" \
         -d "{\"text\":\"$workflow_text\",\"target_grade\":5}")
-    
+
     if echo "$simp" | jq -e '.simplified_text' > /dev/null 2>&1; then
         print_success "✓ Simplify"
         simple_text=$(echo "$simp" | jq -r '.simplified_text')
-        
+
         # Translate
         trans=$(curl -s -X POST "$API_BASE/translate" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $TOKEN" \
             -d "{\"text\":\"$simple_text\",\"source_language\":\"English\",\"target_language\":\"Hindi\"}")
-        
+
         if echo "$trans" | jq -e '.translated_text' > /dev/null 2>&1; then
             print_success "✓ Translate"
-            
+
             # TTS
             tts=$(curl -s -X POST "$API_BASE/tts" \
                 -H "Content-Type: application/json" \
                 -H "Authorization: Bearer $TOKEN" \
                 -d "{\"text\":\"$simple_text\",\"language\":\"English\"}")
-            
+
             if echo "$tts" | jq -e '.audio_url' > /dev/null 2>&1; then
                 print_success "✓ Audio"
                 print_result 0 "Complete workflow executed successfully!"

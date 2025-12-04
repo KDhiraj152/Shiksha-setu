@@ -150,16 +150,16 @@ Rate each dimension from 0-10:
 
 1. FACTUAL_ACCURACY (Is the content factually correct?):
    Score: [0-10]
-   
+
 2. SEMANTIC_PRESERVATION (Does it preserve the original meaning?):
    Score: [0-10]
-   
+
 3. EDUCATIONAL_CLARITY (Is it clear and easy to understand?):
    Score: [0-10]
-   
+
 4. CULTURAL_APPROPRIATENESS (Is it suitable for Indian students?):
    Score: [0-10]
-   
+
 5. COMPLETENESS (Are all key concepts covered?):
    Score: [0-10]
 
@@ -265,6 +265,7 @@ SUGGESTIONS: [comma-separated improvement suggestions if score < 8]"""
             # SIMD-optimized cosine similarity
             try:
                 from backend.core.optimized.simd_ops import cosine_similarity_single
+
                 similarity = cosine_similarity_single(orig_emb, proc_emb)
             except ImportError:
                 similarity = np.dot(orig_emb, proc_emb) / (

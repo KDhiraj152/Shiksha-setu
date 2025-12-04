@@ -39,8 +39,8 @@ export const LandingPage = memo(function LandingPage() {
   if (!mounted) return null;
 
   return (
-    <div className={`min-h-screen font-sans selection:bg-gray-500/30 ${isDark 
-      ? 'bg-[#0a0a0a] text-white' 
+    <div className={`min-h-screen font-sans selection:bg-gray-500/30 ${isDark
+      ? 'bg-[#0a0a0a] text-white'
       : 'bg-[#FAFAFA] text-[#111]'}`}
     >
       {/* Ambient Background */}
@@ -81,7 +81,7 @@ export const LandingPage = memo(function LandingPage() {
             <OmLogo variant="minimal" size={32} color={isDark ? 'dark' : 'light'} animated={false} />
             <span className={`font-bold text-lg tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>Shiksha Setu</span>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <button
               onClick={toggleTheme}
@@ -93,8 +93,8 @@ export const LandingPage = memo(function LandingPage() {
             <button
               onClick={() => navigate('/auth')}
               className={`px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 hover:scale-105 active:scale-95
-                ${isDark 
-                  ? 'bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]' 
+                ${isDark
+                  ? 'bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]'
                   : 'bg-[#111] text-white hover:bg-black/90 shadow-[0_4px_15px_-3px_rgba(0,0,0,0.2)]'
                 }`}
             >
@@ -136,20 +136,20 @@ export const LandingPage = memo(function LandingPage() {
             <button
               onClick={() => navigate('/chat')}
               className={`group relative inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold tracking-tight transition-all duration-300 hover:scale-105 hover:shadow-lg
-                ${isDark 
-                  ? 'bg-white text-black shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]' 
+                ${isDark
+                  ? 'bg-white text-black shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]'
                   : 'bg-[#111] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.2)]'
                 }`}
             >
               Get Started
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
-            
+
             <button
               onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
               className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105
-                ${isDark 
-                  ? 'text-white/70 hover:text-white bg-white/[0.05] hover:bg-white/[0.1]' 
+                ${isDark
+                  ? 'text-white/70 hover:text-white bg-white/[0.05] hover:bg-white/[0.1]'
                   : 'text-black/70 hover:text-black bg-white shadow-sm border border-black/[0.05] hover:bg-gray-50'
                 }`}
             >
@@ -219,7 +219,7 @@ export const LandingPage = memo(function LandingPage() {
               <div className={`mt-8 h-24 rounded-xl w-full overflow-hidden relative ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
                 <div className="absolute inset-0 flex items-center justify-center gap-1">
                   {[...Array(12)].map((_, i) => (
-                    <div key={i} className={`w-1.5 rounded-full animate-pulse ${isDark ? 'bg-white/40' : 'bg-black/20'}`} 
+                    <div key={i} className={`w-1.5 rounded-full animate-pulse ${isDark ? 'bg-white/40' : 'bg-black/20'}`}
                          style={{ height: `${Math.random() * 60 + 20}%`, animationDelay: `${i * 0.1}s` }} />
                   ))}
                 </div>
@@ -293,8 +293,8 @@ export const LandingPage = memo(function LandingPage() {
           <button
             onClick={() => navigate('/auth')}
             className={`group inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-semibold tracking-tight transition-all duration-300 hover:scale-105
-              ${isDark 
-                ? 'bg-white text-black hover:bg-gray-100' 
+              ${isDark
+                ? 'bg-white text-black hover:bg-gray-100'
                 : 'bg-black text-white hover:bg-gray-900'
               }`}
           >
@@ -311,7 +311,7 @@ export const LandingPage = memo(function LandingPage() {
             <OmLogo variant="minimal" size={24} color={isDark ? 'dark' : 'light'} animated={false} />
             <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>© 2025 Shiksha Setu</span>
           </div>
-          
+
           <div className="flex gap-8">
             {['Privacy', 'Terms', 'Contact'].map((link) => (
               <a key={link} href="#" className={`text-sm font-medium transition-colors ${isDark ? 'text-white/40 hover:text-white' : 'text-black/40 hover:text-black'}`}>

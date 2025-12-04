@@ -22,7 +22,7 @@ GEN_RANDOM_UUID = 'gen_random_uuid()'
 
 def upgrade():
     """Create conversations, messages, and file_uploads tables."""
-    
+
     # Create conversations table
     op.create_table(
         'conversations',
@@ -33,11 +33,11 @@ def upgrade():
         sa.Column('updated_at', TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('metadata', JSONB, server_default='{}')
     )
-    
+
     # Create index on user_id for faster lookups
     op.create_index('ix_conversations_user_id', 'conversations', ['user_id'])
     op.create_index('ix_conversations_updated_at', 'conversations', ['updated_at'])
-    
+
     # Create messages table
     op.create_table(
         'messages',
@@ -48,11 +48,11 @@ def upgrade():
         sa.Column('created_at', TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('metadata', JSONB, server_default='{}')
     )
-    
+
     # Create index on conversation_id for faster message retrieval
     op.create_index('ix_messages_conversation_id', 'messages', ['conversation_id'])
     op.create_index('ix_messages_created_at', 'messages', ['created_at'])
-    
+
     # Create file_uploads table
     op.create_table(
         'file_uploads',
@@ -68,7 +68,7 @@ def upgrade():
         sa.Column('created_at', TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('metadata', JSONB, server_default='{}')
     )
-    
+
     # Create index on user_id for file_uploads
     op.create_index('ix_file_uploads_user_id', 'file_uploads', ['user_id'])
 

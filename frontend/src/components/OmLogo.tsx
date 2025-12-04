@@ -10,9 +10,9 @@ interface OmLogoProps {
   color?: 'light' | 'dark' | 'auto';
 }
 
-export const OmLogo = ({ 
-  size = 80, 
-  className = '', 
+export const OmLogo = ({
+  size = 80,
+  className = '',
   animated = true,
   color = 'auto'
 }: OmLogoProps) => {
@@ -23,12 +23,12 @@ export const OmLogo = ({
     return 'currentColor';
   };
   const fillColor = getFillColor();
-  
+
   return (
-    <svg 
-      viewBox="0 0 100 100" 
-      width={size} 
-      height={size} 
+    <svg
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
       className={`${className} ${animated ? 'animate-glow' : ''}`}
       aria-label="Om symbol"
     >
@@ -44,7 +44,7 @@ export const OmLogo = ({
           </feMerge>
         </filter>
       </defs>
-      
+
       {/* Actual Om character (ॐ) - authentic Devanagari */}
       <text
         x="50"
@@ -64,19 +64,19 @@ export const OmLogo = ({
 
 // Simple Om for inline use
 export const OmIcon = ({ size = 24, className = '' }: { size?: number; className?: string }) => (
-  <svg 
-    viewBox="0 0 24 24" 
-    width={size} 
-    height={size} 
+  <svg
+    viewBox="0 0 24 24"
+    width={size}
+    height={size}
     className={className}
     fill="currentColor"
     aria-label="Om"
   >
-    <text 
-      x="12" 
-      y="18" 
-      textAnchor="middle" 
-      fontSize="20" 
+    <text
+      x="12"
+      y="18"
+      textAnchor="middle"
+      fontSize="20"
       fontFamily="Arial Unicode MS, Noto Sans Devanagari, sans-serif"
     >
       ॐ

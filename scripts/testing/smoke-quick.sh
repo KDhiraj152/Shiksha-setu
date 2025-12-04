@@ -130,11 +130,11 @@ if [[ -n "$TOKEN" && "$TOKEN" != "null" ]]; then
     PROTECTED_RESP=$(curl -s -X GET "$API_URL/api/v2/auth/me" \
         -H "Authorization: Bearer $TOKEN" \
         2>/dev/null || echo '{"error":"failed"}')
-    
+
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/v2/auth/me" \
         -H "Authorization: Bearer $TOKEN" \
         2>/dev/null || echo "000")
-    
+
     if [[ "$HTTP_CODE" == "200" || "$HTTP_CODE" == "201" ]]; then
         print_pass "Protected endpoint accessible with token"
     else

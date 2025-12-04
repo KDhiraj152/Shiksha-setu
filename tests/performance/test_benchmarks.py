@@ -172,9 +172,9 @@ class TestAPIPerformance:
             assert response.status_code == 200
 
         result = benchmark_util.run(health_check, "health_check")
-        assert result.mean_ms < THRESHOLDS["health_check"], (
-            f"Health check too slow: {result.mean_ms:.2f}ms > {THRESHOLDS['health_check']}ms"
-        )
+        assert (
+            result.mean_ms < THRESHOLDS["health_check"]
+        ), f"Health check too slow: {result.mean_ms:.2f}ms > {THRESHOLDS['health_check']}ms"
 
     def test_hardware_status_performance(self, client, benchmark_util):
         """Hardware status endpoint performance."""
@@ -261,9 +261,9 @@ class TestEmbeddingPerformance:
             embedder.encode([test_text])
 
         result = benchmark_util.run(embed_single, "embedding_single")
-        assert result.mean_ms < THRESHOLDS["embedding_single"], (
-            f"Single embedding too slow: {result.mean_ms:.2f}ms"
-        )
+        assert (
+            result.mean_ms < THRESHOLDS["embedding_single"]
+        ), f"Single embedding too slow: {result.mean_ms:.2f}ms"
 
     @pytest.mark.skip(reason="Requires model to be loaded")
     def test_batch_embedding_performance(self, benchmark_util):
@@ -277,9 +277,9 @@ class TestEmbeddingPerformance:
             embedder.encode(test_texts)
 
         result = benchmark_util.run(embed_batch, "embedding_batch_10")
-        assert result.mean_ms < THRESHOLDS["embedding_batch_10"], (
-            f"Batch embedding too slow: {result.mean_ms:.2f}ms"
-        )
+        assert (
+            result.mean_ms < THRESHOLDS["embedding_batch_10"]
+        ), f"Batch embedding too slow: {result.mean_ms:.2f}ms"
 
 
 class TestMemoryUsage:
@@ -306,9 +306,9 @@ class TestMemoryUsage:
         print(f"Import overhead: {import_overhead:.1f}MB")
 
         # Should not exceed 500MB just for imports
-        assert import_overhead < 500, (
-            f"Import overhead too high: {import_overhead:.1f}MB"
-        )
+        assert (
+            import_overhead < 500
+        ), f"Import overhead too high: {import_overhead:.1f}MB"
 
 
 class TestConcurrencyPerformance:

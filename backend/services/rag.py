@@ -36,6 +36,7 @@ try:
         normalize_vectors,
         top_k_indices,
     )
+
     SIMD_OPT_AVAILABLE = True
 except ImportError:
     SIMD_OPT_AVAILABLE = False
@@ -43,6 +44,7 @@ except ImportError:
 # Device acceleration layer (now in core.optimized)
 try:
     from ..core.optimized import AcceleratedSearch, get_accelerator
+
     DEVICE_ACCEL_AVAILABLE = True
 except ImportError:
     DEVICE_ACCEL_AVAILABLE = False
@@ -1016,7 +1018,7 @@ class RAGService:
 
         return db.execute(
             text("""
-                SELECT 
+                SELECT
                     dc.id,
                     dc.chunk_text as text,
                     dc.chunk_metadata as metadata,
@@ -1191,7 +1193,7 @@ Answer:"""
         try:
             result = db.execute(
                 text("""
-                SELECT 
+                SELECT
                     COUNT(*) as total_chunks,
                     COUNT(DISTINCT document_id) as total_documents
                 FROM document_chunks

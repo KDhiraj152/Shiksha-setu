@@ -191,7 +191,7 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
     - Adds request context for validation errors
     - Logs validation failures
     - Tracks validation metrics
-    
+
     OPTIMIZATION: Uses __slots__ to reduce memory overhead per instance.
     """
 

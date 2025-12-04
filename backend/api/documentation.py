@@ -53,7 +53,7 @@ Get tokens from `/api/auth/login` endpoint.
 
 API requests are rate-limited based on user role:
 - **Students**: 60 requests/minute, 600/hour
-- **Teachers**: 200 requests/minute, 2000/hour  
+- **Teachers**: 200 requests/minute, 2000/hour
 - **Admins**: 1000 requests/minute, 10000/hour
 
 Rate limit headers included in responses:
@@ -77,7 +77,7 @@ Standard error response format:
 ## Content Pipeline
 
 Content processing flow:
-1. **Upload** → 2. **Simplification** → 3. **Translation** → 
+1. **Upload** → 2. **Simplification** → 3. **Translation** →
 4. **Validation** → 5. **TTS Generation** → 6. **Quality Check**
 
 ## Support

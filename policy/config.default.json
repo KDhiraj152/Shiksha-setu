@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Policy configuration for ShikshaSetu AI Engine. A safe, general-purpose AI for education and noble purposes.",
   "last_updated": "2025-12-04T04:00:00Z",
-  
+
   "meta": {
     "vision": "A safe AI that empowers users for education, research, creativity, and noble purposes without artificial restrictions",
     "principles": [
@@ -285,7 +285,7 @@
     "blocked_imports": ["os", "sys", "subprocess", "socket", "pickle"],
     "blocked_patterns": [
       "import os",
-      "import sys", 
+      "import sys",
       "import subprocess",
       "__import__",
       "eval(",

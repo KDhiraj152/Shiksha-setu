@@ -1,10 +1,10 @@
 # Section 11: Contribution Summary
 
 ## Author Information
-**Name**: K. Dhiraj  
-**Role**: Lead Architect & Full-Stack AI Engineer  
-**Email**: [Your Email Here]  
-**GitHub**: https://github.com/YOURUSERNAME  
+**Name**: K. Dhiraj
+**Role**: Lead Architect & Full-Stack AI Engineer
+**Email**: [Your Email Here]
+**GitHub**: https://github.com/YOURUSERNAME
 **LinkedIn**: https://linkedin.com/in/YOURUSERNAME
 
 ## Summary of Contributions

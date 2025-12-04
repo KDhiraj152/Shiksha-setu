@@ -82,9 +82,9 @@ export default function ExportModal({ isOpen, onClose, messages, conversationTit
       // Create and download file
       const formatInfo = formatOptions.find((f) => f.id === selectedFormat)!;
       const filename = `${conversationTitle || 'conversation'}-${new Date().toISOString().split('T')[0]}${formatInfo.extension}`;
-      
-      const blob = new Blob([content], { 
-        type: selectedFormat === 'json' ? 'application/json' : 'text/plain' 
+
+      const blob = new Blob([content], {
+        type: selectedFormat === 'json' ? 'application/json' : 'text/plain'
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -110,7 +110,7 @@ export default function ExportModal({ isOpen, onClose, messages, conversationTit
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm animate-fadeIn"
         onClick={onClose}
       />
@@ -118,7 +118,7 @@ export default function ExportModal({ isOpen, onClose, messages, conversationTit
       {/* Modal */}
       <div className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md
         ${isDark ? 'bg-[#141414]' : 'bg-white'} rounded-2xl shadow-2xl animate-scaleIn`}>
-        
+
         {/* Header */}
         <div className={`flex items-center justify-between p-4 border-b
           ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
@@ -159,16 +159,16 @@ export default function ExportModal({ isOpen, onClose, messages, conversationTit
                     key={format.id}
                     onClick={() => setSelectedFormat(format.id)}
                     className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all
-                      ${isSelected 
-                        ? isDark 
-                          ? 'border-white/20 bg-white/5' 
+                      ${isSelected
+                        ? isDark
+                          ? 'border-white/20 bg-white/5'
                           : 'border-gray-300 bg-gray-50'
                         : isDark
                           ? 'border-white/[0.06] hover:border-white/10'
                           : 'border-gray-100 hover:border-gray-200'
                       }`}
                   >
-                    <format.icon className={`w-5 h-5 ${isSelected 
+                    <format.icon className={`w-5 h-5 ${isSelected
                       ? isDark ? 'text-white' : 'text-gray-900'
                       : isDark ? 'text-white/40' : 'text-gray-400'
                     }`} />
@@ -189,7 +189,7 @@ export default function ExportModal({ isOpen, onClose, messages, conversationTit
             <label className={`text-xs font-medium ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
               Options
             </label>
-            
+
             {/* Include Metadata */}
             <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer
               ${isDark ? 'border-white/[0.06] hover:border-white/10' : 'border-gray-100 hover:border-gray-200'}`}>
@@ -197,12 +197,12 @@ export default function ExportModal({ isOpen, onClose, messages, conversationTit
                 Include metadata
               </span>
               <div className={`w-10 h-6 rounded-full p-0.5 transition-colors ${
-                includeMetadata 
+                includeMetadata
                   ? isDark ? 'bg-white' : 'bg-gray-900'
                   : isDark ? 'bg-white/10' : 'bg-gray-200'
               }`}>
                 <div className={`w-5 h-5 rounded-full transition-transform ${
-                  includeMetadata 
+                  includeMetadata
                     ? 'translate-x-4 bg-black'
                     : isDark ? 'bg-white/40' : 'bg-white'
                 }`} />
@@ -222,12 +222,12 @@ export default function ExportModal({ isOpen, onClose, messages, conversationTit
                 Include citations
               </span>
               <div className={`w-10 h-6 rounded-full p-0.5 transition-colors ${
-                includeCitations 
+                includeCitations
                   ? isDark ? 'bg-white' : 'bg-gray-900'
                   : isDark ? 'bg-white/10' : 'bg-gray-200'
               }`}>
                 <div className={`w-5 h-5 rounded-full transition-transform ${
-                  includeCitations 
+                  includeCitations
                     ? 'translate-x-4 bg-black'
                     : isDark ? 'bg-white/40' : 'bg-white'
                 }`} />
@@ -248,8 +248,8 @@ export default function ExportModal({ isOpen, onClose, messages, conversationTit
             onClick={handleExport}
             disabled={isExporting}
             className={`w-full py-3 rounded-full text-sm font-medium flex items-center justify-center gap-2 transition-all
-              ${isDark 
-                ? 'bg-white text-black hover:bg-gray-100 disabled:bg-white/50' 
+              ${isDark
+                ? 'bg-white text-black hover:bg-gray-100 disabled:bg-white/50'
                 : 'bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-400'
               }`}
           >

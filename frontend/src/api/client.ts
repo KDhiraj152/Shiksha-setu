@@ -1,6 +1,6 @@
 /**
  * API Client Core - Configuration and utilities
- * 
+ *
  * Uses secure token management for XSS mitigation.
  * Supports request cancellation via AbortController.
  */
@@ -39,8 +39,8 @@ function getRequestKey(url: string, options?: RequestInit): string {
   // Handle body as JSON string for proper deduplication key
   let bodyKey = '';
   if (options?.body) {
-    bodyKey = typeof options.body === 'string' 
-      ? options.body.slice(0, 100) 
+    bodyKey = typeof options.body === 'string'
+      ? options.body.slice(0, 100)
       : JSON.stringify(options.body).slice(0, 100);
   }
   return `${method}:${url}:${bodyKey}`;
@@ -56,14 +56,14 @@ export function createAbortController(
   requestId?: string
 ): AbortController {
   const controller = new AbortController();
-  
+
   // Track by request ID if provided
   if (requestId) {
     // Cancel any existing request with same ID
     cancelRequest(requestId);
     activeRequests.set(requestId, controller);
   }
-  
+
   // Set timeout if specified
   if (timeoutMs > 0) {
     setTimeout(() => {
@@ -72,7 +72,7 @@ export function createAbortController(
       }
     }, timeoutMs);
   }
-  
+
   return controller;
 }
 
@@ -202,7 +202,7 @@ export interface FetchWithRetryOptions extends RequestInit {
 
 /**
  * Make a fetch request with automatic retry logic and abort support
- * 
+ *
  * OPTIMIZATION: Deduplicates in-flight GET requests with same URL
  * to prevent redundant API calls from rapid component re-renders.
  */
@@ -211,11 +211,11 @@ export async function fetchWithRetry<T>(
   options: FetchWithRetryOptions = {}
 ): Promise<T> {
   const { requestId, timeoutMs = DEFAULT_TIMEOUT_MS, signal: externalSignal, ...fetchOptions } = options;
-  
+
   // OPTIMIZATION: Deduplicate GET requests - return pending promise if exists
   const method = fetchOptions.method?.toUpperCase() || 'GET';
   const dedupeKey = method === 'GET' ? getRequestKey(url, options) : null;
-  
+
   if (dedupeKey && pendingRequests.has(dedupeKey)) {
     // Return existing in-flight request
     try {
@@ -225,10 +225,10 @@ export async function fetchWithRetry<T>(
       // If cached request failed, continue with new request
     }
   }
-  
+
   // Create abort controller for this request
   const controller = createAbortController(timeoutMs, requestId);
-  
+
   // If external signal provided, abort when it does
   if (externalSignal) {
     if (externalSignal.aborted) {
@@ -239,14 +239,14 @@ export async function fetchWithRetry<T>(
       controller.abort(externalSignal.reason || new Error('Request cancelled'));
     });
   }
-  
-  const makeRequest = () => fetch(url, { 
-    ...fetchOptions, 
-    signal: controller.signal 
+
+  const makeRequest = () => fetch(url, {
+    ...fetchOptions,
+    signal: controller.signal
   });
-  
+
   let lastError: Error | null = null;
-  
+
   // Store promise for deduplication if this is a GET request
   const requestPromise = (async () => {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -257,17 +257,17 @@ export async function fetchWithRetry<T>(
         return result;
       } catch (error) {
         lastError = error as Error;
-        
+
         // Don't retry for abort/cancel errors
         if (controller.signal.aborted) {
           throw new Error(lastError.message || 'Request was cancelled');
         }
-        
+
         // Don't retry for auth errors
         if (lastError.message === 'Session expired') {
           throw lastError;
         }
-        
+
         // Wait before retrying
         if (attempt < MAX_RETRIES) {
           await sleep(RETRY_DELAY_MS * (attempt + 1));
@@ -276,12 +276,12 @@ export async function fetchWithRetry<T>(
     }
     throw lastError || new Error('Request failed after retries');
   })();
-  
+
   // Track GET requests for deduplication
   if (dedupeKey) {
     pendingRequests.set(dedupeKey, requestPromise as unknown as Promise<Response>);
   }
-  
+
   try {
     return await requestPromise;
   } finally {
@@ -296,7 +296,7 @@ export async function fetchWithRetry<T>(
  * Helper to process individual SSE stream lines
  */
 export function processStreamLine(
-  line: string, 
+  line: string,
   callbacks: {
     onChunk?: (text: string) => void;
     onStatus?: (status: { stage: string; message: string }) => void;
@@ -305,7 +305,7 @@ export function processStreamLine(
   }
 ): void {
   if (!line.startsWith('data: ')) return;
-  
+
   try {
     const data = JSON.parse(line.slice(6));
     switch (data.type) {
@@ -329,7 +329,7 @@ export function processStreamLine(
 
 /**
  * Read and process an SSE stream with abort support
- * 
+ *
  * OPTIMIZATION: Uses TextDecoderStream where available for better performance
  */
 export async function readStream(
@@ -361,13 +361,13 @@ export async function readStream(
         await reader.cancel();
         return;
       }
-      
+
       const { done, value } = await reader.read();
       if (done) break;
 
       // OPTIMIZATION: Process data in chunks without creating intermediate arrays
       buffer += decoder.decode(value, { stream: true });
-      
+
       // Process complete lines
       let newlineIdx: number;
       while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
@@ -378,7 +378,7 @@ export async function readStream(
         }
       }
     }
-    
+
     // Process any remaining buffer content
     if (buffer.length > 0) {
       processStreamLine(buffer, callbacks);

@@ -54,17 +54,17 @@ export function useAudioPlayback({ selectedLanguage, showToast }: UseAudioPlayba
       stopAudio();
       return;
     }
-    
+
     stopAudio();
     setPlayingAudioMessageId(messageId);
-    
+
     try {
-      const langForTTS = selectedLanguage === 'auto' 
-        ? detectLanguage(content) 
+      const langForTTS = selectedLanguage === 'auto'
+        ? detectLanguage(content)
         : selectedLanguage;
-      
+
       const data = await audioApi.textToSpeechGuest(content, langForTTS, 'female');
-      
+
       if (data.success && data.audio_data) {
         return new Promise((resolve) => {
           const audioElement = audioApi.playBase64Audio(data.audio_data!, data.audio_format || 'audio/mpeg');
@@ -81,7 +81,7 @@ export function useAudioPlayback({ selectedLanguage, showToast }: UseAudioPlayba
           };
         });
       }
-      
+
       // Browser TTS fallback
       if (data.use_browser_tts && 'speechSynthesis' in globalThis) {
         return new Promise((resolve) => {
@@ -104,7 +104,7 @@ export function useAudioPlayback({ selectedLanguage, showToast }: UseAudioPlayba
     } catch (error) {
       console.warn('Backend TTS failed, using browser fallback:', error);
       setPlayingAudioMessageId(null);
-      
+
       if ('speechSynthesis' in globalThis) {
         return new Promise((resolve) => {
           setPlayingAudioMessageId(messageId);
@@ -178,10 +178,10 @@ export function useChatScroll({ messagesLength, streamingMessage }: UseChatScrol
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = container;
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
-    
+
     if (isNearBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
@@ -191,10 +191,10 @@ export function useChatScroll({ messagesLength, streamingMessage }: UseChatScrol
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  return { 
-    messagesEndRef, 
-    messagesContainerRef, 
-    showScrollButton, 
-    scrollToBottom 
+  return {
+    messagesEndRef,
+    messagesContainerRef,
+    showScrollButton,
+    scrollToBottom
   };
 }

@@ -27,31 +27,31 @@ const taglines = [
 // Custom hook for rotating taglines (exported for use in landing page)
 export const useRotatingTagline = () => {
   const [index, setIndex] = useState(0);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % taglines.length);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
-  
+
   return taglines[index];
 };
 
 // Beautiful Om symbol using the actual Unicode character with proper font
-const OmSymbol = ({ 
-  size = 48, 
-  color = '#ffffff', 
-  className = '' 
-}: { 
-  size?: number; 
-  color?: string; 
+const OmSymbol = ({
+  size = 48,
+  color = '#ffffff',
+  className = ''
+}: {
+  size?: number;
+  color?: string;
   className?: string;
 }) => (
-  <div 
+  <div
     className={`flex items-center justify-center select-none ${className}`}
-    style={{ 
-      width: size, 
+    style={{
+      width: size,
       height: size,
       fontSize: size * 0.85,
       fontFamily: "'Noto Sans Devanagari', 'Arial Unicode MS', serif",
@@ -64,8 +64,8 @@ const OmSymbol = ({
   </div>
 );
 
-export const OmLogo: React.FC<OmLogoProps> = ({ 
-  size = 200, 
+export const OmLogo: React.FC<OmLogoProps> = ({
+  size = 200,
   className = '',
   animated = true,
   variant = 'hero',
@@ -88,13 +88,13 @@ export const OmLogo: React.FC<OmLogoProps> = ({
   // === HERO VARIANT ===
   if (variant === 'hero') {
     return (
-      <div 
+      <div
         className={`relative flex items-center justify-center ${className} ${isVisible ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}
         style={{ width: size, height: size }}
       >
         {/* Outer rotating ring */}
         {animated && (
-          <div 
+          <div
             className="absolute rounded-full"
             style={{
               width: size * 0.85,
@@ -106,7 +106,7 @@ export const OmLogo: React.FC<OmLogoProps> = ({
         )}
 
         {/* Glowing backdrop */}
-        <div 
+        <div
           className="absolute rounded-full"
           style={{
             width: size * 0.6,
@@ -118,9 +118,9 @@ export const OmLogo: React.FC<OmLogoProps> = ({
         />
 
         {/* The Om Symbol */}
-        <div 
+        <div
           className={animated ? 'animate-breathe' : ''}
-          style={{ 
+          style={{
             filter: `drop-shadow(0 0 20px ${glowColor}30)`,
           }}
         >
@@ -134,14 +134,14 @@ export const OmLogo: React.FC<OmLogoProps> = ({
   if (variant === 'nav') {
     return (
       <div className={`flex items-center gap-2.5 ${className} ${isVisible ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
-        <div 
-          style={{ 
+        <div
+          style={{
             filter: color === 'dark' ? `drop-shadow(0 0 6px ${glowColor}20)` : 'none',
           }}
         >
           <OmSymbol size={size} color={textColor} />
         </div>
-        <span 
+        <span
           className="text-sm font-semibold tracking-tight"
           style={{ color: textColor }}
         >
@@ -156,11 +156,11 @@ export const OmLogo: React.FC<OmLogoProps> = ({
     return (
       <div className={`flex items-center gap-3 ${className} ${isVisible ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
         <OmSymbol size={size} color={color === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)'} />
-        <div 
+        <div
           className="h-4 w-px"
-          style={{ background: color === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }} 
+          style={{ background: color === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }}
         />
-        <span 
+        <span
           className="text-xs tracking-widest uppercase font-medium"
           style={{ color: color === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)' }}
         >
