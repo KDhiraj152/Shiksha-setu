@@ -689,8 +689,6 @@ const ChatMessage = memo(function ChatMessage({
       </div>
     </div>
   );
-}
-
 }, arePropsEqual);
 
 // Named export for direct imports

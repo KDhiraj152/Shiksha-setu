@@ -354,19 +354,21 @@ export async function readStream(
     }, { once: true });  // OPTIMIZATION: Remove listener after first trigger
   }
 
+  let done = false;
   try {
-    while (true) {
+    while (!done) {
       // Check for abort before each read
       if (signal?.aborted) {
         await reader.cancel();
         return;
       }
 
-      const { done, value } = await reader.read();
+      const result = await reader.read();
+      done = result.done;
       if (done) break;
 
       // OPTIMIZATION: Process data in chunks without creating intermediate arrays
-      buffer += decoder.decode(value, { stream: true });
+      buffer += decoder.decode(result.value, { stream: true });
 
       // Process complete lines
       let newlineIdx: number;
