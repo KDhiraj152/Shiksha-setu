@@ -9,7 +9,7 @@ A local-first, unrestricted AI platform that empowers learning, research, creati
 ## Vision
 
 Shiksha Setu is evolving beyond education into a **general-purpose AI** that:
-- 🎓 **Educates** — NCERT/ICSE/State/STEM-aligned content, multilingual support, grade adaptation
+- 🎓 **Educates** — STEM-aligned content, multilingual support, grade adaptation
 - 🔬 **Researches** — Unrestricted knowledge exploration for academic work
 - 🎨 **Creates** — Assists with writing, coding, analysis, and creative tasks
 - 🌍 **Serves Noble Purposes** — Healthcare, accessibility, social good
