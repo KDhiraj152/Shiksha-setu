@@ -44,7 +44,7 @@ uvicorn[standard]>=0.34.0,<1.0.0
 pydantic>=2.10.0,<3.0.0
 pydantic-settings>=2.8.0,<3.0.0
 email-validator>=2.2.0,<3.0.0
-starlette>=0.45.0,<1.0.0
+starlette>=1.3.1,<2.0.0
 
 # ============================================================================
 # DATABASE & ORM
@@ -65,7 +65,7 @@ kombu>=5.4.0,<6.0.0
 # ============================================================================
 # AI/ML CORE
 # ============================================================================
-torch>=2.5.0,<3.0.0
+torch>=2.12.1,<3.0.0
 transformers>=5.0.0,<6.0.0         # Upgraded from 4.x — all Auto classes, pipeline() stable
 accelerate>=1.0.0,<2.0.0          # Upgraded from 0.x — transitive dep for device_map="auto"
 tiktoken>=0.8.0,<1.0.0
@@ -93,9 +93,9 @@ indic-nlp-library>=0.92,<1.0.0
 # DOCUMENT PROCESSING
 # ============================================================================
 pymupdf>=1.25.0,<2.0.0
-Pillow>=11.0.0,<14.0.0
+Pillow>=12.2.0,<14.0.0
 pdf2image>=1.17.0,<2.0.0
-pypdf>=5.0.0,<6.0.0
+pypdf>=6.13.0,<7.0.0
 verovio>=5.6.0,<6.0.0           # Music score rendering (GOT-OCR2) — needs Python 3.11–3.13
 python-docx>=1.1.0,<2.0.0
 python-pptx>=1.0.0,<2.0.0
@@ -115,7 +115,7 @@ datasets>=3.0.0,<5.0.0
 httpx>=0.28.0,<1.0.0
 aiofiles>=24.0.0,<26.0.0
 python-magic>=0.4.27,<1.0.0
-python-dotenv>=1.0.0,<2.0.0
+python-dotenv>=1.2.2,<2.0.0
 
 # ============================================================================
 # SECURITY & AUTH
@@ -123,7 +123,7 @@ python-dotenv>=1.0.0,<2.0.0
 python-jose[cryptography]>=3.3.0,<4.0.0
 passlib[bcrypt]>=1.7.4,<2.0.0
 bcrypt>=4.2.0,<5.0.0
-python-multipart>=0.0.18,<1.0.0
+python-multipart>=0.0.31,<1.0.0
 
 # ============================================================================
 # DATA PROCESSING
@@ -134,7 +134,7 @@ scikit-learn>=1.5.0,<2.0.0        # relaxed — coremltools 9.x supports scikit-
 langdetect>=1.0.9,<2.0.0
 einops>=0.8.0,<1.0.0
 xxhash>=3.5.0,<4.0.0              # Fast hashing for cache keys (10x faster than SHA256)
-orjson>=3.10.0,<4.0.0             # Fast JSON serialization (10x faster than stdlib json)
+orjson>=3.11.6,<4.0.0             # Fast JSON serialization (10x faster than stdlib json)
 
 # ============================================================================
 # MONITORING & OBSERVABILITY
